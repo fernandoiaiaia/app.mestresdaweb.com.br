@@ -7,24 +7,22 @@ FROM base AS builder
 WORKDIR /app
 RUN pnpm install -g turbo
 COPY . .
-RUN turbo prune api --docker
+RUN turbo prune web --docker
 
 FROM base AS installer
 WORKDIR /app
 COPY --from=builder /app/out/json/ .
 COPY --from=builder /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
-# We need to install all dependencies for the api including prisma
 RUN pnpm install --frozen-lockfile
 
 COPY --from=builder /app/out/full/ .
 COPY turbo.json turbo.json
-# Generate prisma client and build api
-RUN pnpm turbo run generate --filter=api... || true
-RUN pnpm turbo run build --filter=api...
+RUN pnpm turbo run build --filter=web...
 
 FROM base AS runner
 WORKDIR /app
 COPY --from=installer /app .
 ENV NODE_ENV=production
-EXPOSE 8080
-CMD ["pnpm", "--filter", "api", "start"]
+ENV PORT=1100
+EXPOSE 1100
+CMD ["pnpm", "--filter", "web", "start"]

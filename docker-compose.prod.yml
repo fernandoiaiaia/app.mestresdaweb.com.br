@@ -80,7 +80,7 @@ services:
     env_file: .env
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.web-comercial.rule=Host(`comercial.cezani.dev`)"
+      - "traefik.http.routers.web-comercial.rule=Host(`advisor.cezani.dev`)"
       - "traefik.http.routers.web-comercial.entrypoints=websecure"
       - "traefik.http.routers.web-comercial.tls.certresolver=myresolver"
       - "traefik.http.services.web-comercial.loadbalancer.server.port=1100"

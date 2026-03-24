@@ -61,7 +61,7 @@ services:
     env_file: .env
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.api.rule=Host(`api.seudominio.com.br`)" # Substitua pelo seu domínio
+      - "traefik.http.routers.api.rule=Host(`tsapi.cezani.dev`)"
       - "traefik.http.routers.api.entrypoints=websecure"
       - "traefik.http.routers.api.tls.certresolver=myresolver"
     networks:
@@ -77,7 +77,7 @@ services:
     env_file: .env
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.web-comercial.rule=Host(`comercial.seudominio.com.br`)" # Substitua pelo seu domínio
+      - "traefik.http.routers.web-comercial.rule=Host(`comercial.cezani.dev`)"
       - "traefik.http.routers.web-comercial.entrypoints=websecure"
       - "traefik.http.routers.web-comercial.tls.certresolver=myresolver"
     networks:
@@ -92,9 +92,24 @@ services:
     env_file: .env
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.web-cliente.rule=Host(`cliente.seudominio.com.br`)" # Substitua pelo seu domínio
+      - "traefik.http.routers.web-cliente.rule=Host(`cliente.cezani.dev`)"
       - "traefik.http.routers.web-cliente.entrypoints=websecure"
       - "traefik.http.routers.web-cliente.tls.certresolver=myresolver"
+    networks:
+      - web
+
+  web-dev:
+    build:
+      context: .
+      dockerfile: "apps/Web Dev/Dockerfile"
+    container_name: web-dev
+    restart: unless-stopped
+    env_file: .env
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.web-dev.rule=Host(`dev.cezani.dev`)"
+      - "traefik.http.routers.web-dev.entrypoints=websecure"
+      - "traefik.http.routers.web-dev.tls.certresolver=myresolver"
     networks:
       - web
 

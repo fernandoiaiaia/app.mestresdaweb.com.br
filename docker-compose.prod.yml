@@ -71,6 +71,7 @@ services:
       - "traefik.http.routers.api.entrypoints=websecure"
       - "traefik.http.routers.api.tls.certresolver=myresolver"
       - "traefik.http.services.api.loadbalancer.server.port=8080"
+      - "traefik.docker.network=proposal-ai_web"
     networks:
       - web
       - internal
@@ -148,6 +149,7 @@ services:
 networks:
   web:
     external: false
+    name: proposal-ai_web
   internal:
     external: false
 

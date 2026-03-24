@@ -1,0 +1,25 @@
+{
+    "name": "proposal-ai",
+    "private": true,
+    "scripts": {
+        "dev": "turbo dev",
+        "dev:api": "turbo dev --filter=api",
+        "dev:web": "turbo dev --filter=web",
+        "build": "turbo build",
+        "lint": "turbo lint",
+        "test": "turbo test",
+        "db:migrate": "cd apps/api && pnpm prisma migrate dev",
+        "db:studio": "cd apps/api && pnpm prisma studio",
+        "db:seed": "cd apps/api && pnpm prisma db seed",
+        "docker:up": "docker-compose up -d",
+        "docker:down": "docker-compose down"
+    },
+    "devDependencies": {
+        "turbo": "^2.5.0"
+    },
+    "packageManager": "pnpm@9.15.0",
+    "dependencies": {
+        "@types/nodemailer": "^7.0.11",
+        "nodemailer": "^8.0.2"
+    }
+}

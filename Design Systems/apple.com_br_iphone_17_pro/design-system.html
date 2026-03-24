@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html class="js no-touch enhanced desktop" dir="ltr" lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
+<title>Design System - Pattern Library</title>
+<link href="assets/globalheader_d08709482e48.css" rel="stylesheet" type="text/css"/>
+<link href="assets/ac-globalfooter_de0345f527b7.css" rel="stylesheet" type="text/css"/>
+<link href="assets/ac-localnav_7321ad5de109.css" rel="stylesheet" type="text/css"/>
+<link href="assets/fonts_861a2ff04d8a.css" rel="stylesheet"/>
+<link href="assets/overview_7bcb153217fe.css" rel="stylesheet" type="text/css"/>
+<link href="assets/overview_12582890821d.css" rel="stylesheet" type="text/css"/>
+<style>
+/* Reset for isolated rendering */
+body { background-color: #000; color: #f5f5f7; margin: 0; padding: 0; }
+.ds-nav { position: sticky; top: 0; z-index: 9999; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); padding: 15px 30px; display: flex; gap: 20px; border-bottom: 1px solid #333; font-family: "SF Pro Text", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 14px; }
+.ds-nav a { color: #f5f5f7; text-decoration: none; transition: color 0.2s; }
+.ds-nav a:hover { color: #2997ff; }
+.ds-section { padding: 80px 30px; border-bottom: 1px solid #333; max-width: 1200px; margin: 0 auto; clear: both; }
+.ds-section-title { font-size: 32px; font-weight: 600; margin-bottom: 40px; color: #fff; border-bottom: 1px solid #333; padding-bottom: 10px; }
+.typo-row { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid #333; padding: 30px 0; }
+.typo-preview { flex-grow: 1; }
+.typo-label { display: block; font-size: 12px; color: #888; margin-bottom: 10px; font-family: monospace; text-transform: uppercase; letter-spacing: 1px; }
+.typo-specs { color: #888; font-family: monospace; font-size: 14px; white-space: nowrap; margin-left: 20px; text-align: right; }
+.color-swatch-container { display: flex; gap: 20px; flex-wrap: wrap; }
+.color-swatch { border-radius: 12px; padding: 20px; width: 200px; height: 120px; display: flex; flex-direction: column; justify-content: flex-end; border: 1px solid rgba(255,255,255,0.1); }
+.swatch-label { font-family: monospace; font-size: 12px; opacity: 0.8; }
+.component-row { margin-bottom: 40px; }
+.states-grid { display: flex; gap: 20px; align-items: center; background: #111; padding: 30px; border-radius: 18px; }
+.motion-gallery { display: flex; gap: 30px; flex-wrap: wrap; }
+.motion-card { width: 250px; height: 250px; background: #111; border-radius: 20px; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; cursor: pointer; }
+.motion-card:hover .hover-child { transform: scale(1.05); }
+.gradient-demo { background: -webkit-linear-gradient(90deg, #ffa1a1, #a1b0ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: bold; }
+</style>
+</head>
+<body class="page-overview globalheader-dark theme-dark">
+
+<!-- Top Navigation -->
+<nav class="ds-nav">
+  <a href="#hero">Hero</a>
+  <a href="#typography">Typography</a>
+  <a href="#colors">Colors & Surfaces</a>
+  <a href="#components">UI Components</a>
+  <a href="#layout">Layout & Spacing</a>
+  <a href="#motion">Motion & Interaction</a>
+  <a href="#icons">Icons</a>
+</nav>
+
+<!-- 0) Hero -->
+<section id="hero" style="position:relative; margin-bottom: 50px;">
+  <section class="section section-welcome no-pad section-welcome-localnav-overlap" data-video-id="welcome-video">
+    <h1 class="visuallyhidden">Design System</h1>
+    <div class="inline-media-component-container welcome-video with-media-ui-button fallback">
+      <div class="video-wrapper media-timeout">
+        <picture class="overview-welcome-hero fallback-frame loaded">
+          <source media="(min-width:0px)" srcset="assets/hero__bsveixlwbms2_xlarge_0c68855f7116.jpg, assets/hero__bsveixlwbms2_xlarge_2x_1b40217e231f.jpg 2x"/>
+          <img alt="Design System Hero Background" src="assets/hero__bsveixlwbms2_xlarge_0c68855f7116.jpg"/>
+        </picture>
+      </div>
+    </div>
+    <div class="marquee theme-dark">
+      <div class="marquee-scrim"></div>
+      <div class="viewport-content">
+        <div class="marquee-detail typography-welcome-detail">
+          <a class="marquee-ctas-link button" href="#typography">Explore Design System</a>
+          <div class="ric-dynamic-pricing-from-monthly marquee-pricing">
+            <p class="ric-dynamic-pricing pricing-product ric-dynamic-pricing-from-monthly has-dynamic-content">
+              <span>The definitive living pattern library & styles.</span>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</section>
+
+<!-- 1) Typography -->
+<section id="typography" class="ds-section">
+  <h2 class="ds-section-title">Typography</h2>
+  
+  <div class="typo-row">
+    <div class="typo-preview">
+      <span class="typo-label">Heading 1 (.typography-section-header-headline)</span>
+      <h2 class="section-header-headline typography-section-header-headline">Design System</h2>
+    </div>
+    <div class="typo-specs"></div>
+  </div>
+
+  <div class="typo-row">
+    <div class="typo-preview">
+      <span class="typo-label">Heading 2 (.typography-ps-headline-elevated)</span>
+      <h3 class="ps-headline-elevated typography-ps-headline-elevated">Design System</h3>
+    </div>
+    <div class="typo-specs"></div>
+  </div>
+
+  <div class="typo-row">
+    <div class="typo-preview">
+      <span class="typo-label">Heading 3 (.typography-ps-headline-eyebrow)</span>
+      <h4 class="ps-headline-eyebrow typography-ps-headline-eyebrow">Design System</h4>
+    </div>
+    <div class="typo-specs"></div>
+  </div>
+
+  <div class="typo-row">
+    <div class="typo-preview">
+      <span class="typo-label">Heading 4 (.typography-media-card-gallery-headline)</span>
+      <p class="caption pin-offset typography-media-card-gallery-headline">Design System</p>
+    </div>
+    <div class="typo-specs"></div>
+  </div>
+
+  <div class="typo-row">
+    <div class="typo-preview">
+      <span class="typo-label">Bold L (.typography-body.has-bold)</span>
+      <p class="typography-body has-bold" style="font-weight: 600;">Design System</p>
+    </div>
+    <div class="typo-specs"></div>
+  </div>
+
+  <div class="typo-row">
+    <div class="typo-preview">
+      <span class="typo-label">Bold M (.typography-body-reduced.has-bold)</span>
+      <p class="typography-body-reduced has-bold" style="font-weight: 600;">Design System</p>
+    </div>
+    <div class="typo-specs"></div>
+  </div>
+
+  <div class="typo-row">
+    <div class="typo-preview">
+      <span class="typo-label">Bold S (.typography-caption.has-bold)</span>
+      <p class="typography-caption has-bold" style="font-weight: 600;">Design System</p>
+    </div>
+    <div class="typo-specs"></div>
+  </div>
+
+  <div class="typo-row">
+    <div class="typo-preview">
+      <span class="typo-label">Paragraph (.typography-ps-body)</span>
+      <p class="ps-header-copy typography-ps-body">This is a paragraph inside the design system representing standard body text utilized across informational sections.</p>
+    </div>
+    <div class="typo-specs"></div>
+  </div>
+
+  <div class="typo-row">
+    <div class="typo-preview">
+      <span class="typo-label">Regular L (.typography-body)</span>
+      <p class="typography-body">Design System</p>
+    </div>
+    <div class="typo-specs"></div>
+  </div>
+
+  <div class="typo-row">
+    <div class="typo-preview">
+      <span class="typo-label">Regular M (.typography-body-reduced)</span>
+      <p class="typography-body-reduced">Design System</p>
+    </div>
+    <div class="typo-specs"></div>
+  </div>
+
+  <div class="typo-row">
+    <div class="typo-preview">
+      <span class="typo-label">Regular S (.typography-caption)</span>
+      <p class="typography-caption">Design System</p>
+    </div>
+    <div class="typo-specs"></div>
+  </div>
+</section>
+
+<!-- 2) Colors & Surfaces -->
+<section id="colors" class="ds-section">
+  <h2 class="ds-section-title">Colors & Surfaces</h2>
+  <div class="color-swatch-container">
+    <div class="color-swatch" style="background: #000;">
+      <span class="swatch-label">Page Background<br/>#000000 / .theme-dark</span>
+    </div>
+    <div class="color-swatch" style="background: #111;">
+      <span class="swatch-label">Card Background<br/>#111111</span>
+    </div>
+    <div class="color-swatch" style="background: #1d1d1f; color: #f5f5f7;">
+      <span class="swatch-label">Elevated Surface<br/>#1D1D1F</span>
+    </div>
+    <div class="color-swatch" style="background: #f5f5f7; color: #000;">
+      <span class="swatch-label">Primary Text<br/>#F5F5F7</span>
+    </div>
+    <div class="color-swatch" style="background: #86868b; color: #fff;">
+      <span class="swatch-label">Secondary Text<br/>#86868B</span>
+    </div>
+    <div class="color-swatch" style="background: #2997ff;">
+      <span class="swatch-label">Link/CTA/Accent<br/>#2997FF</span>
+    </div>
+    <div class="color-swatch" style="background: transparent;">
+      <span class="swatch-label gradient-demo" style="font-size: 16px;">Gradient Text Base<br/>.gradient-text</span>
+    </div>
+  </div>
+</section>
+
+<!-- 3) UI Components -->
+<section id="components" class="ds-section">
+  <h2 class="ds-section-title">UI Components</h2>
+  
+  <div class="component-row">
+    <span class="typo-label">Buttons (.button, .cta)</span>
+    <div class="states-grid">
+      <div>
+        <span class="typo-label" style="text-transform:none;">Default</span>
+        <a class="button cta" href="#">Botão Padrão</a>
+      </div>
+      <div>
+        <span class="typo-label" style="text-transform:none;">Hover</span>
+        <a class="button cta" href="#" style="background: #0071e3; color: white;">Botão Hover</a>
+      </div>
+      <div>
+        <span class="typo-label" style="text-transform:none;">Disabled</span>
+        <a class="button cta disabled" href="#" style="opacity: 0.5; pointer-events: none;">Desabilitado</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="component-row">
+    <span class="typo-label">Links (.link, .icon-wrapper)</span>
+    <div class="states-grid">
+      <div>
+        <span class="typo-label" style="text-transform:none;">Default link</span>
+        <a class="icon-wrapper option-cta link typography-localnav-links" href="#">
+          <span class="icon-copy">Especificações</span><span class="icon icon-after more"></span>
+        </a>
+      </div>
+      <div>
+        <span class="typo-label" style="text-transform:none;">Disabled link</span>
+        <span aria-disabled="true" class="option-cta link typography-localnav-links disabled">Visão geral<span class="icon"></span></span>
+      </div>
+    </div>
+  </div>
+  
+  <div class="component-row">
+    <span class="typo-label">Cards (.media-card)</span>
+    <div class="states-grid" style="background: #000;">
+      <div style="background: #111; border-radius: 18px; padding: 40px; width: 350px;">
+        <h3 class="typography-ps-headline-elevated" style="margin-bottom: 20px;">Card Title</h3>
+        <p class="typography-body-reduced">This is a standard card container with dark theme styling, typical internal padding, and precise border radii seen entirely applied around features.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 4) Layout & Spacing -->
+<section id="layout" class="ds-section">
+  <h2 class="ds-section-title">Layout & Spacing</h2>
+  
+  <span class="typo-label">12-Column Centered Block (.ric-large-8 .ric-large-offset-2)</span>
+  <div style="background: #111; border-radius: 18px; padding: 30px; margin-bottom: 20px;">
+    <div class="ric-large-8 ric-large-offset-2 ric-medium-10 ric-medium-offset-1" style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 8px; text-align: center;">
+      <p class="typography-body">Centered content block representing the primary hero or feature intro configuration.</p>
+    </div>
+  </div>
+  
+  <span class="typo-label">Flex Container & Wrapping (.ric-flex-wrap)</span>
+  <div class="ric-flex-wrap" style="background: #111; border-radius: 18px; padding: 30px; gap: 20px;">
+    <div style="flex: 1 1 45%; background: rgba(255,255,255,0.05); padding: 20px; border-radius: 8px; text-align: center;"><p class="typography-body">Column A</p></div>
+    <div style="flex: 1 1 45%; background: rgba(255,255,255,0.05); padding: 20px; border-radius: 8px; text-align: center;"><p class="typography-body">Column B</p></div>
+  </div>
+</section>
+
+<!-- 5) Motion & Interaction -->
+<section id="motion" class="ds-section">
+  <h2 class="ds-section-title">Motion & Interaction</h2>
+  
+  <div class="motion-gallery">
+    <div class="motion-card">
+      <div style="text-align:center;">
+        <span class="typo-label" style="display:block; margin-bottom: 20px;">Button Hover</span>
+        <a class="button cta" href="#" style="transition: all 0.3s ease;">Hover Me</a>
+      </div>
+    </div>
+    <div class="motion-card">
+      <div style="text-align:center;">
+        <span class="typo-label" style="display:block; margin-bottom: 20px;">Media Card Scale</span>
+        <div class="hover-child" style="transition: transform 0.4s ease; background: #222; border-radius: 12px; padding: 20px;">Card Content</div>
+      </div>
+    </div>
+    <div class="motion-card">
+      <div style="text-align:center;">
+        <span class="typo-label" style="display:block; margin-bottom: 20px;">Entrance Reveal</span>
+        <div class="hero-text" style="opacity: 1; animation: none;">
+          <span style="display:inline-block; transition: transform 1s cubic-bezier(0.16, 1, 0.3, 1), opacity 1s;">Staggered Fade In</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 6) Icons -->
+<section id="icons" class="ds-section">
+  <h2 class="ds-section-title">Icons</h2>
+  
+  <span class="typo-label">System Inline SVG Icons</span>
+  <div class="states-grid" style="gap: 40px; color: #fff;">
+    <div style="display:flex; flex-direction:column; align-items:center; gap: 10px;">
+      <svg height="18" viewbox="0 0 18 18" width="18"><polyline fill="none" points="3.5 15, 15 3.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2"></polyline><polyline fill="none" points="3.5 3.5, 15 15" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2"></polyline></svg>
+      <span class="typo-label" style="margin:0;">Close (ac-ls-close)</span>
+    </div>
+    <div style="display:flex; flex-direction:column; align-items:center; gap: 10px;">
+      <svg height="24px" version="1.1" viewbox="0 0 24 24" width="24px" xmlns="http://www.w3.org/2000/svg"><path d="m11.5 11.5v-6h1v6h6v1h-6v6h-1v-6h-6v-1z" fill="currentColor"></path></svg>
+      <span class="typo-label" style="margin:0;">Plus / Expand</span>
+    </div>
+    <div style="display:flex; flex-direction:column; align-items:center; gap: 10px;">
+      <svg height="14" viewbox="0 0 14 14" width="14" xmlns="http://www.w3.org/2000/svg"><path d="m7 .0339a6.9661 6.9661 0 1 0 6.9661 6.9661 6.9661 6.9661 0 0 0 -6.9661-6.9661zm2.798 8.9867a.55.55 0 0 1 -.778.7774l-2.02-2.02-2.02 2.02a.55.55 0 0 1 -.7784-.7774l2.0206-2.0206-2.0204-2.02a.55.55 0 0 1 .7782-.7778l2.02 2.02 2.02-2.02a.55.55 0 0 1 .778.7778l-2.0203 2.02z" fill="currentColor"></path></svg>
+      <span class="typo-label" style="margin:0;">Reset Field</span>
+    </div>
+  </div>
+</section>
+
+<script>
+  window.addEventListener('load', () => {
+    // Dynamically calculate and display Typography computed specifications
+    document.querySelectorAll('.typo-row').forEach(row => {
+      // Find the visual element being styled
+      const previewEl = row.querySelector('.typo-preview').lastElementChild;
+      const specEl = row.querySelector('.typo-specs');
+      if(previewEl && specEl) {
+        const style = window.getComputedStyle(previewEl);
+        
+        // Font size parsing
+        const sizePx = Math.round(parseFloat(style.fontSize));
+        if (isNaN(sizePx)) return;
+        
+        // Line height parsing
+        let lhPx = style.lineHeight;
+        if(lhPx !== 'normal') {
+          lhPx = Math.round(parseFloat(lhPx)) + 'px';
+        }
+        
+        specEl.textContent = sizePx + 'px / ' + lhPx;
+      }
+    });
+
+    // Handle smooth scrolling for top nav anchors
+    document.querySelectorAll('.ds-nav a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const targetId = this.getAttribute('href').substring(1);
+            const targetEl = document.getElementById(targetId);
+            if(targetEl) {
+                window.scrollTo({
+                    top: targetEl.offsetTop - 80, // Offset for sticky nav
+                    behavior: 'smooth'
+                });
+            }
+        });
+    });
+  });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,269 @@
+.gallery-disclaimer-1 {
+	font-size: 19px;
+	line-height: 23px;
+	padding: 14px 0px;
+}
+
+@media only screen and (max-width: 1069px) {
+	.gallery-disclaimer-1 {
+		font-size: 14px;
+		line-height: 18px;
+		padding: 12px 0px;
+	}
+}
+
+@media only screen and (max-width: 734px) {
+	.gallery-disclaimer-1 {
+		font-size: 12px;
+		line-height: 14px;
+		padding: 8px 0px;
+	}
+}
+
+.intelligence-disclaimer {
+	font-size: 12px;
+	line-height: 16px;
+	color: #86868b;
+}
+
+/* HIGHLIGHTS AI CARD */
+
+@media only screen and (max-width: 1068px) {
+	.section-highlights
+		[data-ac-gallery-item].media-gallery-item-apple-intelligence
+		.positioned-media-element.static
+		img {
+		padding-top: 25px;
+	}
+}
+
+@media only screen and (max-width: 734px) {
+	.section-highlights
+		[data-ac-gallery-item].media-gallery-item-apple-intelligence
+		.positioned-media-element.static
+		img {
+		padding-top: 0px;
+	}
+}
+
+@media only screen and (max-width: 375px) {
+	.section-highlights
+		[data-ac-gallery-item].media-gallery-item-apple-intelligence
+		.positioned-media-element.static
+		img {
+		padding-top: 20px;
+	}
+}
+
+@media only screen and (min-width: 1401px) {
+	.bg-upgrade-image.bg-upgrade-image-camera.ready-to-load {
+		top: 0px;
+		position: relative;
+	}
+}
+
+@media only screen and (min-width: 1084px) and (max-width: 1400px) {
+	.bg-upgrade-image.bg-upgrade-image-camera.ready-to-load {
+		top: 10px;
+		position: relative;
+	}
+}
+
+@media only screen and (min-width: 1069px) and (max-width: 1083px) {
+	.bg-upgrade-image.bg-upgrade-image-camera.ready-to-load {
+		top: 28px;
+		position: relative;
+	}
+}
+
+/*Gallery */
+
+@media only screen and (max-width: 325px) {
+	.section-highlights
+		.card-container.media-gallery-item-6.media-gallery-item-apple-intelligence
+		.caption-container.large-pin-center-left.medium-pin-top-center
+		span {
+		--pin-offset-y: 22px;
+	}
+}
+
+section.section.section-upgrade
+	.inline-wrap
+	.compare-tile-pro-display
+	.bg-upgrade-image.ready-to-load {
+	background-image: url("pro_display__bvu4xbhsdpf6_larg_fe6bf786b78e.jpg");
+}
+
+@media (min-resolution: 1.5dppx), (min-resolution: 144dpi) {
+	section.section.section-upgrade
+		.inline-wrap
+		.compare-tile-pro-display
+		.bg-upgrade-image.ready-to-load {
+		background-image: url("pro_display__bvu4xbhsdpf6_larg_8a0ae774fbfa.jpg");
+	}
+}
+
+@media (max-width: 1068px) {
+	section.section.section-upgrade
+		.inline-wrap
+		.compare-tile-pro-display
+		.bg-upgrade-image.ready-to-load {
+		background-image: url("pro_display__bvu4xbhsdpf6_medi_04b892acfde3.jpg");
+	}
+}
+
+@media (max-width: 1068px) and (min-resolution: 1.5dppx),
+	(max-width: 1068px) and (min-resolution: 144dpi) {
+	section.section.section-upgrade
+		.inline-wrap
+		.compare-tile-pro-display
+		.bg-upgrade-image.ready-to-load {
+		background-image: url("pro_display__bvu4xbhsdpf6_medi_bec71ebb8d61.jpg");
+	}
+}
+
+@media (max-width: 734px) {
+	section.section.section-upgrade
+		.inline-wrap
+		.compare-tile-pro-display
+		.bg-upgrade-image.ready-to-load {
+		background-image: url("pro_display__bvu4xbhsdpf6_smal_a05fa06f8ce5.jpg");
+	}
+}
+
+@media (max-width: 734px) and (min-resolution: 1.5dppx),
+	(max-width: 734px) and (min-resolution: 144dpi) {
+	section.section.section-upgrade
+		.inline-wrap
+		.compare-tile-pro-display
+		.bg-upgrade-image.ready-to-load {
+		background-image: url("pro_display__bvu4xbhsdpf6_smal_36a674c12147.jpg");
+	}
+}
+
+section.section.section-upgrade
+	.inline-wrap
+	.compare-tile-center-stage
+	.bg-upgrade-image.ready-to-load {
+	background-image: url("center_stage__c0j7lsp0wj6u_lar_7823dd71cb48.jpg");
+}
+
+@media (min-resolution: 1.5dppx), (min-resolution: 144dpi) {
+	section.section.section-upgrade
+		.inline-wrap
+		.compare-tile-center-stage
+		.bg-upgrade-image.ready-to-load {
+		background-image: url("center_stage__c0j7lsp0wj6u_lar_59cc5cef6bfa.jpg");
+	}
+}
+
+@media (max-width: 1068px) {
+	section.section.section-upgrade
+		.inline-wrap
+		.compare-tile-center-stage
+		.bg-upgrade-image.ready-to-load {
+		background-image: url("center_stage__c0j7lsp0wj6u_med_cc45a53cf643.jpg");
+	}
+}
+
+@media (max-width: 1068px) and (min-resolution: 1.5dppx),
+	(max-width: 1068px) and (min-resolution: 144dpi) {
+	section.section.section-upgrade
+		.inline-wrap
+		.compare-tile-center-stage
+		.bg-upgrade-image.ready-to-load {
+		background-image: url("center_stage__c0j7lsp0wj6u_med_323f7e96b15c.jpg");
+	}
+}
+
+@media (max-width: 734px) {
+	section.section.section-upgrade
+		.inline-wrap
+		.compare-tile-center-stage
+		.bg-upgrade-image.ready-to-load {
+		background-image: url("center_stage__c0j7lsp0wj6u_sma_1b82b8ce1def.jpg");
+	}
+}
+
+@media (max-width: 734px) and (min-resolution: 1.5dppx),
+	(max-width: 734px) and (min-resolution: 144dpi) {
+	section.section.section-upgrade
+		.inline-wrap
+		.compare-tile-center-stage
+		.bg-upgrade-image.ready-to-load {
+		background-image: url("center_stage__c0j7lsp0wj6u_sma_5a26d20b1184.jpg");
+	}
+}
+
+#connectivity-gallery .media-block picture img {
+	width: unset;
+}
+
+/* CONTEXTUAL COMPARE */
+
+#compare-gallery-wrapper
+	#compare-gallery-design-slide-2
+	.copy-container
+	.callout {
+	font-size: 30px;
+}
+
+/* Upgrade */
+
+@media (min-width: 1069px) {
+	#gallery-item-upgrade-iphone-14-pro .gradient-wrapper {
+		font-size: 35px;
+	}
+}
+
+@media (max-width: 370px) {
+	#gallery-item-upgrade-iphone-14-pro .gradient-wrapper {
+		font-size: 22px;
+	}
+}
+
+/* Ribbon android */
+html.android .section-incentive {
+	display: none;
+}
+
+html.android .section-incentive-alt {
+	display: block;
+}
+
+.android-show,
+html.android .android-hide {
+	display: none;
+}
+
+html.android .android-show {
+	display: initial;
+}
+
+html.no-android [data-toggle="android"] {
+	display: none;
+}
+
+html.no-android
+	#ac-globalfooter
+	.ac-gf-sosumi
+	[data-toggle-footnote="android"] {
+	visibility: hidden;
+	overflow: hidden;
+	height: 0;
+	padding: 0;
+	margin: 0;
+}
+
+html.no-android
+	#ac-globalfooter
+	.ac-gf-sosumi
+	li
+	[data-toggle-footnote="android"] {
+	display: none;
+}
+
+/* size img gallery slides start */
+.overview-contextual-compare-slides-camera-pro-fusion {
+	--p-height: 100%;
+}

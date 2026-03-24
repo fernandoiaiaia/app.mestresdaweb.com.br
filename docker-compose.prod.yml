@@ -113,6 +113,21 @@ services:
     networks:
       - web
 
+  web-site:
+    build:
+      context: apps/Cz/
+      dockerfile: Dockerfile
+    container_name: web-site
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      # O Site público normalmente vai no domínio raiz (cezani.dev)
+      - "traefik.http.routers.web-site.rule=Host(`cezani.dev`) || Host(`www.cezani.dev`)"
+      - "traefik.http.routers.web-site.entrypoints=websecure"
+      - "traefik.http.routers.web-site.tls.certresolver=myresolver"
+    networks:
+      - web
+
 networks:
   web:
     external: false

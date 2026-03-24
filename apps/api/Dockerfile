@@ -19,7 +19,7 @@ RUN pnpm install --frozen-lockfile
 COPY --from=builder /app/out/full/ .
 COPY turbo.json turbo.json
 # Generate prisma client and build api
-RUN pnpm turbo run generate --filter=api... || true
+RUN pnpm --filter api exec prisma generate
 RUN pnpm turbo run build --filter=api...
 
 FROM base AS runner

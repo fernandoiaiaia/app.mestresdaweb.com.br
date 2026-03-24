@@ -67,11 +67,11 @@ async function bootstrap() {
     }
 
     // Start HTTP server
-    const server = app.listen(env.PORT, () => {
-        logger.info(`🚀 API running on http://localhost:${env.PORT}`);
-        logger.info(`📊 Health: http://localhost:${env.PORT}/health`);
-        logger.info(`🔐 Auth: http://localhost:${env.PORT}/api/auth`);
-        logger.info(`👤 Users: http://localhost:${env.PORT}/api/users`);
+    const server = app.listen(env.PORT, "0.0.0.0", () => {
+        logger.info(`🚀 API running on http://0.0.0.0:${env.PORT}`);
+        logger.info(`📊 Health: http://0.0.0.0:${env.PORT}/health`);
+        logger.info(`🔐 Auth: http://0.0.0.0:${env.PORT}/api/auth`);
+        logger.info(`👤 Users: http://0.0.0.0:${env.PORT}/api/users`);
         logger.info(`🤖 SDR: http://localhost:${env.PORT}/api/sdr`);
         logger.info(`⚙️  Environment: ${env.NODE_ENV}`);
     });

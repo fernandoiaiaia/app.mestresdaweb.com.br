@@ -62,6 +62,7 @@ services:
       - redis
     env_file: .env
     environment:
+      - PORT=8080
       - CORS_ORIGIN=https://advisor.cezani.dev,https://www.advisor.cezani.dev,https://cliente.cezani.dev,https://www.cliente.cezani.dev,https://dev.cezani.dev,https://www.dev.cezani.dev
       - REDIS_URL=redis://redis:6379
     labels:

@@ -1,0 +1,110 @@
+version: '3.8'
+
+services:
+  traefik:
+    image: traefik:v2.10
+    container_name: traefik
+    command:
+      - "--api.insecure=false"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      # Redireciona http para https
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+      # Configuração do Let's Encrypt para gerar SSL (HTTPS)
+      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
+      - "--certificatesresolvers.myresolver.acme.email=suporte@mestresdaweb.com.br" # Substitua pelo seu e-mail
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./letsencrypt:/letsencrypt"
+    restart: unless-stopped
+    networks:
+      - web
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-proposalai}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - internal
+      
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - internal
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: api
+    restart: unless-stopped
+    depends_on:
+      - postgres
+      - redis
+    env_file: .env
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.api.rule=Host(`api.seudominio.com.br`)" # Substitua pelo seu domínio
+      - "traefik.http.routers.api.entrypoints=websecure"
+      - "traefik.http.routers.api.tls.certresolver=myresolver"
+    networks:
+      - web
+      - internal
+
+  web-comercial:
+    build:
+      context: .
+      dockerfile: apps/Web Comercial/Dockerfile
+    container_name: web-comercial
+    restart: unless-stopped
+    env_file: .env
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.web-comercial.rule=Host(`comercial.seudominio.com.br`)" # Substitua pelo seu domínio
+      - "traefik.http.routers.web-comercial.entrypoints=websecure"
+      - "traefik.http.routers.web-comercial.tls.certresolver=myresolver"
+    networks:
+      - web
+
+  web-cliente:
+    build:
+      context: .
+      dockerfile: apps/Web Cliente/Dockerfile
+    container_name: web-cliente
+    restart: unless-stopped
+    env_file: .env
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.web-cliente.rule=Host(`cliente.seudominio.com.br`)" # Substitua pelo seu domínio
+      - "traefik.http.routers.web-cliente.entrypoints=websecure"
+      - "traefik.http.routers.web-cliente.tls.certresolver=myresolver"
+    networks:
+      - web
+
+networks:
+  web:
+    external: false
+  internal:
+    external: false
+
+volumes:
+  postgres_data:
+  redis_data:
+  letsencrypt:

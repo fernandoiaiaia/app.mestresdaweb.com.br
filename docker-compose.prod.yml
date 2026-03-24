@@ -61,6 +61,8 @@ services:
       - postgres
       - redis
     env_file: .env
+    environment:
+      - CORS_ORIGIN=https://advisor.cezani.dev,https://www.advisor.cezani.dev,https://cliente.cezani.dev,https://www.cliente.cezani.dev,https://dev.cezani.dev,https://www.dev.cezani.dev
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.api.rule=Host(`tsapi.cezani.dev`) || Host(`www.tsapi.cezani.dev`)"
@@ -75,6 +77,8 @@ services:
     build:
       context: .
       dockerfile: apps/Web Comercial/Dockerfile
+      args:
+        - NEXT_PUBLIC_API_URL=https://tsapi.cezani.dev
     container_name: web-comercial
     restart: unless-stopped
     env_file: .env
@@ -91,6 +95,8 @@ services:
     build:
       context: .
       dockerfile: apps/Web Cliente/Dockerfile
+      args:
+        - NEXT_PUBLIC_API_URL=https://tsapi.cezani.dev
     container_name: web-cliente
     restart: unless-stopped
     env_file: .env
@@ -107,6 +113,8 @@ services:
     build:
       context: .
       dockerfile: "apps/Web Dev/Dockerfile"
+      args:
+        - NEXT_PUBLIC_API_URL=https://tsapi.cezani.dev
     container_name: web-dev
     restart: unless-stopped
     env_file: .env

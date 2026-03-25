@@ -4,6 +4,7 @@
 
 import { env } from "../../config/env.js";
 import { logger } from "../../config/logger.js";
+import { getSystemEmailConfig } from "../../lib/email-config.js";
 
 /**
  * Send a password reset email via Brevo with a link to reset the password.
@@ -13,7 +14,7 @@ export async function sendPasswordResetEmail(
     resetToken: string,
     userName: string
 ): Promise<void> {
-    const apiKey = env.BREVO_API_KEY;
+    const { apiKey, fromEmail, fromName } = await getSystemEmailConfig();
     const frontendUrl = env.FRONTEND_URL || "http://localhost:1200";
     const resetLink = `${frontendUrl}/reset-password?token=${encodeURIComponent(resetToken)}`;
 
@@ -23,9 +24,6 @@ export async function sendPasswordResetEmail(
         );
         return;
     }
-
-    const fromEmail = env.BREVO_FROM_EMAIL || "noreply@mestresdaweb.com.br";
-    const fromName = env.BREVO_FROM_NAME || "ProposalAI";
 
     const html = `
 <!DOCTYPE html>

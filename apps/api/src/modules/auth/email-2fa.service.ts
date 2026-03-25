@@ -4,19 +4,18 @@
 
 import { env } from "../../config/env.js";
 import { logger } from "../../config/logger.js";
+import { getSystemEmailConfig } from "../../lib/email-config.js";
 
 /**
  * Send a 2FA verification code via Brevo
  */
 export async function send2faEmail(to: string, code: string, userName: string): Promise<void> {
-  const apiKey = env.BREVO_API_KEY;
+  const { apiKey, fromEmail, fromName } = await getSystemEmailConfig();
+  
   if (!apiKey) {
     logger.warn("BREVO_API_KEY not configured — 2FA email not sent. Code: " + code);
     return;
   }
-
-  const fromEmail = env.BREVO_FROM_EMAIL || "noreply@mestresdaweb.com.br";
-  const fromName = env.BREVO_FROM_NAME || "ProposalAI";
 
   const html = `
 <!DOCTYPE html>

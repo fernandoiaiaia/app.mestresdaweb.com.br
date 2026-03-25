@@ -4,6 +4,7 @@
 
 import { env } from "../../config/env.js";
 import { logger } from "../../lib/logger.js";
+import { getSystemEmailConfig } from "../../lib/email-config.js";
 
 /**
  * Send a welcome/invite email to a newly created user via Brevo.
@@ -14,7 +15,7 @@ export async function sendInviteEmail(
     userName: string,
     resetToken: string
 ): Promise<void> {
-    const apiKey = env.BREVO_API_KEY;
+    const { apiKey, fromEmail, fromName } = await getSystemEmailConfig();
     const frontendUrl = env.FRONTEND_URL || "http://localhost:1100";
     const resetLink = `${frontendUrl}/reset-password?token=${encodeURIComponent(resetToken)}`;
 
@@ -24,9 +25,6 @@ export async function sendInviteEmail(
         );
         return;
     }
-
-    const fromEmail = env.BREVO_FROM_EMAIL || "noreply@mestresdaweb.com.br";
-    const fromName = env.BREVO_FROM_NAME || "ProposalAI";
 
     const html = `
 <!DOCTYPE html>

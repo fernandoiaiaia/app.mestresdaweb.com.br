@@ -2,6 +2,7 @@ import { prisma } from "../../config/database.js";
 import { env } from "../../config/env.js";
 import { logger } from "../../lib/logger.js";
 import { aiService } from "./ai.service.js";
+import { getSystemEmailConfig } from "../../lib/email-config.js";
 
 // ═══════════════════════════════════════
 // Email Service — Brevo
@@ -23,7 +24,8 @@ interface InboundEmail {
 }
 
 async function sendViaBrevo(to: string, subject: string, html: string): Promise<string | null> {
-    const apiKey = env.BREVO_API_KEY;
+    const { apiKey, fromEmail, fromName } = await getSystemEmailConfig();
+    
     if (!apiKey) {
         logger.warn("BREVO_API_KEY não configurada — email não enviado");
         return null;
@@ -38,8 +40,8 @@ async function sendViaBrevo(to: string, subject: string, html: string): Promise<
         },
         body: JSON.stringify({
             sender: {
-                email: env.BREVO_FROM_EMAIL || "noreply@sdr.com",
-                name: env.BREVO_FROM_NAME || "SDR Automático",
+                email: fromEmail,
+                name: fromName,
             },
             to: [{ email: to }],
             subject,

@@ -15,6 +15,7 @@ async function main() {
       role: "OWNER",
       active: true,
       allowedApps: ["growth", "dev"],
+      twoFactorEnabled: false,
     },
     create: {
       name: "Fernando Cezani",
@@ -23,6 +24,7 @@ async function main() {
       role: "OWNER",
       active: true,
       allowedApps: ["growth", "dev"],
+      twoFactorEnabled: false,
     },
   });
 

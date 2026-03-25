@@ -30,7 +30,8 @@ const getPlatformIcon = (iconName: string, className: string = "") => {
 };
 
 // ═══ Types ═══
-interface PresentationScreen { id: string; title: string; description: string; features: string[]; technical: boolean; complexity: string; estimatedHours: number; }
+interface PresentationFeature { name: string; description: string; hours?: number; }
+interface PresentationScreen { id: string; title: string; description: string; features: PresentationFeature[]; technical: boolean; complexity: string; estimatedHours: number; }
 interface PresentationModule { id: string; title: string; screens: PresentationScreen[]; }
 interface PresentationPlatform { id: string; title: string; icon: string; count: number; modules: PresentationModule[]; }
 interface TeamMember { role: string; hours: number; }
@@ -66,13 +67,17 @@ function buildPresentationData(proposal: Proposal): ProposalData {
                 const moduleName = mod.name;
                 
                 const screens: PresentationScreen[] = mod.screens.map((scr, sIdx) => {
-                    const features = scr.functionalities.map(f => f.name);
+                    const features = scr.functionalities.map(f => ({
+                        name: f.name,
+                        description: (f as any).description || "",
+                        hours: f.hours
+                    }));
                     const hours = scr.functionalities.reduce((sum, f) => sum + (f.hours || 0), 0);
                     
                     return {
                         id: `scr-${pIdx}-${uIdx}-${mIdx}-${sIdx}`,
                         title: scr.name,
-                        description: "", // Fallback
+                        description: (scr as any).description || "",
                         features,
                         technical: false,
                         complexity: hours > 24 ? "very_high" : hours > 16 ? "high" : hours > 8 ? "medium" : "low",
@@ -481,9 +486,29 @@ export default function PublicProposalPresentationPage({ params }: { params: Pro
                                             <span className="text-slate-500 font-mono text-sm ml-auto">Tela {activeScreenIndex + 1} de {FlatScreens.length}</span>
                                         </div>
                                         <h3 className="text-2xl lg:text-3xl font-extrabold text-white mb-3">{activeScreenContext.title}</h3>
-                                        <ul className="space-y-3">
-                                            {activeScreenContext.features?.map((feat: string, idx: number) => (
-                                                <li key={idx} className="flex items-start gap-3 text-base text-slate-300"><CheckCircle2 size={20} className="text-blue-500 shrink-0 mt-0.5" /><span className="leading-relaxed">{feat}</span></li>
+                                        {activeScreenContext.description && (
+                                            <p className="text-slate-400 text-base mb-6 leading-relaxed">
+                                                {activeScreenContext.description}
+                                            </p>
+                                        )}
+                                        <ul className="space-y-4">
+                                            {activeScreenContext.features?.map((feat: any, idx: number) => (
+                                                <li key={idx} className="flex items-start gap-3">
+                                                    <CheckCircle2 size={20} className="text-blue-500 shrink-0 mt-0.5" />
+                                                    <div className="flex flex-col">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-base text-slate-300 font-medium">{feat.name}</span>
+                                                            {feat.hours > 0 && (
+                                                                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-400 border border-slate-700">
+                                                                    ~{feat.hours}h
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        {feat.description && (
+                                                            <span className="text-sm text-slate-500 mt-1 leading-relaxed">{feat.description}</span>
+                                                        )}
+                                                    </div>
+                                                </li>
                                             ))}
                                         </ul>
                                         <div className="mt-auto border-t border-white/10 pt-4 flex items-center justify-between gap-2 mt-8">

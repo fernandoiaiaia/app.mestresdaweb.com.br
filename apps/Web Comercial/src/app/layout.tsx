@@ -8,7 +8,7 @@ const spaceGrotesk = Space_Grotesk({ subsets: ['latin'], variable: '--font-space
 const valeraRound = Varela_Round({ subsets: ['latin'], weight: '400', variable: '--font-varela-round' });
 
 export const metadata: Metadata = {
-  title: 'ProposalAI | Mestres da Web',
+  title: 'ProposalAI | Cezani',
   description: 'ProposalAI Login Portal',
 };
 

@@ -403,7 +403,7 @@ export default function PrintReport({ activeTab = "team" }: { activeTab?: string
             <div style={{ borderBottom: "3px solid #22c55e", paddingBottom: 12, marginBottom: 20, display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
                 <div>
                     <h1 style={{ fontSize: 22, fontWeight: 800, color: "#0f172a", margin: 0, letterSpacing: -0.5 }}>Relatórios Gerenciais</h1>
-                    <p style={{ fontSize: 10, color: "#64748b", margin: "4px 0 0 0" }}>Mestres da Web · {title}</p>
+                    <p style={{ fontSize: 10, color: "#64748b", margin: "4px 0 0 0" }}>Cezani · {title}</p>
                 </div>
                 <div style={{ textAlign: "right" }}>
                     <p style={{ fontSize: 9, color: "#94a3b8", margin: 0 }}>Gerado em {now.toLocaleDateString("pt-BR")}</p>
@@ -418,7 +418,7 @@ export default function PrintReport({ activeTab = "team" }: { activeTab?: string
 
             {/* Footer */}
             <div style={{ textAlign: "center", fontSize: 7, color: "#94a3b8", borderTop: "1px solid #e2e8f0", paddingTop: 8, marginTop: 24 }}>
-                {title} — Mestres da Web · {now.toLocaleDateString("pt-BR")} · Documento Confidencial
+                {title} — Cezani · {now.toLocaleDateString("pt-BR")} · Documento Confidencial
             </div>
         </div>
     );

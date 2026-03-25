@@ -44,7 +44,7 @@ export async function send2faEmail(to: string, code: string, userName: string): 
   </td></tr>
   <!-- Footer -->
   <tr><td style="padding:16px 32px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;">
-    <p style="color:#475569;font-size:11px;margin:0;">ProposalAI — Mestres da Web</p>
+    <p style="color:#475569;font-size:11px;margin:0;">ProposalAI — Cezani</p>
   </td></tr>
 </table>
 </td></tr>

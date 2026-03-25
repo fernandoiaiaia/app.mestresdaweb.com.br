@@ -410,7 +410,7 @@ export default function LoginPage() {
                                                             type="email"
                                                             value={email}
                                                             onChange={(e) => setEmail(e.target.value)}
-                                                            placeholder="email@mestresdaweb.com.br"
+                                                            placeholder="email@cezani.dev"
                                                             disabled={isLocked}
                                                             className="w-full bg-slate-900/50 border border-slate-600/50 rounded-lg pl-11 pr-4 py-3.5 text-white text-sm placeholder:text-slate-500 focus:outline-none focus:border-blue-600/50 focus:ring-1 focus:ring-blue-600/50 transition-all hover:bg-slate-900/80 disabled:opacity-40 disabled:cursor-not-allowed"
                                                         />

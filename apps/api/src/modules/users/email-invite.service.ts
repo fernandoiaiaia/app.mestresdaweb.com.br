@@ -16,7 +16,7 @@ export async function sendInviteEmail(
     resetToken: string
 ): Promise<void> {
     const { apiKey, fromEmail, fromName } = await getSystemEmailConfig();
-    const frontendUrl = env.FRONTEND_URL || "http://localhost:1100";
+    const frontendUrl = env.FRONTEND_URL || "https://advisor.cezani.dev";
     const resetLink = `${frontendUrl}/reset-password?token=${encodeURIComponent(resetToken)}`;
 
     if (!apiKey) {
@@ -52,7 +52,7 @@ export async function sendInviteEmail(
     <p style="color:#475569;font-size:11px;margin:0;">Se você não reconhece este convite, ignore este e-mail.</p>
   </td></tr>
   <tr><td style="padding:16px 32px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;">
-    <p style="color:#475569;font-size:11px;margin:0;">ProposalAI — Mestres da Web</p>
+    <p style="color:#475569;font-size:11px;margin:0;">ProposalAI — Cezani</p>
   </td></tr>
 </table>
 </td></tr>

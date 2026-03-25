@@ -224,11 +224,9 @@ export default function ResetPasswordPage() {
                     transition={{ duration: 1.2, ease: [0.2, 0.8, 0.2, 1] }}
                     className="w-full max-w-[440px] bg-slate-800/60 rounded-xl border border-white/[0.06] backdrop-blur-2xl p-8 shadow-[0_15px_40px_rgb(0,0,0,0.5)]"
                 >
-                    {/* Logo */}
-                    <div className="flex justify-center mb-6">
-                        <div className="relative w-full h-32">
-                            <Image src="/branding/logo-mdw.png" alt="Mestres da Web Logo" fill className="object-contain" unoptimized />
-                        </div>
+                    {/* Brand Name */}
+                    <div className="flex justify-center mb-8">
+                        <span className="text-5xl font-bold tracking-tight text-white font-varela-round lowercase">cezani</span>
                     </div>
 
                     {/* Title */}

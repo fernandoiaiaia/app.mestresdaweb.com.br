@@ -17,7 +17,7 @@ services:
       - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
       # Configuração do Let's Encrypt para gerar SSL (HTTPS)
       - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
-      - "--certificatesresolvers.myresolver.acme.email=suporte@mestresdaweb.com.br" # Substitua pelo seu e-mail
+      - "--certificatesresolvers.myresolver.acme.email=suporte@cezani.dev" # Substitua pelo seu e-mail
       - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
     ports:
       - "80:80"
@@ -63,6 +63,7 @@ services:
     env_file: .env
     environment:
       - PORT=8080
+      - FRONTEND_URL=https://advisor.cezani.dev
       - CORS_ORIGIN=https://advisor.cezani.dev,https://www.advisor.cezani.dev,https://cliente.cezani.dev,https://www.cliente.cezani.dev,https://dev.cezani.dev,https://www.dev.cezani.dev
       - REDIS_URL=redis://redis:6379
     labels:

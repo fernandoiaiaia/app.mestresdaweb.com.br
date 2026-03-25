@@ -14,14 +14,14 @@ export interface MockUser {
 }
 
 export const MOCK_USERS: MockUser[] = [
-    { id: "u0", name: "Fernando Oliveira", email: "fernando@mestresdaweb.com.br", role: "ADMIN", avatar: "F", cargo: "Administrador" },
-    { id: "u1", name: "Carlos Mendes", email: "carlos@mestresdaweb.com.br", role: "GESTOR", avatar: "C", cargo: "Gestor de Projetos" },
-    { id: "u2", name: "Ana Oliveira", email: "ana@mestresdaweb.com.br", role: "TECH_LEAD", avatar: "A", cargo: "Tech Lead" },
-    { id: "u3", name: "Rafael Costa", email: "rafael@mestresdaweb.com.br", role: "PO", avatar: "R", cargo: "Product Owner" },
-    { id: "u4", name: "Juliana Santos", email: "juliana@mestresdaweb.com.br", role: "DEV", avatar: "J", cargo: "Desenvolvedora Full Stack" },
-    { id: "u5", name: "Marcos Lima", email: "marcos@mestresdaweb.com.br", role: "QA", avatar: "M", cargo: "QA Engineer" },
-    { id: "u6", name: "Beatriz Nunes", email: "beatriz@mestresdaweb.com.br", role: "DESIGNER", avatar: "B", cargo: "UI/UX Designer" },
-    { id: "u7", name: "Pedro Almeida", email: "pedro@mestresdaweb.com.br", role: "DEV", avatar: "P", cargo: "Desenvolvedor Backend" },
+    { id: "u0", name: "Fernando Oliveira", email: "fernando@cezani.dev", role: "ADMIN", avatar: "F", cargo: "Administrador" },
+    { id: "u1", name: "Carlos Mendes", email: "carlos@cezani.dev", role: "GESTOR", avatar: "C", cargo: "Gestor de Projetos" },
+    { id: "u2", name: "Ana Oliveira", email: "ana@cezani.dev", role: "TECH_LEAD", avatar: "A", cargo: "Tech Lead" },
+    { id: "u3", name: "Rafael Costa", email: "rafael@cezani.dev", role: "PO", avatar: "R", cargo: "Product Owner" },
+    { id: "u4", name: "Juliana Santos", email: "juliana@cezani.dev", role: "DEV", avatar: "J", cargo: "Desenvolvedora Full Stack" },
+    { id: "u5", name: "Marcos Lima", email: "marcos@cezani.dev", role: "QA", avatar: "M", cargo: "QA Engineer" },
+    { id: "u6", name: "Beatriz Nunes", email: "beatriz@cezani.dev", role: "DESIGNER", avatar: "B", cargo: "UI/UX Designer" },
+    { id: "u7", name: "Pedro Almeida", email: "pedro@cezani.dev", role: "DEV", avatar: "P", cargo: "Desenvolvedor Backend" },
 ];
 
 export type ProjectHealth = "on_track" | "at_risk" | "delayed";

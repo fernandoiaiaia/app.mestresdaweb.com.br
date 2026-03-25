@@ -78,15 +78,7 @@ function ResetPasswordForm() {
                 >
                     {/* Logo */}
                     <div className="flex justify-center mb-8 mt-4">
-                        <div className="relative w-full h-40">
-                            <Image
-                                src="/branding/logo-mdw.png"
-                                alt="Mestres da Web Logo"
-                                fill
-                                className="object-contain"
-                                unoptimized
-                            />
-                        </div>
+                        <span className="text-5xl font-bold tracking-tight text-white font-varela-round lowercase">cezani</span>
                     </div>
 
                     {success ? (

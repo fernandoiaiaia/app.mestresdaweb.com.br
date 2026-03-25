@@ -73,6 +73,7 @@ export const leadsService = {
 
     /**
      * Step 2 — Creates a Deal (Opportunity) in the default funnel's first stage.
+     * If no active funnel exists, creates a default one automatically.
      * Title = client name; tags = selected services.
      */
     async createPublicOpportunity(data: { clientId: string; services: string[] }) {
@@ -90,7 +91,7 @@ export const leadsService = {
         if (!client) throw new Error("Contato não encontrado.");
 
         // Try default funnel first, then any active funnel
-        const funnel = await prisma.funnel.findFirst({
+        let funnel = await prisma.funnel.findFirst({
             where: { userId: owner.id, isDefault: true, active: true },
             include: { stages: { orderBy: { orderIndex: "asc" }, take: 1 } },
         }) ?? await prisma.funnel.findFirst({
@@ -98,9 +99,27 @@ export const leadsService = {
             include: { stages: { orderBy: { orderIndex: "asc" }, take: 1 } },
         });
 
+        // Auto-create a default funnel if none exists
         if (!funnel || funnel.stages.length === 0) {
-            logger.warn({ clientId: data.clientId }, "[Cz Form] No funnel/stage found — opportunity skipped");
-            return null;
+            logger.info({ userId: owner.id }, "[Cz Form] No funnel found — creating default funnel automatically");
+            const newFunnel = await prisma.funnel.create({
+                data: {
+                    userId: owner.id,
+                    name: "Funil de Vendas",
+                    isDefault: true,
+                    active: true,
+                    stages: {
+                        create: [
+                            { name: "Novo Lead", orderIndex: 0 },
+                            { name: "Em Negociação", orderIndex: 1 },
+                            { name: "Proposta Enviada", orderIndex: 2 },
+                            { name: "Fechado", orderIndex: 3 },
+                        ],
+                    },
+                },
+                include: { stages: { orderBy: { orderIndex: "asc" }, take: 1 } },
+            });
+            funnel = newFunnel;
         }
 
         const deal = await prisma.deal.create({
@@ -120,6 +139,7 @@ export const leadsService = {
         logger.info({ dealId: deal.id, clientId: data.clientId, funnelId: funnel.id }, "[Cz Form] Public opportunity created");
         return { dealId: deal.id };
     },
+
 
     /**
      * Final step — updates the Deal with budget value + adds message as DealNote.

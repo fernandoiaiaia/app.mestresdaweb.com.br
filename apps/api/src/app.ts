@@ -53,6 +53,9 @@ import { proposalsRoutes } from "./modules/proposals/proposals.routes.js";
 
 const app: ReturnType<typeof express> = express();
 
+// Trust first proxy (Traefik) so express-rate-limit reads X-Forwarded-For correctly
+app.set("trust proxy", 1);
+
 // ═══ Global Middlewares ═══
 app.use(helmet());
 app.use(

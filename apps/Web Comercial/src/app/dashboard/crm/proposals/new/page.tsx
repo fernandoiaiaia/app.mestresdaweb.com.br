@@ -9,6 +9,7 @@ import {
     Loader2,
     Calendar,
     ArrowRight,
+    Sparkles,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { DRAFT_KEY, saveDraft, loadDraft, clearDraft, type ProposalDraft } from "./_shared";
@@ -183,6 +184,25 @@ export default function NewProposalPage() {
                             <span className="text-[10px] text-slate-600 font-mono">
                                 {summaryRaw.trim().length} caracteres
                             </span>
+                        </div>
+
+                        <div className="mb-3 px-3 py-2.5 rounded-xl bg-violet-500/10 border border-violet-500/20 flex gap-2 items-start">
+                            <Sparkles size={14} className="text-violet-400 shrink-0 mt-0.5" />
+                            <div className="space-y-0.5">
+                                <p className="text-[11px] font-bold text-violet-300 uppercase tracking-wide">
+                                    Para montar o escopo é preciso usar Inteligência Artificial
+                                </p>
+                                <p className="text-[11px] text-slate-400">
+                                    Recomendamos gerar o escopo detalhado através da integração:&nbsp;
+                                    <a 
+                                        href="/dashboard/settings/integrations/proposal_minimax" 
+                                        target="_blank" 
+                                        className="text-violet-400 hover:text-violet-300 underline underline-offset-2"
+                                    >
+                                        Acessar Proposal Minimax
+                                    </a>
+                                </p>
+                            </div>
                         </div>
 
                         <textarea

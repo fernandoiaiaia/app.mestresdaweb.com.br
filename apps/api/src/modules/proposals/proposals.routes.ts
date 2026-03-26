@@ -150,9 +150,9 @@ router.post("/", async (req: Request, res: Response) => {
  * Body: { summary: string; title: string }
  */
 router.post("/generate-scope", async (req: Request, res: Response) => {
-    req.setTimeout(600000); // 10 minutes
-    res.setTimeout(600000);
     try {
+        req.socket?.setTimeout(600000); // 10 minutes
+        res.socket?.setTimeout(600000);
         const userId = (req as any).user?.userId;
         const { summary, title } = req.body as {
             summary: string;
@@ -312,9 +312,9 @@ Funcionalidades:
  * Body: { scopeText: string; proposalTitle?: string }
  */
 router.post("/analyze-gaps", async (req: Request, res: Response) => {
-    req.setTimeout(600000); // 10 minutes
-    res.setTimeout(600000);
     try {
+        req.socket?.setTimeout(600000); // 10 minutes
+        res.socket?.setTimeout(600000);
         const userId = (req as any).user?.userId;
         const { scopeText, proposalTitle } = req.body as {
             scopeText: string;
@@ -544,9 +544,9 @@ Analise o escopo acima e identifique lacunas nas 6 categorias: Plataformas, UsuÃ
  * Returns: { lines: EstimateLine[]; totalHours: number; totalCost: number }
  */
 router.post("/estimate", async (req: Request, res: Response) => {
-    req.setTimeout(600000); // 10 minutes
-    res.setTimeout(600000);
     try {
+        req.socket?.setTimeout(600000); // 10 minutes
+        res.socket?.setTimeout(600000);
         const userId = (req as any).user?.userId;
         const { scopeText, proposalTitle } = req.body as {
             scopeText: string;

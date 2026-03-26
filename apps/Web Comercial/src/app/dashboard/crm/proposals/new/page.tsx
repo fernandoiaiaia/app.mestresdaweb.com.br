@@ -86,7 +86,7 @@ export default function NewProposalPage() {
         try {
             const res = await api<{ generatedScope: string }>("/api/proposals/generate-scope", {
                 method: "POST",
-                body: JSON.stringify({ summary: summaryRaw, title })
+                body: { summary: summaryRaw, title }
             });
 
             if (!res?.success || !res.data?.generatedScope) {

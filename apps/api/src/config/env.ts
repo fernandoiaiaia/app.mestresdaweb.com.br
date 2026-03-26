@@ -25,9 +25,9 @@ const envSchema = z.object({
     // CORS
     CORS_ORIGIN: z.string().default("http://localhost:1100"),
 
-    // Rate Limiting
+    // Rate Limiting — 10.000 req per 15min window supports 20+ concurrent users
     RATE_LIMIT_WINDOW_MS: z.coerce.number().default(900_000),
-    RATE_LIMIT_MAX: z.coerce.number().default(100),
+    RATE_LIMIT_MAX: z.coerce.number().default(10_000),
 
     // Sentry (optional)
     SENTRY_DSN: z.string().optional(),

@@ -27,6 +27,10 @@ export const leadsController = {
     async updatePublicOpportunity(req: Request, res: Response) {
         try {
             const id = req.params.id as string;
+            
+            // ── Temporary debug log to inspect what the frontend is actually sending ──
+            logger.info({ id, body: req.body }, "[Cz Form] Incoming updatePublicOpportunity payload");
+            
             const { value, budgetText, message } = req.body as {
                 value?: number; budgetText?: string | null; message?: string | null;
             };

@@ -48,6 +48,7 @@ export interface ProposalDraft {
     title: string;
     clientId: string;
     expiresAt: string;
+    summaryRaw?: string;
     scopeRaw: string;
     clientPortalPassword?: string;
     /** Overrides scopeRaw when present — set by step-2 editor before navigating to step 3. */

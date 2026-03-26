@@ -374,55 +374,21 @@ export default function GapsAnalysisPage() {
         const accepted = gaps.filter((g) => g.accepted);
         if (accepted.length === 0) return baseScope;
 
-        // 1. Transform raw text into rigorous AST Tree
-        const ast = parseScope(baseScope);
+        // Simply append the accepted gaps to the raw text
+        let finalScope = baseScope.trim();
+        finalScope += "\n\n---\n### Adições Identificadas pela IA (Lacunas)\n\n";
 
-        // 2. Weave the accepted gaps precisely where the AI specified
         for (const gap of accepted) {
             const inj = gap.injection;
-            let targetPlatform = inj?.platform || "Plataforma Principal";
-            let targetUser = inj?.user || "Geral";
-            let targetModule = inj?.module || "Geral";
-            let targetScreen = inj?.screen || "Geral";
+            const contextStr = (inj?.platform || inj?.module)
+                ? ` [Contexto: ${[inj?.platform, inj?.module].filter(Boolean).join(" > ")}]`
+                : "";
 
-            // Find or create Platform
-            let pNode = ast.find((p) => p.name.toLowerCase() === targetPlatform.toLowerCase());
-            if (!pNode) {
-                pNode = { _id: crypto.randomUUID(), name: targetPlatform, users: [] };
-                ast.push(pNode);
-            }
-
-            // Find or create User
-            let uNode = pNode.users.find((u) => u.name.toLowerCase() === targetUser.toLowerCase());
-            if (!uNode) {
-                uNode = { _id: crypto.randomUUID(), name: targetUser, modules: [] };
-                pNode.users.push(uNode);
-            }
-
-            // Find or create Module
-            let mNode = uNode.modules.find((m) => m.name.toLowerCase() === targetModule.toLowerCase());
-            if (!mNode) {
-                mNode = { _id: crypto.randomUUID(), name: targetModule, screens: [] };
-                uNode.modules.push(mNode);
-            }
-
-            // Find or create Screen
-            let sNode = mNode.screens.find((s) => s.name.toLowerCase() === targetScreen.toLowerCase());
-            if (!sNode) {
-                sNode = { _id: crypto.randomUUID(), name: targetScreen, description: "", functionalities: [] };
-                mNode.screens.push(sNode);
-            }
-
-            // Inject the Functionality
-            sNode.functionalities.push({
-                _id: crypto.randomUUID(),
-                name: "[IA] " + gap.title,
-                description: gap.editedDescription ?? gap.description,
-            });
+            finalScope += `**${gap.title}**${contextStr}\n`;
+            finalScope += `${gap.editedDescription ?? gap.description}\n\n`;
         }
 
-        // 3. Serialize back perfectly to the original structured Markdown format
-        return scopeToText(ast);
+        return finalScope.trim();
     }
 
     /* ── Navigate to estimate step ── */

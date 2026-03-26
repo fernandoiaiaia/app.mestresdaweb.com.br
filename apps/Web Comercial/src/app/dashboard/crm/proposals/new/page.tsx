@@ -7,10 +7,8 @@ import {
     FileText,
     ChevronLeft,
     Loader2,
-    Info,
     Calendar,
     ArrowRight,
-    Lock,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { DRAFT_KEY, saveDraft, loadDraft, clearDraft, type ProposalDraft } from "./_shared";
@@ -25,17 +23,6 @@ interface ClientOption {
     email?: string;
 }
 
-// ─── Constants ────────────────────────────────
-
-const SCOPE_PLACEHOLDER = `1. Plataforma: Nome da Plataforma
-2. Usuário: Administrador
-3. Módulo / Menu: Gestão de Usuários
-4. Tela: Listagem de Usuários
-Descrição da Tela: Exibe todos os usuários com filtros e paginação.
-5. Funcionalidade: Filtrar usuários por status
-Descrição da Funcionalidade: Filtra a lista por status (ativo/inativo) em tempo real.
-Integração: API de Usuários`;
-
 // ─── Main Page ────────────────────────────────
 
 export default function NewProposalPage() {
@@ -47,7 +34,7 @@ export default function NewProposalPage() {
     const [title, setTitle] = useState("");
     const [clientId, setClientId] = useState("");
     const [expiresAt, setExpiresAt] = useState("");
-    const [scopeRaw, setScopeRaw] = useState("");
+    const [summaryRaw, setSummaryRaw] = useState("");
 
     // Load clients
     useEffect(() => {
@@ -78,14 +65,14 @@ export default function NewProposalPage() {
                         setExpiresAt(draft.expiresAt);
                     }
                 }
-                if (draft.scopeRaw) setScopeRaw(draft.scopeRaw);
+                if (draft.summaryRaw) setSummaryRaw(draft.summaryRaw);
             }
         } else {
             clearDraft();
         }
     }, []);
 
-    const canNext = title.trim().length > 0 && scopeRaw.trim().length > 0;
+    const canNext = title.trim().length > 0 && summaryRaw.trim().length > 0;
 
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 30);
@@ -94,7 +81,7 @@ export default function NewProposalPage() {
     const handleNext = () => {
         if (!canNext) return;
         const previous = loadDraft() || ({} as ProposalDraft);
-        saveDraft({ ...previous, title, clientId, expiresAt: expiresAt || defaultExpiry, scopeRaw });
+        saveDraft({ ...previous, title, clientId, expiresAt: expiresAt || defaultExpiry, summaryRaw });
         router.push("/dashboard/crm/proposals/new/review");
     };
 
@@ -109,7 +96,7 @@ export default function NewProposalPage() {
 
             <WizardHeader 
                 title="Nova Proposta"
-                subtitle="Passo 1 de 4 — Informações e Escopo Mestre"
+                subtitle="Passo 1 de 4 — Informações Base"
                 currentStep={1}
             />
 
@@ -126,7 +113,7 @@ export default function NewProposalPage() {
                     <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
                         <FileText size={16} className="text-blue-500" />
                     </div>
-                    Informações &amp; Escopo
+                    Informações &amp; Resumo
                 </h2>
 
                 <div className="space-y-6 relative z-10">
@@ -187,35 +174,24 @@ export default function NewProposalPage() {
                         </div>
                     </div>
 
-                    {/* Scope textarea */}
+                    {/* Summary textarea */}
                     <div>
                         <div className="flex items-center justify-between mb-1.5">
                             <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                                Escopo Completo do Projeto <span className="text-red-400">*</span>
+                                Resumo do Aplicativo / Software <span className="text-red-400">*</span>
                             </label>
                             <span className="text-[10px] text-slate-600 font-mono">
-                                {scopeRaw.trim().length > 0 ? `${scopeRaw.split("\n").filter(Boolean).length} linhas` : ""}
+                                {summaryRaw.trim().length} caracteres
                             </span>
                         </div>
 
-                        <div className="mb-2 px-3 py-2.5 rounded-xl bg-blue-500/5 border border-blue-500/15 flex gap-2">
-                            <Info size={13} className="text-blue-400 shrink-0 mt-0.5" />
-                            <p className="text-[11px] text-slate-400 leading-relaxed">
-                                Cole o escopo usando a hierarquia:{" "}
-                                <span className="text-blue-300 font-semibold">
-                                    1. Plataforma → 2. Usuário → 3. Módulo → 4. Tela → Descrição da Tela → 5. Funcionalidade → Descrição da Funcionalidade → Integração
-                                </span>.
-                                Ao clicar em &ldquo;Próximo&rdquo;, o conteúdo será organizado automaticamente.
-                            </p>
-                        </div>
-
                         <textarea
-                            value={scopeRaw}
-                            onChange={(e) => setScopeRaw(e.target.value)}
-                            placeholder={SCOPE_PLACEHOLDER}
-                            rows={20}
+                            value={summaryRaw}
+                            onChange={(e) => setSummaryRaw(e.target.value)}
+                            placeholder="Ex: Aplicativo de delivery para um restaurante local."
+                            rows={4}
                             spellCheck={false}
-                            className="w-full bg-slate-900/60 border border-white/[0.08] rounded-xl px-4 py-4 text-sm text-slate-200 placeholder-slate-700 focus:outline-none focus:border-blue-500/40 transition-all resize-y leading-relaxed font-mono"
+                            className="w-full bg-slate-900/60 border border-white/[0.08] rounded-xl px-4 py-4 text-sm text-slate-200 placeholder-slate-700 focus:outline-none focus:border-blue-500/40 transition-all resize-y leading-relaxed"
                         />
                     </div>
                 </div>

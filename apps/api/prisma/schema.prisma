@@ -544,6 +544,7 @@ model Deal {
   nextAction    String?   @map("next_action")
   lastActivity  String?   @map("last_activity")
   tags          String[]
+  assigneeIds   String[] @default([]) @map("assignee_ids")
 
   notes         DealNote[]
   files         DealFile[]

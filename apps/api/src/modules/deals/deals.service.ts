@@ -29,6 +29,7 @@ interface UpdateDealDto {
     probability?: number;
     status?: string;
     tags?: string[];
+    assigneeIds?: string[];
     consultantId?: string;
     priority?: string;
     source?: string;
@@ -113,7 +114,15 @@ export const dealsService = {
             });
         }
 
-        return { ...deal, clientProposals };
+        // Resolve assigneeIds into full user objects
+        const assignees = deal.assigneeIds.length > 0
+            ? await prisma.user.findMany({
+                where: { id: { in: deal.assigneeIds } },
+                select: { id: true, name: true, avatar: true },
+            })
+            : [];
+
+        return { ...deal, clientProposals, assignees };
     },
 
     async create(data: CreateDealDto, user: JwtUser) {

@@ -67,6 +67,7 @@ interface DealDetail {
     probability: number;
     stageId: string;
     tags: string[];
+    assigneeIds: string[];
     createdAt: string;
     status: string;
     source?: string;
@@ -85,6 +86,11 @@ interface DealDetail {
         name: string;
         avatar: string | null;
     } | null;
+    assignees: {
+        id: string;
+        name: string;
+        avatar: string | null;
+    }[];
     stage: {
         id: string;
         name: string;
@@ -189,6 +195,11 @@ export default function PipelineDealDetail() {
     const sourceDropdownRef = useRef<HTMLDivElement>(null);
     const contactDropdownRef = useRef<HTMLDivElement>(null);
     const companyDropdownRef = useRef<HTMLDivElement>(null);
+
+    // Multi-assignee state
+    const [allUsers, setAllUsers] = useState<{ id: string; name: string; avatar: string | null }[]>([]);
+    const [showAssigneePicker, setShowAssigneePicker] = useState(false);
+    const assigneePickerRef = useRef<HTMLDivElement>(null);
 
     // Files tab state
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -295,6 +306,9 @@ export default function PipelineDealDetail() {
             if (companyDropdownRef.current && !companyDropdownRef.current.contains(e.target as Node)) {
                 setIsEditingCompany(false);
             }
+            if (assigneePickerRef.current && !assigneePickerRef.current.contains(e.target as Node)) {
+                setShowAssigneePicker(false);
+            }
         };
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -307,6 +321,8 @@ export default function PipelineDealDetail() {
             if (res.success && res.data) setAllClients(res.data);
             const compRes = await api<any[]>("/api/companies");
             if (compRes.success && compRes.data) setAllCompanies(compRes.data);
+            const usersRes = await api<any[]>("/api/users");
+            if (usersRes.success && usersRes.data) setAllUsers(usersRes.data);
         })();
     }, []);
 
@@ -1042,14 +1058,80 @@ export default function PipelineDealDetail() {
 
                     {/* Responsável */}
                     <div className="p-4 bg-white dark:bg-slate-900/70 border border-slate-200 dark:border-white/[0.06] rounded-xl">
-                        <div className="flex items-center justify-between mb-4 cursor-pointer">
+                        <div className="flex items-center justify-between mb-3">
                             <h3 className="text-sm font-bold text-slate-900 dark:text-white">Responsável</h3>
                             <ChevronDown size={16} className="text-slate-400" />
                         </div>
-                        <div className="space-y-3 text-sm">
-                            <div className="flex items-center">
-                                <span className="w-28 text-slate-500">Responsável</span>
-                                <span className="flex-1 font-medium text-slate-900 dark:text-white">{deal.consultant?.name || "Não atribuído"}</span>
+                        <div className="space-y-2" ref={assigneePickerRef}>
+                            {/* Current assignees */}
+                            <div className="flex flex-wrap gap-2 mb-2">
+                                {(deal.assignees || []).length === 0 && (
+                                    <span className="text-sm text-slate-400 italic">Nenhum responsável atribuído</span>
+                                )}
+                                {(deal.assignees || []).map(u => (
+                                    <div key={u.id} className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-800/60 border border-white/10 rounded-full">
+                                        <div className="w-5 h-5 rounded-full bg-cyan-600 flex items-center justify-center text-[9px] font-bold text-white shrink-0">
+                                            {u.name.charAt(0).toUpperCase()}
+                                        </div>
+                                        <span className="text-xs text-white font-medium">{u.name}</span>
+                                        <button
+                                            onClick={() => {
+                                                const newIds = (deal.assigneeIds || []).filter(id => id !== u.id);
+                                                handleInlineUpdate("assigneeIds", newIds);
+                                            }}
+                                            className="ml-0.5 text-slate-500 hover:text-red-400 transition-colors"
+                                        >
+                                            <X size={11} />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Add assignee button */}
+                            <div className="relative">
+                                <button
+                                    onClick={() => setShowAssigneePicker(v => !v)}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-500 hover:text-slate-300 border border-dashed border-slate-700 hover:border-slate-500 rounded-lg transition-all w-full justify-center"
+                                >
+                                    <Plus size={12} /> Atribuir responsável
+                                </button>
+
+                                {showAssigneePicker && (
+                                    <div className="absolute bottom-full left-0 right-0 mb-1 bg-slate-900 border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden">
+                                        <div className="p-2 max-h-48 overflow-y-auto">
+                                            {allUsers.length === 0 && (
+                                                <p className="text-xs text-slate-500 px-2 py-2">Nenhum usuário encontrado</p>
+                                            )}
+                                            {allUsers.map(u => {
+                                                const isSelected = (deal.assigneeIds || []).includes(u.id);
+                                                return (
+                                                    <button
+                                                        key={u.id}
+                                                        onClick={() => {
+                                                            const newIds = isSelected
+                                                                ? (deal.assigneeIds || []).filter(id => id !== u.id)
+                                                                : [...(deal.assigneeIds || []), u.id];
+                                                            handleInlineUpdate("assigneeIds", newIds);
+                                                        }}
+                                                        className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-colors text-left ${
+                                                            isSelected
+                                                                ? 'bg-cyan-500/15 text-cyan-400'
+                                                                : 'hover:bg-slate-800 text-slate-300'
+                                                        }`}
+                                                    >
+                                                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
+                                                            isSelected ? 'bg-cyan-600 text-white' : 'bg-slate-700 text-slate-400'
+                                                        }`}>
+                                                            {u.name.charAt(0).toUpperCase()}
+                                                        </div>
+                                                        <span className="text-sm flex-1">{u.name}</span>
+                                                        {isSelected && <Check size={13} className="text-cyan-400 shrink-0" />}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>

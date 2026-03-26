@@ -422,7 +422,7 @@ export default function EstimatePage() {
                         <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
                             <Sparkles size={16} className="text-blue-500" />
                         </div>
-                        Escopo Final (Com Lacunas)
+                        Escopo Final
                         <span className="ml-auto text-[10px] font-normal text-slate-500 text-right max-w-[150px]">
                             Clique nos itens para edição final
                         </span>

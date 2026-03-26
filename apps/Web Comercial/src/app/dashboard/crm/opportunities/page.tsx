@@ -1,31 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
     Target,
     Plus,
     Search,
-    Eye,
-    Edit3,
     Building2,
     User,
     DollarSign,
-    Calendar,
-    Clock,
     TrendingUp,
-    TrendingDown,
-    X,
-    FileText,
-    ArrowUp,
-    ArrowDown,
-    Filter,
     BarChart3,
     Zap,
-    ThermometerSun,
-    Save,
-    MapPin,
-    Tag,
+    Calendar,
 } from "lucide-react";
 
 /* ═══════════════════════════════════════ */
@@ -91,7 +78,6 @@ export default function OpportunitiesPage() {
     const [filterPriority, setFilterPriority] = useState("all");
     const [filterTemperature, setFilterTemperature] = useState("all");
     const [sortBy, setSortBy] = useState<"value" | "probability" | "expectedClose">("value");
-    const [selectedOpp, setSelectedOpp] = useState<Opportunity | null>(null);
 
     useEffect(() => {
         loadDeals();
@@ -227,7 +213,7 @@ export default function OpportunitiesPage() {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: i * 0.04 }}
-                        onClick={() => setSelectedOpp(opp)}
+                        onClick={() => router.push(`/dashboard/crm/pipeline/${opp.id}`)}
                         className="bg-slate-800/40 border border-white/[0.06] rounded-xl p-5 hover:bg-white/[0.02] hover:border-white/10 transition-all cursor-pointer group"
                     >
                         <div className="flex items-start justify-between gap-4">
@@ -292,100 +278,6 @@ export default function OpportunitiesPage() {
                 </div>
             )}
 
-            {/* ═══ DETAIL DRAWER ═══ */}
-            <AnimatePresence>
-                {selectedOpp && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]" onClick={() => setSelectedOpp(null)}>
-                        <motion.div
-                            initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
-                            transition={{ type: "spring", damping: 30, stiffness: 350 }}
-                            onClick={(e) => e.stopPropagation()}
-                            className="absolute right-0 top-0 h-full w-full max-w-md bg-slate-900 border-l border-white/10 shadow-2xl overflow-y-auto"
-                        >
-                            <div className="p-6">
-                                <div className="flex items-center justify-between mb-6">
-                                    <div className="flex items-center gap-2">
-                                        {priorityConfig[selectedOpp.priority] && (
-                                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${priorityConfig[selectedOpp.priority].color}`}>{priorityConfig[selectedOpp.priority].label}</span>
-                                        )}
-                                        {temperatureConfig[selectedOpp.temperature] && (
-                                            <span className="text-sm">{temperatureConfig[selectedOpp.temperature].icon}</span>
-                                        )}
-                                    </div>
-                                    <button onClick={() => setSelectedOpp(null)} className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400"><X size={18} /></button>
-                                </div>
-
-                                <h2 className="text-lg font-bold text-white mb-1">{selectedOpp.title}</h2>
-                                <p className="text-sm text-slate-400 mb-6">
-                                    {[selectedOpp.client?.company, selectedOpp.client?.name].filter(Boolean).join(" · ") || "Sem cliente"}
-                                </p>
-
-                                <div className="space-y-5">
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div className="p-3 bg-slate-800/50 rounded-xl">
-                                            <span className="text-[9px] font-bold uppercase tracking-widest text-slate-600 block mb-1">Valor</span>
-                                            <span className="text-lg font-bold text-blue-400">R$ {selectedOpp.value.toLocaleString("pt-BR")}</span>
-                                        </div>
-                                        <div className="p-3 bg-slate-800/50 rounded-xl">
-                                            <span className="text-[9px] font-bold uppercase tracking-widest text-slate-600 block mb-1">Probabilidade</span>
-                                            <span className="text-lg font-bold text-white">{selectedOpp.probability}%</span>
-                                            <div className="w-full bg-slate-800 rounded-full h-1.5 mt-1">
-                                                <div className={`h-1.5 rounded-full ${selectedOpp.probability >= 70 ? "bg-blue-500" : selectedOpp.probability >= 40 ? "bg-amber-500" : "bg-red-500"}`} style={{ width: `${selectedOpp.probability}%` }} />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        {[
-                                            { icon: Building2, label: "Empresa", value: selectedOpp.client?.company || "—" },
-                                            { icon: User, label: "Contato", value: selectedOpp.client?.name || "—" },
-                                            { icon: User, label: "Consultor", value: selectedOpp.consultant?.name || "—" },
-                                            { icon: Target, label: "Estágio", value: selectedOpp.stage?.name || "—" },
-                                            { icon: Calendar, label: "Fech. Previsto", value: selectedOpp.expectedClose ? format(new Date(selectedOpp.expectedClose), "dd MMM yyyy", { locale: ptBR }) : "Não definido" },
-                                            { icon: Clock, label: "Criado em", value: format(new Date(selectedOpp.createdAt), "dd MMM yyyy", { locale: ptBR }) },
-                                        ].map((item) => (
-                                            <div key={item.label} className="flex items-center gap-3 p-2.5 bg-slate-800/30 rounded-lg">
-                                                <item.icon size={13} className="text-slate-500 shrink-0" />
-                                                <div className="flex items-center justify-between flex-1">
-                                                    <span className="text-[10px] text-slate-600">{item.label}</span>
-                                                    <span className="text-sm text-white">{item.value}</span>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-
-                                    <div className="p-4 bg-amber-500/5 border border-amber-500/10 rounded-xl">
-                                        <h4 className="text-[10px] font-bold uppercase tracking-widest text-amber-400 mb-1 flex items-center gap-1"><Zap size={11} /> Próxima Ação</h4>
-                                        <p className="text-sm text-white">{selectedOpp.nextAction || "Nenhuma próxima ação cadastrada. Defina o próximo passo para não esfriar."}</p>
-                                    </div>
-
-                                    <div>
-                                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-600 block mb-2">Última Atividade</span>
-                                        <p className="text-sm text-slate-400">{selectedOpp.lastActivity || "Nenhum histórico de atividade registrado até o momento."}</p>
-                                    </div>
-
-                                    <div className="flex flex-wrap gap-1.5">
-                                        {selectedOpp.tags.map((t) => (
-                                            <span key={t} className="px-2 py-1 bg-slate-800 text-[10px] font-bold uppercase tracking-wider text-slate-400 rounded-lg border border-white/[0.04]">{t}</span>
-                                        ))}
-                                    </div>
-
-                                    <div className="flex gap-2 pt-4 border-t border-white/[0.06]">
-                                        <button onClick={() => router.push(`/dashboard/crm/pipeline/${selectedOpp.id}`)} className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-semibold text-sm transition-all">
-                                            <FileText size={14} /> Abrir Pipeline
-                                        </button>
-                                        <button onClick={() => router.push(`/dashboard/crm/pipeline/${selectedOpp.id}`)} className="px-4 py-2.5 text-sm text-slate-400 hover:text-white rounded-xl border border-white/10 hover:bg-white/5 transition-colors">
-                                            <Edit3 size={14} />
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
-            {/* ═══ NEW DEAL MODAL HAS BEEN MOVED TO A SEPARATE PAGE ═══ */}
         </div>
     );
 }

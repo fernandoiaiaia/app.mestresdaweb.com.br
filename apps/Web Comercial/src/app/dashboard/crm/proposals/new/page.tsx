@@ -215,17 +215,10 @@ export default function NewProposalPage() {
                             <Sparkles size={14} className="text-violet-400 shrink-0 mt-0.5" />
                             <div className="space-y-0.5">
                                 <p className="text-[11px] font-bold text-violet-300 uppercase tracking-wide">
-                                    Para montar o escopo é preciso usar Inteligência Artificial
+                                    Escopo Inteligente Automático
                                 </p>
                                 <p className="text-[11px] text-slate-400">
-                                    Recomendamos gerar o escopo detalhado através da integração:&nbsp;
-                                    <a 
-                                        href="/dashboard/settings/integrations/proposal_minimax" 
-                                        target="_blank" 
-                                        className="text-violet-400 hover:text-violet-300 underline underline-offset-2"
-                                    >
-                                        Acessar Proposal Minimax
-                                    </a>
+                                    Descreva a ideia em poucas palavras acima. Ao clicar no botão <strong>Escopo AI</strong>, a Inteligência Artificial montará automaticamente a estrutura detalhada do projeto para você!
                                 </p>
                             </div>
                         </div>

@@ -62,17 +62,38 @@ router.put("/:provider", async (req: Request, res: Response) => {
             return res.status(400).json({ success: false, error: { message: `Provider inválido. Use: ${validProviders.join(", ")}` } });
         }
 
+        // ── Fetch existing setting so we can MERGE credentials, not replace them ──
+        // This prevents the UI from wiping saved API keys when the user saves
+        // other fields (model, group_id, etc.) without re-entering masked secrets.
+        const existing = await prisma.integrationSetting.findUnique({
+            where: { userId_provider: { userId, provider } },
+        });
+
+        // Deep-merge: start from what's in DB, apply only non-empty incoming values
+        const existingCreds: Record<string, any> = (existing?.credentials as Record<string, any>) || {};
+        const mergedCreds: Record<string, any> = { ...existingCreds };
+
+        if (credentials && typeof credentials === "object") {
+            for (const [key, value] of Object.entries(credentials)) {
+                // Only overwrite if the incoming value is a non-empty, non-masked string
+                const isPlaceholder = typeof value === "string" && /^[•*]+$/.test(value);
+                if (value !== undefined && value !== null && value !== "" && !isPlaceholder) {
+                    mergedCreds[key] = value;
+                }
+            }
+        }
+
         const setting = await prisma.integrationSetting.upsert({
             where: { userId_provider: { userId, provider } },
             create: {
                 userId,
                 provider,
-                credentials: credentials || {},
+                credentials: mergedCreds,
                 metadata: metadata || {},
                 isActive: isActive ?? false,
             },
             update: {
-                ...(credentials !== undefined && { credentials }),
+                credentials: mergedCreds,
                 ...(metadata !== undefined && { metadata }),
                 ...(isActive !== undefined && { isActive }),
             },

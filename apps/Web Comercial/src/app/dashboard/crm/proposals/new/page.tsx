@@ -36,6 +36,7 @@ export default function NewProposalPage() {
     const [clientId, setClientId] = useState("");
     const [expiresAt, setExpiresAt] = useState("");
     const [summaryRaw, setSummaryRaw] = useState("");
+    const [isGenerating, setIsGenerating] = useState(false);
 
     // Load clients
     useEffect(() => {
@@ -79,11 +80,35 @@ export default function NewProposalPage() {
     tomorrow.setDate(tomorrow.getDate() + 30);
     const defaultExpiry = tomorrow.toISOString().split("T")[0];
 
-    const handleNext = () => {
+    const handleNext = async () => {
         if (!canNext) return;
-        const previous = loadDraft() || ({} as ProposalDraft);
-        saveDraft({ ...previous, title, clientId, expiresAt: expiresAt || defaultExpiry, summaryRaw });
-        router.push("/dashboard/crm/proposals/new/review");
+        setIsGenerating(true);
+        try {
+            const res = await api<{ generatedScope: string }>("/api/proposals/generate-scope", {
+                method: "POST",
+                body: JSON.stringify({ summary: summaryRaw, title })
+            });
+
+            if (!res?.success || !res.data?.generatedScope) {
+                alert(res?.error?.message || "Erro ao gerar escopo com a Inteligência Artificial.");
+                return;
+            }
+
+            const previous = loadDraft() || ({} as ProposalDraft);
+            saveDraft({ 
+                ...previous, 
+                title, 
+                clientId, 
+                expiresAt: expiresAt || defaultExpiry, 
+                summaryRaw, 
+                scopeRaw: res.data.generatedScope 
+            });
+            router.push("/dashboard/crm/proposals/new/review");
+        } catch (err) {
+            alert("Erro inesperado ao gerar escopo. Verifique os logs do servidor.");
+        } finally {
+            setIsGenerating(false);
+        }
     };
 
     return (
@@ -220,11 +245,20 @@ export default function NewProposalPage() {
             <div className="flex items-center justify-end gap-4 mt-8 pt-6 border-t border-white/[0.06]">
                 <button
                     onClick={handleNext}
-                    disabled={!canNext}
+                    disabled={!canNext || isGenerating}
                     className="flex items-center gap-2 px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold shadow-[0_0_20px_rgba(37,99,235,0.2)] disabled:opacity-40 disabled:shadow-none disabled:cursor-not-allowed transition-all"
                 >
-                    Próximo Passo
-                    <ArrowRight size={18} />
+                    {isGenerating ? (
+                        <>
+                            <Loader2 size={18} className="animate-spin" />
+                            Gerando Escopo…
+                        </>
+                    ) : (
+                        <>
+                            <Sparkles size={18} />
+                            Escopo AI
+                        </>
+                    )}
                 </button>
             </div>
         </div>

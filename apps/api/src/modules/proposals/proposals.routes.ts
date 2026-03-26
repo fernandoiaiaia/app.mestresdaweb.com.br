@@ -144,6 +144,168 @@ router.post("/", async (req: Request, res: Response) => {
 });
 
 /**
+ * POST /api/proposals/generate-scope
+ * Sends a summary/prompt to MiniMax and returns a highly detailed project scope.
+ *
+ * Body: { summary: string; title: string }
+ */
+router.post("/generate-scope", async (req: Request, res: Response) => {
+    req.setTimeout(600000); // 10 minutes
+    res.setTimeout(600000);
+    try {
+        const userId = (req as any).user?.userId;
+        const { summary, title } = req.body as {
+            summary: string;
+            title: string;
+        };
+
+        if (!summary || typeof summary !== "string" || summary.trim().length < 10) {
+            return res.status(400).json({
+                success: false,
+                error: { message: "O resumo deve ter pelo menos 10 caracteres." },
+            });
+        }
+
+        const integration = await prisma.integrationSetting.findUnique({
+            where: { userId_provider: { userId, provider: "proposal_minimax" } },
+        });
+
+        if (!integration || !integration.isActive) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    message:
+                        "Integração MiniMax não configurada ou inativa. " +
+                        "Ative-a em Configurações → Integrações → MiniMax M2.5 (Propostas).",
+                },
+            });
+        }
+
+        const creds = integration.credentials as Record<string, any>;
+        const apiKey = creds?.apiKey as string | undefined;
+        const groupId = creds?.groupId as string | undefined;
+        const model = (creds?.model as string | undefined) || "MiniMax-M2.5";
+        const maxTokens = parseInt(creds?.maxTokens as string, 10) || 8192;
+
+        if (!apiKey || !groupId) {
+            return res.status(400).json({
+                success: false,
+                error: { message: "API Key ou Group ID não encontrados na integração MiniMax." },
+            });
+        }
+
+        const systemPrompt = `Você é um Analista de Sistemas e Arquiteto de Software Sênior especializado em elicitação e especificação de requisitos funcionais e técnicos.
+Sua missão é receber um resumo de um projeto/software de um cliente e devolver o Escopo Detalhado estruturado EXATAMENTE no formato abaixo.
+Seja exaustivamente completo, detalhista, profissional e criativo. Descreva painéis administrativos, segurança, relatórios e permissões granulares mesmo se a requisição original for simples.
+
+Use português do Brasil. O formato obrigatório de saída de texto é este:
+
+Escopo de Software — [Nome sugerido]
+Versão: 1.0
+ Tipo: Documento de Escopo Funcional
+ Plataformas: [Lista de plataformas, ex: Mobile (iOS & Android) · Web (Painel) · API]
+
+1. Usuários do Sistema
+Perfil | Descrição
+[Listar cada perfil na tabela texto]
+
+2. Plataforma
+[Descrever cada plataforma do sistema, como 2.1 Aplicativo do Cliente — iOS e Android (React Native)]
+
+3. Módulos / Menu do Sistema
+Módulo | Descrição | Plataforma | Perfil
+[Listar Módulos gerais com |]
+
+4. Telas e Descrições
+[Para cada Plataforma listada na seção 2, documentar exaustivamente todas as Telas:]
+Tela: [Nome da Tela]
+Plataforma: [Plataforma correspondente]
+Descrição: [Detalhes do objetivo da tela]
+Funcionalidades:
+- [Item 1 e detalhes]
+- [Item 2 e detalhes]
+
+5. Integrações
+[Serviço externo, ex: Stripe, SendGrid, AWS, Google Maps]: [Motivo e onde será usado]`;
+
+        const userMessage = `Por favor, elabore o escopo completo para o projeto "${title || "Sem título"}".\n\nResumo e Objetivo fornecido pelo cliente:\n"${summary.trim()}"`;
+
+        const miniMaxUrl = `https://api.minimaxi.chat/v1/chat/completions?GroupId=${groupId}`;
+        const requestBody = {
+            model,
+            messages: [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: userMessage },
+            ],
+            temperature: 0.6,
+            max_tokens: maxTokens,
+        };
+
+        logger.info({ userId, model, url: miniMaxUrl }, "Calling MiniMax generate-scope");
+
+        const miniMaxRes = await fetch(miniMaxUrl, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify(requestBody),
+        });
+
+        if (!miniMaxRes.ok) {
+            const errText = await miniMaxRes.text().catch(() => "");
+            let errMsg = `HTTP ${miniMaxRes.status}`;
+            try {
+                const errBody = JSON.parse(errText) as any;
+                errMsg = errBody?.error?.message || errBody?.base_resp?.status_msg || errMsg;
+            } catch { /* ignore */ }
+            logger.warn({ userId, model, status: miniMaxRes.status, errMsg }, "MiniMax generate-scope failed");
+            return res.status(502).json({
+                success: false,
+                error: { message: `MiniMax retornou um erro: ${errMsg}` },
+            });
+        }
+
+        const rawText = await miniMaxRes.text();
+        let miniMaxData: any;
+        try {
+            miniMaxData = JSON.parse(rawText);
+        } catch {
+            return res.status(502).json({
+                success: false,
+                error: { message: "Resposta do MiniMax inválida. Tente novamente." },
+            });
+        }
+
+        const rawContent: string =
+            miniMaxData?.choices?.[0]?.message?.content ||
+            miniMaxData?.reply ||
+            "";
+
+        if (!rawContent) {
+            return res.status(502).json({
+                success: false,
+                error: { message: "MiniMax retornou resposta vazia. Tente novamente." },
+            });
+        }
+
+        let cleaned = rawContent.trim();
+        const fenceMatch = cleaned.match(/```(?:text)?\s*\n?([\s\S]*?)\n?\s*```/i);
+        if (fenceMatch) {
+            cleaned = fenceMatch[1].trim();
+        }
+
+        logger.info({ userId, model, generatedLen: cleaned.length }, "generate-scope completed");
+        return res.json({ success: true, data: { generatedScope: cleaned } });
+    } catch (err: any) {
+        logger.error({ err }, "Error in generate-scope");
+        return res
+            .status(500)
+            .json({ success: false, error: { message: "Erro interno ao gerar escopo: " + String(err) } });
+    }
+});
+
+/**
  * POST /api/proposals/analyze-gaps
  * Sends the current scope to MiniMax 2.5M and returns a structured gap analysis.
  *

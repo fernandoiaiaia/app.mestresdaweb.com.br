@@ -165,11 +165,40 @@ export const dealsService = {
     },
 
     async update(id: string, data: UpdateDealDto, user: JwtUser) {
-        return prisma.deal.update({
+        const updated = await prisma.deal.update({
             where: { id, userId: user.userId },
             data,
-            include: { client: true, consultant: true }
+            include: {
+                client: { select: { id: true, name: true, email: true, company: true, phone: true } },
+                consultant: { select: { id: true, name: true, avatar: true } },
+                stage: { select: { id: true, name: true, color: true } },
+                funnel: {
+                    select: {
+                        id: true,
+                        name: true,
+                        stages: {
+                            select: { id: true, name: true, color: true, orderIndex: true },
+                            orderBy: { orderIndex: 'asc' }
+                        }
+                    }
+                },
+                notes: {
+                    include: { user: { select: { id: true, name: true, avatar: true } } },
+                    orderBy: { createdAt: 'desc' }
+                },
+                tasks: { orderBy: { date: 'asc' } }
+            }
         });
+
+        // Resolve assigneeIds → full user objects (keeps UI in sync after every update)
+        const assignees = updated.assigneeIds.length > 0
+            ? await prisma.user.findMany({
+                where: { id: { in: updated.assigneeIds } },
+                select: { id: true, name: true, avatar: true },
+            })
+            : [];
+
+        return { ...updated, assignees };
     },
 
     async updateStage(id: string, stageId: string, user: JwtUser) {

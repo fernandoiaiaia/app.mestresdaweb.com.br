@@ -18,6 +18,9 @@
         "turbo": "^2.5.0"
     },
     "packageManager": "pnpm@9.1.0",
+    "engines": {
+        "node": "20.x"
+    },
     "dependencies": {
         "@types/nodemailer": "^7.0.11",
         "nodemailer": "^8.0.2"

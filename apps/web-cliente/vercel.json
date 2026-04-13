@@ -4,5 +4,6 @@
       "ENABLE_EXPERIMENTAL_COREPACK": "1"
     }
   },
+  "buildCommand": "cd ../.. && npx turbo run build --filter=web-cliente",
   "installCommand": "pnpm install --no-frozen-lockfile"
 }

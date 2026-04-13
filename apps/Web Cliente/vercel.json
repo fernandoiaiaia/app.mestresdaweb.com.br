@@ -1,1 +1,1 @@
-{"installCommand": "npm install -g pnpm@8.15.5 && pnpm install"}
+{"build": {"env": {"ENABLE_EXPERIMENTAL_COREPACK": "1"}}}

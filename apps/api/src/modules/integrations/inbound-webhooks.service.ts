@@ -133,7 +133,7 @@ export const inboundWebhooksService = {
                 clientId: client.id,
                 funnelId: funnel.id,
                 stageId: funnel.stages[0].id,
-                title: payload.dealTitle?.trim() || \`Negócio - \${client.name}\`,
+                title: payload.dealTitle?.trim() || `Negócio - ${client.name}`,
                 value: payload.dealValue ? Number(payload.dealValue) : null,
                 priority: payload.dealPriority || "medium",
                 source: payload.source?.trim() || "Inbound Webhook",

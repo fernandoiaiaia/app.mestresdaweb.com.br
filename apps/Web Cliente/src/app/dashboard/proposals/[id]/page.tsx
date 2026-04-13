@@ -312,7 +312,7 @@ export default function PublicProposalPresentationPage({ params }: { params: Pro
             <div className="w-full max-w-2xl h-[260px] sm:h-[360px] bg-slate-900/80 border border-slate-700/80 rounded-xl overflow-hidden shadow-2xl flex flex-col group relative shrink-0">
                 <div className="bg-slate-800/90 px-4 py-2 flex items-center gap-2 border-b border-slate-700/50">
                     <div className="flex gap-1.5"><div className="w-3 h-3 rounded-full bg-red-500/80" /><div className="w-3 h-3 rounded-full bg-yellow-500/80" /><div className="w-3 h-3 rounded-full bg-blue-500/80" /></div>
-                    <div className="ml-4 flex-1 bg-slate-900/60 rounded text-center text-xs text-slate-400 py-1 font-mono">plataforma.cezani.dev</div>
+                    <div className="ml-4 flex-1 bg-slate-900/60 rounded text-center text-xs text-slate-400 py-1 font-mono">plataforma.mestresdaweb.com.br</div>
                 </div>
                 <div className="flex-1 bg-[#0a0a0a] p-6 flex flex-col gap-6 relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-[200px] h-[200px] bg-blue-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />

@@ -19,6 +19,8 @@ import {
     Package,
     FileText,
     Clock,
+    Bug,
+    MessageSquare
 } from "lucide-react";
 import { api } from "@/lib/api";
 
@@ -67,9 +69,26 @@ const DEV_PERMISSIONS: ModuleGroup[] = [
                 icon: <ListTodo size={16} />,
                 permissions: [
                     { module: "backlog", action: "view", label: "Visualizar", hasDataScope: true },
-                    { module: "backlog", action: "create", label: "Criar" },
-                    { module: "backlog", action: "edit", label: "Editar" },
-                    { module: "backlog", action: "delete", label: "Excluir" },
+                    { module: "backlog", action: "create", label: "Criar Tarefa" },
+                    { module: "backlog", action: "edit", label: "Editar Tarefa" },
+                    { module: "backlog", action: "delete", label: "Excluir Tarefa" },
+                ],
+            },
+            {
+                name: "Bugs & Qualidade",
+                icon: <Bug size={16} />,
+                permissions: [
+                    { module: "bugs", action: "view", label: "Visualizar", hasDataScope: true },
+                    { module: "bugs", action: "report", label: "Reportar Bug" },
+                    { module: "bugs", action: "resolve", label: "Resolver Bug" },
+                ],
+            },
+            {
+                name: "Comentários",
+                icon: <MessageSquare size={16} />,
+                permissions: [
+                    { module: "comments", action: "view", label: "Visualizar" },
+                    { module: "comments", action: "create", label: "Comentar" },
                 ],
             },
         ],
@@ -270,11 +289,11 @@ export default function NewDevUserPage() {
     );
 
     const roleOptions = [
-        { value: "OWNER", label: "Proprietário", desc: "Acesso total a todas funcionalidades", icon: <Shield size={16} />, color: "red" },
-        { value: "ADMIN", label: "Administrador", desc: "Controle administrativo completo", icon: <Shield size={16} />, color: "orange" },
-        { value: "MANAGER", label: "Gestor", desc: "Gerencia projetos e equipe", icon: <BarChart3 size={16} />, color: "purple" },
-        { value: "USER", label: "Usuário", desc: "Acesso padrão aos módulos atribuídos", icon: <Users size={16} />, color: "blue" },
-        { value: "VIEWER", label: "Visualizador", desc: "Apenas visualização, sem edição", icon: <Eye size={16} />, color: "amber" },
+        { value: "ADMIN", label: "Administrador / Owner", desc: "Controle técnico e administrativo", icon: <Shield size={16} />, color: "red" },
+        { value: "GESTOR", label: "Gestor", desc: "Gerencia sprints e aprova entregas", icon: <BarChart3 size={16} />, color: "purple" },
+        { value: "TECH_LEAD", label: "Tech Lead", desc: "Líder técnico do desenvolvimento", icon: <Code2 size={16} />, color: "orange" },
+        { value: "DEV", label: "Desenvolvedor", desc: "Acesso padrão para atuação nos projetos", icon: <Code2 size={16} />, color: "blue" },
+        { value: "VIEWER", label: "Visualizador", desc: "Apenas acompanha atividades", icon: <Eye size={16} />, color: "amber" },
     ];
 
     const roleColorMap: Record<string, { active: string; inactive: string; icon: string; text: string }> = {

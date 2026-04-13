@@ -21,6 +21,7 @@ export const updateDealSchema = z.object({
     value: z.number().min(0).optional(),
     probability: z.number().min(0).max(100).optional(),
     status: z.enum(["open", "won", "lost"]).optional(),
+    lossReasonId: z.string().uuid().nullable().optional(),
     tags: z.array(z.string()).optional(),
     assigneeIds: z.array(z.string().uuid()).optional(),
     clientId: z.string().uuid().optional(),

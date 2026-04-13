@@ -12,7 +12,7 @@
   --color-background: #E2E8F0;
   --color-foreground: #020617;
 
-  --color-primary: #2563eb;
+  --color-primary: #22ffb5;
   --color-primary-foreground: #FFFFFF;
 
   --color-secondary: rgba(0, 0, 0, 0.05);
@@ -29,9 +29,22 @@
 
   --color-border: rgba(0, 0, 0, 0.1);
   --color-input: rgba(0, 0, 0, 0.05);
-  --color-ring: rgba(37, 99, 235, 0.5);
+  --color-ring: rgba(34, 255, 181, 0.5);
 
   --animate-beam-fall: beam-fall 6s linear infinite;
+
+  /* Remap all blue to neon green based on #22ffb5 */
+  --color-blue-50: #eafff7;
+  --color-blue-100: #cbffec;
+  --color-blue-200: #9dfde0;
+  --color-blue-300: #5dffce;
+  --color-blue-400: #22ffb5;
+  --color-blue-500: #0ae69c;
+  --color-blue-600: #00b87c;
+  --color-blue-700: #008f62;
+  --color-blue-800: #00704f;
+  --color-blue-900: #005c41;
+  --color-blue-950: #003323;
 }
 
 :root {
@@ -68,7 +81,7 @@
   justify-content: center;
   overflow: hidden;
   transition: all 0.25s ease;
-  background: radial-gradient(65.28% 65.28% at 50% 100%, rgba(59, 130, 246, 0.8) 0%, rgba(59, 130, 246, 0) 100%), linear-gradient(0deg, #1d4ed8, #2563eb);
+  background: radial-gradient(65.28% 65.28% at 50% 100%, rgba(59, 130, 246, 0.8) 0%, rgba(59, 130, 246, 0) 100%), linear-gradient(0deg, #1d4ed8, #00b87c);
   border-radius: 9999px;
   border: none;
   padding: 10px 24px;
@@ -89,7 +102,7 @@
   content: "";
   position: absolute;
   inset: 2px;
-  background: radial-gradient(65.28% 65.28% at 50% 100%, rgba(59, 130, 246, 0.8) 0%, rgba(59, 130, 246, 0) 100%), linear-gradient(0deg, #1d4ed8, #2563eb);
+  background: radial-gradient(65.28% 65.28% at 50% 100%, rgba(59, 130, 246, 0.8) 0%, rgba(59, 130, 246, 0) 100%), linear-gradient(0deg, #1d4ed8, #00b87c);
   border-radius: 9999px;
   transition: all 0.5s ease-in-out;
   z-index: 0;
@@ -187,3 +200,76 @@
 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
 .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+/* =========================================
+   PRODUCT TOUR (DRIVER.JS) BEAUTIFUL THEME
+   ========================================= */
+.driver-popover {
+  background-color: rgba(15, 23, 42, 0.95) !important; /* bg-slate-900 com opacidade */
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  color: #94a3b8 !important; /* text-slate-400 */
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 16px !important; /* xl radius */
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05) inset !important;
+  padding: 20px !important;
+}
+
+.driver-popover-title {
+  color: #f8fafc !important; /* text-slate-50 */
+  font-size: 1.125rem !important;
+  font-weight: 700 !important;
+  margin-bottom: 0.5rem !important;
+  letter-spacing: -0.025em !important;
+}
+
+.driver-popover-description {
+  color: #94a3b8 !important; /* text-slate-400 */
+  font-size: 0.875rem !important;
+  line-height: 1.6 !important;
+}
+
+.driver-popover-footer {
+  margin-top: 1.25rem !important;
+}
+
+.driver-popover-progress-text {
+  color: #64748b !important; /* text-slate-500 */
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+}
+
+/* Estilo padrão de botões Next e Prev */
+.driver-popover-footer button {
+  background-color: rgba(59, 130, 246, 0.1) !important;
+  color: #60a5fa !important;
+  border: 1px solid rgba(59, 130, 246, 0.2) !important;
+  border-radius: 8px !important;
+  padding: 6px 14px !important;
+  font-weight: 600 !important;
+  font-size: 0.75rem !important;
+  transition: all 0.2s ease !important;
+  text-shadow: none !important;
+  cursor: pointer !important;
+}
+
+.driver-popover-footer button:hover {
+  background-color: rgba(59, 130, 246, 0.2) !important;
+  color: #93c5fd !important;
+}
+
+/* Esconder close button default pois criamos um texto explicativo */
+.driver-popover-close-btn {
+  display: none !important; 
+}
+
+/* Hard Lock no botão Próximo */
+.driver-popover.driver-lock-next .driver-popover-next-btn {
+  display: none !important;
+  pointer-events: none !important;
+}
+
+.driver-popover.driver-unlocked-next .driver-popover-next-btn {
+  display: inline-flex !important;
+  pointer-events: auto !important;
+}

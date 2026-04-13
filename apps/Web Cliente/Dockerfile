@@ -23,8 +23,13 @@ RUN pnpm turbo run build --filter=web-cliente...
 
 FROM base AS runner
 WORKDIR /app
-COPY --from=installer /app .
 ENV NODE_ENV=production
 ENV PORT=1300
+
+# Copy standalone output + static assets + public
+COPY --from=installer /app/apps/Web\ Cliente/.next/standalone ./
+COPY --from=installer /app/apps/Web\ Cliente/.next/static ./apps/Web\ Cliente/.next/static
+COPY --from=installer /app/apps/Web\ Cliente/public ./apps/Web\ Cliente/public
+
 EXPOSE 1300
-CMD ["pnpm", "--filter", "web-cliente", "start"]
+CMD ["node", "apps/Web Cliente/server.js"]

@@ -120,7 +120,7 @@ export default function NotificationsPage() {
     return (
         <div className="p-6 md:p-8 space-y-5">
             {/* Header */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+            <motion.div id="tour-page-notifications-header" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
                 <div className="flex items-center justify-between flex-wrap gap-3">
                     <div>
                         <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
@@ -151,7 +151,7 @@ export default function NotificationsPage() {
             </motion.div>
 
             {/* Search + Filters */}
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
+            <motion.div id="tour-page-notifications-search" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
                 className="flex items-center gap-3 flex-wrap">
                 {/* Search input */}
                 <div className="relative flex-1 min-w-[200px] max-w-md">

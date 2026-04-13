@@ -226,7 +226,7 @@ export default function ResetPasswordPage() {
                 >
                     {/* Brand Name */}
                     <div className="flex justify-center mb-8">
-                        <span className="text-5xl font-bold tracking-tight text-white font-varela-round lowercase">cezani</span>
+                        <span className="text-5xl font-bold tracking-tight text-white font-varela-round lowercase">Mestres da Web</span>
                     </div>
 
                     {/* Title */}

@@ -21,7 +21,7 @@ export async function getSystemEmailConfig() {
             const apiKey = creds?.apiKey || env.BREVO_API_KEY;
             
             // Check both metadata and credentials since frontend structure might vary
-            const fromEmail = meta?.fromEmail || creds?.fromEmail || meta?.senderEmail || creds?.senderEmail || env.BREVO_FROM_EMAIL || "noreply@cezani.dev";
+            const fromEmail = meta?.fromEmail || creds?.fromEmail || meta?.senderEmail || creds?.senderEmail || env.BREVO_FROM_EMAIL || "noreply@mestresdaweb.com.br";
             const fromName = meta?.fromName || creds?.fromName || meta?.senderName || creds?.senderName || env.BREVO_FROM_NAME || "ProposalAI";
 
             if (apiKey) {
@@ -34,7 +34,7 @@ export async function getSystemEmailConfig() {
 
     return {
         apiKey: env.BREVO_API_KEY,
-        fromEmail: env.BREVO_FROM_EMAIL || "noreply@cezani.dev",
+        fromEmail: env.BREVO_FROM_EMAIL || "noreply@mestresdaweb.com.br",
         fromName: env.BREVO_FROM_NAME || "ProposalAI",
         source: "env"
     };

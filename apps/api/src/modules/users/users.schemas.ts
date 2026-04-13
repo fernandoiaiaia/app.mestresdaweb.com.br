@@ -34,7 +34,8 @@ export const createUserSchema = z.object({
     position: z.string().optional().nullable(),
     role: z.enum(["OWNER", "ADMIN", "MANAGER", "USER", "VIEWER"]).default("USER"),
     permissions: z.array(permissionSchema).default([]),
-    allowedApps: z.array(z.enum(["growth", "dev"])).default([]),
+    allowedApps: z.array(z.string()).default([]),
+    allowedFunnels: z.array(z.string()).default([]),
 });
 
 export const updateUserFullSchema = z.object({
@@ -45,7 +46,8 @@ export const updateUserFullSchema = z.object({
     role: z.enum(["OWNER", "ADMIN", "MANAGER", "USER", "VIEWER"]).optional(),
     active: z.boolean().optional(),
     permissions: z.array(permissionSchema).optional(),
-    allowedApps: z.array(z.enum(["growth", "dev"])).optional(),
+    allowedApps: z.array(z.string()).optional(),
+    allowedFunnels: z.array(z.string()).optional(),
 });
 
 export type UpdateUserInput = z.infer<typeof updateUserSchema>;

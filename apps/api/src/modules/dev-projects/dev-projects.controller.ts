@@ -41,6 +41,16 @@ class DevProjectsController {
         }
     }
 
+    /** POST /api/dev-projects/from-assembled/:proposalId */
+    async createFromAssembledProposal(req: Request, res: Response) {
+        try {
+            const project = await devProjectsService.createFromAssembledProposal((req.params.proposalId as string), req.user!);
+            res.status(201).json({ success: true, data: project });
+        } catch (err: any) {
+            res.status(400).json({ success: false, error: { message: err.message } });
+        }
+    }
+
     /** PATCH /api/dev-projects/:id */
     async update(req: Request, res: Response) {
         const project = await devProjectsService.update((req.params.id as string), req.body);
@@ -150,17 +160,34 @@ class DevProjectsController {
 
     // ── TASK COMMENTS ──
 
+    /** GET /api/dev-projects/:id/recent-comments */
+    async listProjectRecentComments(req: Request, res: Response) {
+        const comments = await devProjectsService.listProjectRecentComments((req.params.id as string));
+        res.json({ success: true, data: comments });
+    }
+
     /** GET /api/dev-projects/tasks/:taskId/comments */
     async listComments(req: Request, res: Response) {
         const comments = await devProjectsService.listComments((req.params.taskId as string));
         res.json({ success: true, data: comments });
     }
 
-    /** POST /api/dev-projects/tasks/:taskId/comments */
+    /** PATCH /api/dev-projects/tasks/comments/:id/read */
+    async markCommentAsRead(req: Request, res: Response) {
+        const comment = await devProjectsService.markCommentAsRead((req.params.id as string));
+        res.json({ success: true, data: comment });
+    }
+
+    /** PATCH /api/dev-projects/tasks/:taskId/comments/read */
+    async markAllTaskCommentsAsRead(req: Request, res: Response) {
+        const result = await devProjectsService.markAllTaskCommentsAsRead((req.params.taskId as string));
+        res.json({ success: true, data: result });
+    }
+
     async addComment(req: Request, res: Response) {
         const user = (req as any).user;
         const comment = await devProjectsService.addComment((req.params.taskId as string), user.userId, req.body.text);
-        await devProjectsService.logHistory((req.params.taskId as string), user.userId, "comment", `Comentário adicionado: "${req.body.text.substring(0, 80)}${req.body.text.length > 80 ? '...' : ''}"`);
+        await devProjectsService.logHistory((req.params.taskId as string), user.userId, "comment", `Comentário: "${req.body.text}"`);
         res.status(201).json({ success: true, data: comment });
     }
 
@@ -349,8 +376,15 @@ class DevProjectsController {
             return;
         }
 
-        const disposition = doc.mimeType.startsWith("image/") ? "inline" : "attachment";
-        res.setHeader("Content-Disposition", `${disposition}; filename="${encodeURIComponent(doc.fileName)}"`);
+        const isView = req.query.view === "1";
+        const disposition = isView ? "inline" : (doc.mimeType.startsWith("image/") ? "inline" : "attachment");
+
+        if (isView) {
+            res.setHeader("Content-Disposition", "inline");
+        } else {
+            res.setHeader("Content-Disposition", `${disposition}; filename="${encodeURIComponent(doc.fileName)}"`);
+        }
+
         res.setHeader("Content-Type", doc.mimeType);
         res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
         res.setHeader("Access-Control-Allow-Origin", "*");

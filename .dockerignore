@@ -7,3 +7,23 @@ out/
 .env
 .env.*.local
 *.log
+.DS_Store
+*.md
+!README.md
+.vscode/
+.idea/
+.gemini/
+debug-schema.ts
+fix-*.js
+test-*.js
+seed-*.js
+sync_login.js
+update_*.js
+query_feedback.ts
+lhrun.log
+lt.log
+ngrok.log
+ngrok_test.log
+pinggy.log
+Design Systems/
+apps/Mobile Cliente/

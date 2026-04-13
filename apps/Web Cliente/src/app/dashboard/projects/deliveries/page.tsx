@@ -50,13 +50,13 @@ export default function DeliveriesPage() {
 
     return (
         <div className="p-6 md:p-8 space-y-6">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+            <motion.div id="tour-page-deliveries-header" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
                 <h1 className="text-3xl font-bold tracking-tight">Entregas</h1>
                 <p className="text-slate-400 mt-1">Histórico de entregas e progresso dos sprints dos seus projetos.</p>
             </motion.div>
 
             {/* Stat Cards */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
+            <motion.div id="tour-page-deliveries-filters" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
                 className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {([
                     { key: "all", label: "Total", icon: ListChecks, color: "text-white", bg: "bg-slate-800/40", border: "border-white/[0.06]" },
@@ -86,7 +86,7 @@ export default function DeliveriesPage() {
                     <p className="text-sm text-slate-500 mt-1">As entregas aparecerão aqui conforme os sprints são criados e concluídos.</p>
                 </motion.div>
             ) : (
-                <div className="space-y-4">
+                <div id="tour-page-deliveries-list" className="space-y-4">
                     {filtered.map((sprint, i) => {
                         const sc = sprintStatusConfig[sprint.status] || sprintStatusConfig.planned;
                         const StatusIcon = sc.icon;

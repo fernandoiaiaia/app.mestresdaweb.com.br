@@ -37,7 +37,7 @@ export default function ProposalsPage() {
 
     return (
         <div className="p-6 md:p-8 space-y-6">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+            <motion.div id="tour-page-proposals-header" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
                 <h1 className="text-3xl font-bold tracking-tight">Propostas</h1>
                 <p className="text-slate-400 mt-1">Visualize as propostas comerciais dos seus projetos.</p>
             </motion.div>
@@ -52,41 +52,49 @@ export default function ProposalsPage() {
                     <p className="text-sm text-slate-500 mt-1">Suas propostas aparecerão aqui assim que forem enviadas.</p>
                 </motion.div>
             ) : (
-                <div className="grid grid-cols-1 gap-4">
+                <div id="tour-page-proposals-list" className="grid grid-cols-1 gap-4">
                     {proposals.map((p, i) => {
-                        const st = STATUS_LABELS[p.status] || STATUS_LABELS.SENT;
-                        const sentDate = p.sentAt ? new Date(p.sentAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" }) : "—";
-                        const projectLabel = Array.isArray(p.projectType) ? p.projectType.join(", ") : p.projectType;
+                        const isAssembler = !!p.scopeData || p.isAssembler;
+                        const st = STATUS_LABELS[p.status] || (isAssembler ? STATUS_LABELS.SENT : STATUS_LABELS.SENT);
+                        const displayDate = p.sentAt || p.createdAt;
+                        const dateLabel = displayDate ? new Date(displayDate).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" }) : "—";
+                        
+                        // Assembler uses 'title', Legacy uses 'projectType'
+                        let titleLabel = p.title || "Proposta";
+                        if (!p.title && p.projectType) {
+                            titleLabel = Array.isArray(p.projectType) ? p.projectType.join(", ") : p.projectType;
+                        }
 
                         return (
                             <motion.div key={p.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-                                <Link href={`/dashboard/proposals/${p.id}`}
+                                <Link href={isAssembler ? `/dashboard/proposals/a/${p.id}` : `/dashboard/proposals/${p.id}`}
                                     className="block bg-slate-800/40 backdrop-blur-sm border border-white/[0.06] rounded-2xl p-6 hover:border-white/[0.12] transition-all group">
                                     <div className="flex items-start justify-between gap-4">
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-3 mb-2">
                                                 <h3 className="text-lg font-bold text-white truncate group-hover:text-blue-400 transition-colors">
-                                                    {projectLabel}
+                                                    {titleLabel}
                                                 </h3>
+
                                                 <span className={`shrink-0 px-2.5 py-0.5 text-[10px] font-bold rounded-full border ${st.color}`}>
                                                     {st.label}
                                                 </span>
                                             </div>
-                                            <p className="text-sm text-slate-400 mb-3">{p.clientName}</p>
+                                            <p className="text-sm text-slate-400 mb-3">{p.clientName || "Portal do Cliente"}</p>
                                             <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">
                                                 <span className="flex items-center gap-1.5">
-                                                    <Calendar size={13} /> {sentDate}
+                                                    <Calendar size={13} /> {dateLabel}
                                                 </span>
-                                                {p.totalValue && (
+                                                {p.totalValue ? (
                                                     <span className="flex items-center gap-1.5">
                                                         <DollarSign size={13} /> {fmt(p.totalValue)}
                                                     </span>
-                                                )}
-                                                {p.totalHours && (
+                                                ) : null}
+                                                {p.totalHours ? (
                                                     <span className="flex items-center gap-1.5">
                                                         <Clock size={13} /> {p.totalHours}h estimadas
                                                     </span>
-                                                )}
+                                                ) : null}
                                             </div>
                                         </div>
                                         <div className="shrink-0 flex items-center gap-2 text-slate-500 group-hover:text-blue-400 transition-colors">

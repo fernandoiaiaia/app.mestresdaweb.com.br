@@ -63,7 +63,7 @@ export default function ClientLoginPage() {
                 <div className="bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl shadow-black/50">
                     {/* Brand Name */}
                     <div className="flex justify-center mb-8">
-                        <span className="text-4xl font-bold tracking-tight text-white font-varela-round lowercase">cezani</span>
+                        <span className="text-4xl font-bold tracking-tight text-white font-varela-round lowercase">Mestres da Web</span>
                     </div>
 
                     <div className="text-center mb-8">
@@ -143,7 +143,7 @@ export default function ClientLoginPage() {
 
                 {/* Footer branding */}
                 <p className="text-center text-[10px] text-slate-600 mt-6">
-                    Desenvolvido por <span className="text-slate-400 font-medium">Cezani</span> · Todos os direitos reservados
+                    Desenvolvido por <span className="text-slate-400 font-medium">Mestres da Web</span> · Todos os direitos reservados
                 </p>
             </motion.div>
         </div>

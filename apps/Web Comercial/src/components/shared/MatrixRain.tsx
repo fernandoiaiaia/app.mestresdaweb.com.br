@@ -32,11 +32,11 @@ export default function MatrixRain() {
                     <div key={i} className="flex-1 border-l border-slate-700/20 h-full flex justify-center relative overflow-hidden">
                         {isCenter ? (
                             <>
-                                <div className="absolute top-0 -left-[1px] w-[2px] h-96 bg-gradient-to-b from-transparent via-blue-600/80 to-transparent animate-beam-2"></div>
-                                <div className="h-full border-r border-dashed border-blue-600/30 w-[2px]"></div>
+                                <div className="absolute top-0 -left-[1px] w-[2px] h-96 bg-gradient-to-b from-transparent via-[#22ffb5]/80 to-transparent animate-beam-2"></div>
+                                <div className="h-full border-r border-dashed border-[#22ffb5]/30 w-[2px]"></div>
                                 {/* Center thick exploding beam toned down */}
                                 <div
-                                    className="absolute top-0 left-1/2 -translate-x-1/2 w-[2px] h-[300px] rounded-full bg-gradient-to-b from-transparent via-blue-500 to-transparent shadow-[0_0_20px_4px_rgba(37,99,235,0.4)] animate-beam-1"
+                                    className="absolute top-0 left-1/2 -translate-x-1/2 w-[2px] h-[300px] rounded-full bg-gradient-to-b from-transparent via-[#22ffb5] to-transparent shadow-[0_0_20px_4px_rgba(34,255,181,0.4)] animate-beam-1"
                                     style={{
                                         animationDelay: '1.5s'
                                     }}
@@ -44,9 +44,12 @@ export default function MatrixRain() {
                             </>
                         ) : hasBeam ? (
                             <div
-                                className="absolute top-0 -left-[1px] w-[2px] h-64 bg-gradient-to-b from-transparent via-blue-600/60 to-transparent"
+                                className="absolute top-0 -left-[1px] w-[2px] h-64 bg-gradient-to-b from-transparent via-[#22ffb5]/60 to-transparent"
                                 style={{
-                                    animation: `beam-fall ${duration} infinite linear`,
+                                    animationName: 'beam-fall',
+                                    animationDuration: duration,
+                                    animationTimingFunction: 'linear',
+                                    animationIterationCount: 'infinite',
                                     animationDelay: delay
                                 }}
                             />

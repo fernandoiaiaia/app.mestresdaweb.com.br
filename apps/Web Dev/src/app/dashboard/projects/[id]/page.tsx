@@ -253,7 +253,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                         </div>
                         <div className="flex items-center justify-between mt-2 text-[11px] text-slate-500">
                             <span>{tasksDone}/{tasksTotal} tarefas concluídas</span>
-                            <span>{hoursUsed}h / {hoursEstimated}h</span>
+                            <span>{hoursUsed}h registradas</span>
                         </div>
                     </div>
                 </div>
@@ -418,7 +418,6 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                                 { label: "Criado em", value: new Date(project.createdAt).toLocaleDateString("pt-BR") },
                                 { label: "Início", value: project.startDate ? new Date(project.startDate).toLocaleDateString("pt-BR") : "—" },
                                 { label: "Prazo", value: project.deadline ? new Date(project.deadline).toLocaleDateString("pt-BR") : "—" },
-                                { label: "Horas Estimadas", value: `${hoursEstimated}h` },
                                 { label: "Horas Usadas", value: `${hoursUsed}h` },
                                 ...(project.proposal ? [{ label: "Proposta Origem", value: project.proposal.clientName }] : []),
                             ].map((item, i) => (
@@ -454,20 +453,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                             ))}
                         </div>
 
-                        {/* Hours Summary */}
-                        <div className="mt-4 pt-4 border-t border-slate-700/30">
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="text-[10px] font-bold tracking-widest uppercase text-slate-500">Consumo de Horas</span>
-                                <span className={`text-sm font-bold ${hoursPercent > 100 ? "text-red-400" : hoursPercent > 80 ? "text-amber-400" : "text-blue-400"}`}>{hoursPercent}%</span>
-                            </div>
-                            <div className="h-2.5 bg-slate-700/40 rounded-full overflow-hidden">
-                                <div className={`h-full rounded-full transition-all ${hoursPercent > 100 ? "bg-red-500" : hoursPercent > 80 ? "bg-amber-500" : "bg-green-500"}`}
-                                    style={{ width: `${Math.min(hoursPercent, 100)}%` }} />
-                            </div>
-                            <p className="text-[10px] text-slate-500 mt-1.5 text-right">
-                                Saldo: <span className={`font-bold ${hoursEstimated - hoursUsed >= 0 ? "text-blue-400" : "text-red-400"}`}>{hoursEstimated - hoursUsed >= 0 ? "+" : ""}{hoursEstimated - hoursUsed}h</span>
-                            </p>
-                        </div>
+
                     </motion.div>
                 </div>
             )}
@@ -487,7 +473,6 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                                 <th className="text-left px-5 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Épico</th>
                                 <th className="text-left px-5 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Status</th>
                                 <th className="text-left px-5 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Prioridade</th>
-                                <th className="text-left px-5 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Horas</th>
                                 <th className="text-left px-5 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Responsável</th>
                             </tr></thead>
                             <tbody>
@@ -502,7 +487,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                                         <td className="px-5 py-3 text-slate-400 text-xs truncate max-w-[150px]">{t.epic || "—"}</td>
                                         <td className="px-5 py-3"><span className={`px-2 py-0.5 text-[10px] font-bold rounded-md ${t.status === "done" ? "bg-blue-500/10 text-blue-400" : t.status === "in_progress" ? "bg-blue-500/10 text-blue-400" : t.status === "review" ? "bg-amber-500/10 text-amber-400" : "bg-slate-500/10 text-slate-400"}`}>{getStatusLabel(t.status)}</span></td>
                                         <td className="px-5 py-3"><span className={`px-2 py-0.5 text-[10px] font-bold rounded-md ${t.priority === "critical" ? "bg-red-500/10 text-red-400" : t.priority === "high" ? "bg-amber-500/10 text-amber-400" : t.priority === "medium" ? "bg-blue-500/10 text-blue-400" : "bg-slate-500/10 text-slate-400"}`}>{t.priority === "critical" ? "Crítica" : t.priority === "high" ? "Alta" : t.priority === "medium" ? "Média" : "Baixa"}</span></td>
-                                        <td className="px-5 py-3 text-xs text-slate-400">{t.estimatedHours || 0}h</td>
+
                                         <td className="px-5 py-3">{t.assignee ? (
                                             <div className="flex items-center gap-2">
                                                 <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-blue-600 to-blue-400 flex items-center justify-center text-white text-[8px] font-bold">{t.assignee.name.charAt(0)}</div>

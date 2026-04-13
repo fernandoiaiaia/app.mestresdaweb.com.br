@@ -197,7 +197,7 @@ export default function DashboardPage() {
             </motion.div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div id="tour-dashboard-stats" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {statCards.map((stat, i) => {
                     const colors = colorMap[stat.color];
                     const Icon = stat.icon;
@@ -221,7 +221,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Row 1: Area Chart + Donut */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div id="tour-dashboard-charts" className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
                     className="lg:col-span-2 bg-slate-800/40 backdrop-blur-sm border border-white/[0.06] rounded-2xl p-6">
                     <div className="flex items-center justify-between mb-6">
@@ -335,7 +335,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Recent Activity */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
+            <motion.div id="tour-dashboard-activity" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
                 className="bg-slate-800/40 backdrop-blur-sm border border-white/[0.06] rounded-2xl p-6">
                 <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
                     <Clock size={18} className="text-slate-400" /> Atividades Recentes

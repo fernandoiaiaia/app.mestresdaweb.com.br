@@ -74,7 +74,14 @@ class DevDocumentsController {
         if (!doc) { res.status(404).json({ success: false, error: "Documento não encontrado" }); return; }
         const filePath = path.resolve(process.cwd(), "uploads", "project-documents", doc.storedName);
         if (!fs.existsSync(filePath)) { res.status(404).json({ success: false, error: "Arquivo não encontrado" }); return; }
-        res.setHeader("Content-Disposition", `inline; filename="${encodeURIComponent(doc.fileName)}"`);
+        
+        const isView = req.query.view === "1";
+        if (isView) {
+            res.setHeader("Content-Disposition", "inline");
+        } else {
+            res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent(doc.fileName)}"`);
+        }
+        
         res.setHeader("Content-Type", doc.mimeType);
         res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
         res.setHeader("Access-Control-Allow-Origin", "*");

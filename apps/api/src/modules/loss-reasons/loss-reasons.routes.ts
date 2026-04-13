@@ -3,9 +3,6 @@ import { lossReasonsController } from "./loss-reasons.controller.js";
 import { authMiddleware } from "../../middlewares/auth.middleware.js";
 import { validate } from "../../middlewares/validate.middleware.js";
 import {
-    createCategorySchema,
-    updateCategorySchema,
-    categoryParamsSchema,
     createReasonSchema,
     updateReasonSchema,
     reasonParamsSchema,
@@ -14,27 +11,6 @@ import {
 const router: Router = Router();
 
 router.use(authMiddleware);
-
-// ═══ Categories ═══
-router.get("/categories", lossReasonsController.listCategories);
-
-router.post(
-    "/categories",
-    validate({ body: createCategorySchema }),
-    lossReasonsController.createCategory
-);
-
-router.put(
-    "/categories/:id",
-    validate({ params: categoryParamsSchema, body: updateCategorySchema }),
-    lossReasonsController.updateCategory
-);
-
-router.delete(
-    "/categories/:id",
-    validate({ params: categoryParamsSchema }),
-    lossReasonsController.deleteCategory
-);
 
 // ═══ Reasons ═══
 router.get("/", lossReasonsController.listReasons);

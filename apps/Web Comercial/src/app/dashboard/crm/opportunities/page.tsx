@@ -31,6 +31,7 @@ interface Opportunity {
     lastActivity: string | null;
     tags: string[];
     createdAt: string;
+    status: "open" | "won" | "lost";
     client: {
         id: string;
         name: string;
@@ -78,6 +79,7 @@ export default function OpportunitiesPage() {
     const [filterPriority, setFilterPriority] = useState("all");
     const [filterTemperature, setFilterTemperature] = useState("all");
     const [sortBy, setSortBy] = useState<"value" | "probability" | "expectedClose">("value");
+    const [activeTab, setActiveTab] = useState<"abertos" | "fechados" | "perdidos">("abertos");
 
     useEffect(() => {
         loadDeals();
@@ -99,6 +101,7 @@ export default function OpportunitiesPage() {
                 lastActivity: string | null;
                 tags: string[];
                 createdAt: string;
+                status: "open" | "won" | "lost";
                 client: {
                     id: string;
                     name: string;
@@ -126,6 +129,12 @@ export default function OpportunitiesPage() {
 
     const filtered = opportunities
         .filter((o) => {
+            if (activeTab === "abertos") return o.status === "open";
+            if (activeTab === "fechados") return o.status === "won";
+            if (activeTab === "perdidos") return o.status === "lost";
+            return true;
+        })
+        .filter((o) => {
             const q = searchQuery.toLowerCase();
             return o.title.toLowerCase().includes(q) ||
                 (o.client?.company || "").toLowerCase().includes(q) ||
@@ -139,10 +148,10 @@ export default function OpportunitiesPage() {
             return 0;
         });
 
-    const totalValue = opportunities.reduce((s, o) => s + (o.value || 0), 0);
-    const weightedValue = opportunities.reduce((s, o) => s + ((o.value || 0) * (o.probability || 0) / 100), 0);
-    const avgProbability = opportunities.length > 0
-        ? Math.round(opportunities.reduce((s, o) => s + (o.probability || 0), 0) / opportunities.length)
+    const totalValue = filtered.reduce((s, o) => s + (o.value || 0), 0);
+    const weightedValue = filtered.reduce((s, o) => s + ((o.value || 0) * (o.probability || 0) / 100), 0);
+    const avgProbability = filtered.length > 0
+        ? Math.round(filtered.reduce((s, o) => s + (o.probability || 0), 0) / filtered.length)
         : 0;
 
     return (
@@ -168,7 +177,7 @@ export default function OpportunitiesPage() {
             {/* Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                 {[
-                    { label: "Oportunidades", value: opportunities.length, icon: Target, color: "text-blue-400" },
+                    { label: "Oportunidades", value: filtered.length, icon: Target, color: "text-blue-400" },
                     { label: "Valor Total", value: `R$ ${(totalValue / 1000).toFixed(0)}k`, icon: DollarSign, color: "text-blue-400" },
                     { label: "Valor Ponderado", value: `R$ ${(weightedValue / 1000).toFixed(0)}k`, icon: TrendingUp, color: "text-purple-400" },
                     { label: "Probabilidade Média", value: `${avgProbability}%`, icon: BarChart3, color: "text-amber-400" },
@@ -179,6 +188,28 @@ export default function OpportunitiesPage() {
                         <span className="text-[10px] uppercase tracking-widest text-slate-600">{s.label}</span>
                     </motion.div>
                 ))}
+            </div>
+
+            {/* Tabs */}
+            <div className="flex border-b border-white/[0.08] mb-6 overflow-x-auto hide-scrollbar">
+                <button
+                    onClick={() => setActiveTab("abertos")}
+                    className={`px-5 py-3.5 text-sm font-semibold transition-colors border-b-2 whitespace-nowrap ${activeTab === "abertos" ? "border-blue-500 text-blue-400" : "border-transparent text-slate-500 hover:text-slate-300"}`}
+                >
+                    Em Aberto ({opportunities.filter(o => o.status === "open" || !o.status).length})
+                </button>
+                <button
+                    onClick={() => setActiveTab("fechados")}
+                    className={`px-5 py-3.5 text-sm font-semibold transition-colors border-b-2 whitespace-nowrap ${activeTab === "fechados" ? "border-green-500 text-green-400" : "border-transparent text-slate-500 hover:text-slate-300"}`}
+                >
+                    Ganhos ({opportunities.filter(o => o.status === "won").length})
+                </button>
+                <button
+                    onClick={() => setActiveTab("perdidos")}
+                    className={`px-5 py-3.5 text-sm font-semibold transition-colors border-b-2 whitespace-nowrap ${activeTab === "perdidos" ? "border-red-500 text-red-400" : "border-transparent text-slate-500 hover:text-slate-300"}`}
+                >
+                    Perdidos ({opportunities.filter(o => o.status === "lost").length})
+                </button>
             </div>
 
             {/* Search + Filters */}
@@ -251,10 +282,10 @@ export default function OpportunitiesPage() {
                             <div className="text-right shrink-0">
                                 <span className="text-lg font-bold text-blue-400 block">R$ {(opp.value / 1000).toFixed(0)}k</span>
                                 <div className="flex items-center gap-1 justify-end mb-2">
-                                    <div className="w-16 bg-slate-800 rounded-full h-1.5">
+                                    <div className="w-16 bg-slate-800 rounded-full h-1.5 opacity-40">
                                         <div className={`h-1.5 rounded-full ${opp.probability >= 70 ? "bg-blue-500" : opp.probability >= 40 ? "bg-amber-500" : "bg-red-500"}`} style={{ width: `${opp.probability}%` }} />
                                     </div>
-                                    <span className="text-xs font-bold text-white">{opp.probability}%</span>
+                                    <span className="text-xs font-bold text-slate-400 opacity-60">{opp.probability}%</span>
                                 </div>
                                 <span className="text-[10px] text-slate-600">Ponderado: R$ {((opp.value * opp.probability / 100) / 1000).toFixed(0)}k</span>
                             </div>

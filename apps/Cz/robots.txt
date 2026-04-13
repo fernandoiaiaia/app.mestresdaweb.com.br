@@ -1,5 +1,0 @@
-User-agent: *
-Allow: /
-Disallow: /cases/
-
-Sitemap: https://cezani.com.br/sitemap.xml

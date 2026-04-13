@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -116,6 +116,33 @@ export default function DeliveryProjectPage() {
     // Available tasks = all project tasks not yet in a sprint
     const availableTasks = projectTasks.filter(t => !assignedTaskIds.has(t.id));
 
+    const groupedAvailableTasks = useMemo(() => {
+        const userGroups: Record<string, { label: string; platforms: Record<string, { label: string; modules: Record<string, { label: string; tasks: any[] }> }> }> = {};
+
+        availableTasks.forEach(task => {
+            const tags = Array.isArray(task.tags) ? task.tags : [];
+            const uTag = tags.find((t: any) => typeof t === "string" && t.startsWith('user:'));
+            const pTag = tags.find((t: any) => typeof t === "string" && t.startsWith('platform:'));
+            
+            const assigneeName = uTag ? uTag.replace('user:', '') : "Geral (Sem Usuário)";
+            const platformRaw = pTag ? pTag.replace('platform:', '') : "Sistema/Geral";
+            const moduleRaw = task.epic || "Outros Módulos";
+
+            if (!userGroups[assigneeName]) userGroups[assigneeName] = { label: assigneeName, platforms: {} };
+            if (!userGroups[assigneeName].platforms[platformRaw]) userGroups[assigneeName].platforms[platformRaw] = { label: platformRaw, modules: {} };
+            if (!userGroups[assigneeName].platforms[platformRaw].modules[moduleRaw]) userGroups[assigneeName].platforms[platformRaw].modules[moduleRaw] = { label: moduleRaw, tasks: [] };
+            userGroups[assigneeName].platforms[platformRaw].modules[moduleRaw].tasks.push(task);
+        });
+
+        return Object.values(userGroups).sort((a, b) => a.label === "Geral (Sem Usuário)" ? 1 : b.label === "Geral (Sem Usuário)" ? -1 : a.label.localeCompare(b.label)).map(user => ({
+            ...user,
+            platforms: Object.values(user.platforms).sort((a, b) => a.label.localeCompare(b.label)).map(plat => ({
+                ...plat,
+                modules: Object.values(plat.modules).sort((a, b) => a.label === "Outros Módulos" ? -1 : b.label === "Outros Módulos" ? 1 : a.label.localeCompare(b.label))
+            }))
+        }));
+    }, [availableTasks]);
+
     if (loading) return (
         <div className="p-6 md:p-8 flex items-center justify-center min-h-[400px]">
             <div className="w-8 h-8 border-2 border-blue-500/30 border-t-green-500 rounded-full animate-spin" />
@@ -225,87 +252,115 @@ export default function DeliveryProjectPage() {
                                 </div>
                             </div>
 
-                            {/* Task/Screen Selector — grouped by Platform */}
+                            {/* Task/Screen Selector — grouped by Hierarchy */}
                             <div>
-                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2 flex items-center gap-1.5">
-                                    <Monitor size={11} /> Selecionar Telas ({selectedTaskIds.length} selecionadas)
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2 flex items-center justify-between">
+                                    <span className="flex items-center gap-1.5"><Monitor size={11} /> Selecionar Telas ({selectedTaskIds.length} selecionadas)</span>
+                                    {selectedTaskIds.length > 0 && <button onClick={() => setSelectedTaskIds([])} className="text-blue-400 hover:text-blue-300">Desmarcar todas</button>}
                                 </label>
                                 {loadingTasks ? (
                                     <div className="flex items-center justify-center py-6">
                                         <div className="w-5 h-5 border-2 border-blue-500/30 border-t-green-500 rounded-full animate-spin" />
                                     </div>
-                                ) : availableTasks.length > 0 ? (() => {
-                                    // Group tasks by platform (extracted from epic: "Platform — Module")
-                                    const grouped: Record<string, typeof availableTasks> = {};
-                                    availableTasks.forEach(task => {
-                                        const platform = task.epic
-                                            ? task.epic.split("—")[0]?.trim() || task.epic.split("-")[0]?.trim() || "Sem Plataforma"
-                                            : "Sem Plataforma";
-                                        if (!grouped[platform]) grouped[platform] = [];
-                                        grouped[platform].push(task);
-                                    });
-                                    const platforms = Object.keys(grouped).sort();
-
-                                    return (
-                                        <div className="max-h-[320px] overflow-y-auto rounded-lg border border-white/[0.06] bg-slate-900/30">
-                                            {platforms.map(platform => {
-                                                const tasks = grouped[platform];
-                                                const allSelected = tasks.every(t => selectedTaskIds.includes(t.id));
-                                                const someSelected = tasks.some(t => selectedTaskIds.includes(t.id));
-                                                const togglePlatform = () => {
-                                                    if (allSelected) {
-                                                        setSelectedTaskIds(prev => prev.filter(id => !tasks.some(t => t.id === id)));
-                                                    } else {
-                                                        setSelectedTaskIds(prev => [...new Set([...prev, ...tasks.map(t => t.id)])]);
-                                                    }
-                                                };
-                                                return (
-                                                    <div key={platform}>
-                                                        {/* Platform Header */}
-                                                        <button type="button" onClick={togglePlatform}
-                                                            className="w-full flex items-center gap-2.5 px-3 py-2 bg-slate-800/60 hover:bg-slate-800/80 border-b border-white/[0.04] transition-colors sticky top-0 z-10">
-                                                            <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${
-                                                                allSelected ? "bg-blue-600 border-blue-600" : someSelected ? "bg-blue-600/40 border-blue-600/60" : "bg-transparent border-slate-500"
-                                                            }`}>
-                                                                {(allSelected || someSelected) && <Check size={12} className="text-white" />}
-                                                            </div>
-                                                            <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">{platform}</span>
-                                                            <span className="ml-auto text-[10px] text-slate-500 font-bold">{tasks.filter(t => selectedTaskIds.includes(t.id)).length}/{tasks.length}</span>
-                                                        </button>
-                                                        {/* Tasks */}
-                                                        {tasks.map(task => {
-                                                            const isSelected = selectedTaskIds.includes(task.id);
-                                                            const priorityColor = PRIORITY_COLORS[(task.priority as TaskPriority)] || PRIORITY_COLORS.medium;
-                                                            const moduleName = task.epic?.includes("—") ? task.epic.split("—").slice(1).join("—").trim() : "";
+                                ) : availableTasks.length > 0 ? (
+                                    <div className="max-h-[380px] overflow-y-auto rounded-lg border border-white/[0.06] bg-slate-900/30 custom-scrollbar pr-1 space-y-2">
+                                        {groupedAvailableTasks.map(userGroup => {
+                                            const allUserTasks = userGroup.platforms.flatMap(p => p.modules.flatMap(m => m.tasks));
+                                            const allUserSelected = allUserTasks.length > 0 && allUserTasks.every(t => selectedTaskIds.includes(t.id));
+                                            const someUserSelected = allUserTasks.some(t => selectedTaskIds.includes(t.id));
+                                            const toggleUser = (e: React.MouseEvent) => {
+                                                e.preventDefault();
+                                                const ids = allUserTasks.map(t => t.id);
+                                                if (allUserSelected) setSelectedTaskIds(prev => prev.filter(id => !ids.includes(id)));
+                                                else setSelectedTaskIds(prev => [...new Set([...prev, ...ids])]);
+                                            };
+                                            return (
+                                                <details key={userGroup.label} className="group/user rounded-xl bg-slate-800/20 border border-white/[0.06] overflow-hidden">
+                                                    <summary className="flex items-center gap-3 px-4 py-3 cursor-pointer select-none hover:bg-slate-800/40 transition-colors">
+                                                        <div onClick={toggleUser} className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all cursor-pointer ${allUserSelected ? "bg-blue-600 border-blue-600" : someUserSelected ? "bg-blue-600/40 border-blue-600/60" : "bg-transparent border-slate-500"}`}>
+                                                            {(allUserSelected || someUserSelected) && <Check size={12} className="text-white" />}
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-cyan-600 to-blue-400 flex items-center justify-center text-white text-[9px] font-bold shrink-0">{userGroup.label.charAt(0)}</div>
+                                                            <span className="text-xs font-bold text-white uppercase tracking-wider">{userGroup.label}</span>
+                                                        </div>
+                                                        <span className="text-[10px] text-slate-500 font-bold ml-1">{allUserTasks.filter(t => selectedTaskIds.includes(t.id)).length}/{allUserTasks.length}</span>
+                                                    </summary>
+                                                    <div className="border-t border-white/[0.04]">
+                                                        {userGroup.platforms.map(plat => {
+                                                            const allPlatTasks = plat.modules.flatMap(m => m.tasks);
+                                                            const allPlatSelected = allPlatTasks.length > 0 && allPlatTasks.every(t => selectedTaskIds.includes(t.id));
+                                                            const somePlatSelected = allPlatTasks.some(t => selectedTaskIds.includes(t.id));
+                                                            const togglePlat = (e: React.MouseEvent) => {
+                                                                e.preventDefault();
+                                                                const ids = allPlatTasks.map(t => t.id);
+                                                                if (allPlatSelected) setSelectedTaskIds(prev => prev.filter(id => !ids.includes(id)));
+                                                                else setSelectedTaskIds(prev => [...new Set([...prev, ...ids])]);
+                                                            };
                                                             return (
-                                                                <button key={task.id} type="button" onClick={() => toggleTask(task.id)}
-                                                                    className={`w-full flex items-center gap-3 px-3 pl-6 py-2 text-left transition-all border-b border-white/[0.02] ${
-                                                                        isSelected ? "bg-blue-500/5 hover:bg-blue-500/10" : "hover:bg-slate-800/40"
-                                                                    }`}>
-                                                                    <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-all ${
-                                                                        isSelected ? "bg-blue-600 border-blue-600" : "bg-transparent border-slate-600"
-                                                                    }`}>
-                                                                        {isSelected && <Check size={10} className="text-white" />}
-                                                                    </div>
-                                                                    <div className="flex-1 min-w-0">
-                                                                        <p className={`text-sm font-medium truncate ${isSelected ? "text-blue-400" : "text-white"}`}>{task.title}</p>
-                                                                        <div className="flex items-center gap-2 mt-0.5">
-                                                                            {moduleName && <span className="text-[10px] text-slate-500 truncate max-w-[150px]">{moduleName}</span>}
-                                                                            <span className={`px-1.5 py-0.5 text-[9px] font-bold rounded ${priorityColor}`}>
-                                                                                {task.priority === "critical" ? "Crítica" : task.priority === "high" ? "Alta" : task.priority === "medium" ? "Média" : "Baixa"}
-                                                                            </span>
-                                                                            <span className="text-[9px] text-slate-600">{STATUS_LABELS[task.status] || task.status}</span>
+                                                                <details key={plat.label} className="group/plat border-t first:border-t-0 border-white/[0.04]">
+                                                                    <summary className="flex items-center gap-3 px-4 py-2.5 bg-slate-900/40 cursor-pointer select-none hover:bg-slate-800/30 transition-colors pl-8">
+                                                                        <div onClick={togglePlat} className={`w-4 h-4 rounded-md border-2 flex items-center justify-center shrink-0 transition-all cursor-pointer ${allPlatSelected ? "bg-blue-600 border-blue-600" : somePlatSelected ? "bg-blue-600/40 border-blue-600/60" : "bg-transparent border-slate-500"}`}>
+                                                                            {(allPlatSelected || somePlatSelected) && <Check size={10} className="text-white" />}
                                                                         </div>
+                                                                        <span className="text-[11px] font-bold text-slate-300 uppercase tracking-widest">{plat.label}</span>
+                                                                    </summary>
+                                                                    <div className="border-t border-slate-700/20 bg-slate-900/60">
+                                                                        {plat.modules.map(mod => {
+                                                                            const modTasks = mod.tasks;
+                                                                            const allModSelected = modTasks.length > 0 && modTasks.every(t => selectedTaskIds.includes(t.id));
+                                                                            const someModSelected = modTasks.some(t => selectedTaskIds.includes(t.id));
+                                                                            const toggleMod = (e: React.MouseEvent) => {
+                                                                                e.preventDefault();
+                                                                                const ids = modTasks.map(t => t.id);
+                                                                                if (allModSelected) setSelectedTaskIds(prev => prev.filter(id => !ids.includes(id)));
+                                                                                else setSelectedTaskIds(prev => [...new Set([...prev, ...ids])]);
+                                                                            };
+                                                                            return (
+                                                                                <details key={mod.label} className="group/mod border-t border-slate-700/20 first:border-0 pl-12 pr-4 py-2">
+                                                                                    <summary className="flex items-center gap-3 py-1 cursor-pointer select-none hover:opacity-80 transition-opacity">
+                                                                                        <div onClick={toggleMod} className={`w-3.5 h-3.5 rounded-sm border-2 flex items-center justify-center shrink-0 transition-all cursor-pointer ${allModSelected ? "bg-blue-600 border-blue-600" : someModSelected ? "bg-blue-600/40 border-blue-600/60" : "bg-transparent border-slate-500"}`}>
+                                                                                            {(allModSelected || someModSelected) && <Check size={8} className="text-white" />}
+                                                                                        </div>
+                                                                                        <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">{mod.label}</span>
+                                                                                    </summary>
+                                                                                    <div className="mt-2 space-y-1">
+                                                                                        {modTasks.map(task => {
+                                                                                            const isSelected = selectedTaskIds.includes(task.id);
+                                                                                            return (
+                                                                                                <div key={task.id} onClick={() => toggleTask(task.id)}
+                                                                                                    className={`flex items-start justify-between gap-3 p-2.5 rounded-lg border transition-all cursor-pointer ${isSelected ? "bg-blue-500/5 border-blue-500/20" : "bg-slate-800/30 border-slate-700/30 hover:border-blue-500/30 hover:bg-slate-800/50"}`}>
+                                                                                                    <div className="flex items-start gap-2.5 mt-0.5">
+                                                                                                        <div className={`w-3.5 h-3.5 mt-0.5 rounded border flex items-center justify-center shrink-0 transition-all ${isSelected ? "bg-blue-600 border-blue-600" : "bg-transparent border-slate-600"}`}>
+                                                                                                            {isSelected && <Check size={8} className="text-white" />}
+                                                                                                        </div>
+                                                                                                        <div className="flex-1 min-w-0">
+                                                                                                            <p className={`text-[11px] font-bold leading-tight ${isSelected ? "text-blue-400" : "text-white"}`}>{task.title}</p>
+                                                                                                            <div className="flex items-center gap-2 mt-1">
+                                                                                                                <span className={`px-1.5 py-0.5 text-[8px] font-bold uppercase rounded ${PRIORITY_COLORS[(task.priority as TaskPriority)] || PRIORITY_COLORS.medium}`}>
+                                                                                                                    {task.priority === "critical" ? "Crítico" : task.priority === "high" ? "Alta" : task.priority === "medium" ? "Média" : "Baixa"}
+                                                                                                                </span>
+                                                                                                                <span className="text-[8px] font-medium text-slate-500 uppercase">{STATUS_LABELS[task.status] || task.status}</span>
+                                                                                                            </div>
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            );
+                                                                                        })}
+                                                                                    </div>
+                                                                                </details>
+                                                                            );
+                                                                        })}
                                                                     </div>
-                                                                </button>
+                                                                </details>
                                                             );
                                                         })}
                                                     </div>
-                                                );
-                                            })}
-                                        </div>
-                                    );
-                                })() : (
+                                                </details>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
                                     <div className="text-center py-6 text-slate-500 bg-slate-900/30 rounded-lg border border-white/[0.06]">
                                         <Monitor size={20} className="mx-auto mb-1.5 opacity-40" />
                                         <p className="text-xs">Todas as telas já estão em sprints</p>

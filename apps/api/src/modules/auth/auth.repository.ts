@@ -15,11 +15,16 @@ export const authRepository = {
         return prisma.user.findUnique({ where: { googleId } });
     },
 
+    async findUserByAppleId(appleId: string): Promise<User | null> {
+        return prisma.user.findUnique({ where: { appleId } });
+    },
+
     async createUser(data: {
         name: string;
         email: string;
         password: string;
         googleId?: string;
+        appleId?: string;
     }): Promise<User> {
         return prisma.user.create({ data });
     },
@@ -35,6 +40,13 @@ export const authRepository = {
         return prisma.user.update({
             where: { id: userId },
             data: { googleId },
+        });
+    },
+
+    async linkAppleAccount(userId: string, appleId: string): Promise<User> {
+        return prisma.user.update({
+            where: { id: userId },
+            data: { appleId },
         });
     },
 

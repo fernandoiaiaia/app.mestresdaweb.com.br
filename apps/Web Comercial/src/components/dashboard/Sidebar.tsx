@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import Image from "next/image";
 
 import {
     Home,
@@ -13,15 +14,14 @@ import {
     CheckSquare,
     BarChart3,
     Bell,
+    Package,
     LogOut,
-    User,
     ChevronLeft,
     ChevronRight,
     ChevronDown,
     Clock,
-    Menu,
     Workflow,
-    FileText,
+    MessageCircle,
 } from "lucide-react";
 import NotificationBell from "@/components/dashboard/NotificationBell";
 import { useAuthStore } from "@/stores/auth";
@@ -38,15 +38,14 @@ export default function Sidebar() {
         // If OWNER/ADMIN, allow by default
         if (user?.role === "OWNER" || user?.role === "ADMIN") return true;
         // If they have any permission with this module prefix, they can see the menu
-        return permissions.some((p: any) => p.module.startsWith(moduleName));
+        return permissions.some((p: { module: string }) => p.module.startsWith(moduleName));
     };
 
     // Section-level checks
     const hasCrmAccess = hasModuleAccess("crm.");
-    const hasSdrAccess = hasModuleAccess("sdr.");
     const hasManagerAccess = hasModuleAccess("manager.");
     const hasSettingsAccess = hasModuleAccess("settings");
-    const hasNotificationsAccess = hasModuleAccess("notifications");
+
 
     const navItemBase = "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-sm font-medium";
     const navItemActive = "bg-blue-600/10 text-blue-500 hover:bg-blue-600/20";
@@ -60,10 +59,10 @@ export default function Sidebar() {
             {/* Brand Name */}
             <div className={`flex shrink-0 items-center justify-center border-b border-slate-800 ${collapsed ? 'py-4' : 'py-5'}`}>
                 {!collapsed && (
-                    <span className="text-4xl font-bold tracking-tight text-white font-varela-round lowercase">cezani</span>
+                    <Image src="/branding/logo-mdw.png" alt="Mestres da Web" width={180} height={40} className="w-full max-w-[180px] h-auto object-contain" />
                 )}
                 {collapsed && (
-                    <span className="text-base font-bold tracking-tight text-white font-varela-round lowercase">cz</span>
+                    <Image src="/branding/logo-mdw.png" alt="MDW" width={50} height={40} className="w-[90%] max-w-[50px] h-auto object-contain" />
                 )}
                 <button
                     onClick={() => setCollapsed(!collapsed)}
@@ -128,32 +127,28 @@ export default function Sidebar() {
                                     </Link>
                                 )}
 
-                                {hasModuleAccess("crm.proposals") && (
-                                    <Link href="/dashboard/crm/proposals" className={`${navItemBase} ${pathname.includes('/crm/proposals') ? navItemActive : navItemInactive}`}>
-                                        <FileText size={20} className={pathname.includes('/crm/proposals') ? 'text-blue-500' : 'text-slate-400'} />
-                                        {!collapsed && <span>Propostas</span>}
-                                    </Link>
-                                )}
-
                                 {hasModuleAccess("crm.tasks") && (
                                     <Link href="/dashboard/crm/tasks" className={`${navItemBase} ${pathname.includes('/crm/tasks') ? navItemActive : navItemInactive}`}>
                                         <CheckSquare size={20} className={pathname.includes('/crm/tasks') ? 'text-blue-500' : 'text-slate-400'} />
                                         {!collapsed && <span>Tarefas</span>}
                                     </Link>
                                 )}
+
+                                {hasModuleAccess("crm.proposals") && (
+                                    <Link href="/dashboard/crm/assembler" className={`${navItemBase} ${pathname.includes('/crm/assembler') ? navItemActive : navItemInactive}`}>
+                                        <Package size={20} className={pathname.includes('/crm/assembler') ? 'text-blue-500' : 'text-slate-400'} />
+                                        {!collapsed && <span>Montador de Proposta</span>}
+                                    </Link>
+                                )}
+
+                                {hasModuleAccess("crm") && (
+                                    <Link href="/dashboard/whatsapp/kanban" className={`${navItemBase} ${pathname.includes('/whatsapp') ? 'bg-emerald-600/10 text-emerald-400 hover:bg-emerald-600/20' : navItemInactive}`}>
+                                        <MessageCircle size={20} className={pathname.includes('/whatsapp') ? 'text-emerald-400' : 'text-slate-400'} />
+                                        {!collapsed && <span>WhatsApp Web</span>}
+                                    </Link>
+                                )}
                             </div>
                         )}
-                    </div>
-                )}
-
-                {/* SDR Automático */}
-                {hasSdrAccess && (
-                    <div className="space-y-1">
-                        {!collapsed && <div className="px-3 mb-2 text-[10px] font-bold tracking-widest text-slate-500 uppercase">SDR Automático</div>}
-                        <Link href="/dashboard/sdr" className={`${navItemBase} ${pathname.includes('/sdr') ? navItemActive : navItemInactive}`}>
-                            <Workflow size={20} className={pathname.includes('/sdr') ? 'text-blue-500' : 'text-slate-400'} />
-                            {!collapsed && <span>Cadências</span>}
-                        </Link>
                     </div>
                 )}
 
@@ -207,6 +202,7 @@ export default function Sidebar() {
                     <Link href="/dashboard/profile" className="flex items-center gap-3 flex-1 min-w-0 hover:opacity-80 transition-opacity">
                         <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-blue-400 flex items-center justify-center text-white shrink-0 font-bold text-sm overflow-hidden">
                             {user?.avatar ? (
+                                /* eslint-disable-next-line @next/next/no-img-element */
                                 <img src={`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:7777"}${user.avatar}`} alt="" className="w-full h-full object-cover" />
                             ) : (
                                 user?.name?.charAt(0) || "U"
@@ -220,7 +216,7 @@ export default function Sidebar() {
                         )}
                     </Link>
                     {!collapsed && (
-                        <button onClick={() => { logout(); window.location.href = "/"; }} className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors" title="Sair">
+                        <button onClick={() => { logout(); window.location.href = "/login"; }} className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors" title="Sair">
                             <LogOut size={16} />
                         </button>
                     )}

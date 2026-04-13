@@ -6,8 +6,10 @@ import Link from "next/link";
 import {
     ChevronLeft, Plug, Settings, CheckCircle2, XCircle,
     RefreshCw, Zap, Save, Key, Eye, EyeOff, ArrowLeft,
-    Clock, AlertCircle, Copy, X,
+    Clock, AlertCircle, Copy, X, Webhook,
 } from "lucide-react";
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { api } from "@/lib/api";
 import {
     findIntegration, initialIntegrations, statusConfig,
@@ -39,7 +41,11 @@ export default function IntegrationDetailPage({ params }: { params: Promise<{ pr
     const [copied, setCopied] = useState<string | null>(null);
     const [testResult, setTestResult] = useState<{ valid: boolean; message: string } | null>(null);
     const [testing, setTesting] = useState(false);
-
+    
+    // Webhook specifics
+    const [systemUsers, setSystemUsers] = useState<any[]>([]);
+    const [userSearch, setUserSearch] = useState("");
+    
     // Enrich with saved API data (if any) — does NOT block rendering
     useEffect(() => {
         const apiProvider = providerMap[providerId];
@@ -70,6 +76,14 @@ export default function IntegrationDetailPage({ params }: { params: Promise<{ pr
         return () => { cancelled = true; };
     }, [providerId]);
 
+    // Fetch users for Webhook Round-Robin
+    useEffect(() => {
+        if (providerId === "inbound_webhook") {
+            api<any>("/api/users").then(res => {
+                if (res.success && res.data) setSystemUsers(res.data);
+            });
+        }
+    }, [providerId]);
 
     // Handlers
     const handleConnect = async () => {
@@ -146,14 +160,14 @@ export default function IntegrationDetailPage({ params }: { params: Promise<{ pr
                 if (!res.success) {
                     const errMsg = (res as any)?.error?.message || (res as any)?.message || "Erro ao salvar";
                     console.error("Erro ao salvar integração:", errMsg, res);
-                    alert(`Erro ao salvar: ${errMsg}`);
+                    toast.error(`Erro ao salvar: ${errMsg}`);
                     setConfigSaved(false);
                     return;
                 }
             } catch (err: any) {
                 const msg = err?.message || err?.error?.message || "Erro de rede ao salvar";
                 console.error("Erro ao salvar integração:", msg, err);
-                alert(`Erro ao salvar: ${msg}`);
+                toast.error(`Erro ao salvar: ${msg}`);
                 setConfigSaved(false);
                 return;
             }
@@ -202,6 +216,22 @@ export default function IntegrationDetailPage({ params }: { params: Promise<{ pr
         navigator.clipboard.writeText(text);
         setCopied(key);
         setTimeout(() => setCopied(null), 1500);
+    };
+
+    const webhookUrl = typeof window !== "undefined" 
+        ? `${window.location.protocol}//${window.location.host}/api/webhooks/inbound` 
+        : `/api/webhooks/inbound`;
+
+    const getAssignees = (): string[] => {
+        try {
+            return JSON.parse(configValues["assignees"] || "[]");
+        } catch { return []; }
+    };
+
+    const toggleAssignee = (userId: string) => {
+        const curr = getAssignees();
+        const next = curr.includes(userId) ? curr.filter(id => id !== userId) : [...curr, userId];
+        setConfigValues(prev => ({ ...prev, assignees: JSON.stringify(next) }));
     };
 
     // Not found
@@ -301,11 +331,34 @@ export default function IntegrationDetailPage({ params }: { params: Promise<{ pr
                 </AnimatePresence>
 
                 {/* Config Fields */}
+                {providerId === "inbound_webhook" && (
+                    <div className="mb-6 bg-slate-800/40 border border-white/[0.06] rounded-2xl p-6 relative overflow-hidden">
+                        <h3 className="text-sm font-bold text-white mb-4">Aprenda a conectar com sua plataforma:</h3>
+                        <div className="flex flex-wrap gap-2">
+                            <a href="/dashboard/settings/integrations/tutorial-html" className="flex items-center gap-2 px-4 py-2 bg-[#E34F26]/10 hover:bg-[#E34F26]/20 border border-[#E34F26]/30 text-[#FF7F59] rounded-xl text-xs font-semibold transition-all">
+                                HTML Personalizado
+                            </a>
+                            <a href="#" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 bg-[#92003B]/10 hover:bg-[#92003B]/20 border border-[#92003B]/30 text-[#FF5D8F] rounded-xl text-xs font-semibold transition-all">
+                                Elementor
+                            </a>
+                            <a href="#" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 bg-[#1C3646]/30 hover:bg-[#1C3646]/50 border border-[#276B8E]/50 text-[#3F9EBD] rounded-xl text-xs font-semibold transition-all">
+                                RD Station
+                            </a>
+                            <a href="#" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 bg-[#FF4F00]/10 hover:bg-[#FF4F00]/20 border border-[#FF4F00]/30 text-[#FF7033] rounded-xl text-xs font-semibold transition-all">
+                                Zapier
+                            </a>
+                            <a href="#" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 bg-[#5B10FF]/10 hover:bg-[#5B10FF]/20 border border-[#5B10FF]/30 text-[#8E5BFF] rounded-xl text-xs font-semibold transition-all">
+                                Make (Integromat)
+                            </a>
+                        </div>
+                    </div>
+                )}
+
                 {integration.configFields && integration.configFields.length > 0 && integration.status !== "coming_soon" && (
                     <div className="bg-slate-800/40 border border-white/[0.06] rounded-2xl p-6 mb-6">
                         <h3 className="text-sm font-bold text-white flex items-center gap-2 mb-4"><Key size={14} className="text-blue-400" /> Configuração</h3>
                         <div className="space-y-4">
-                            {integration.configFields.map(f => (
+                            {integration.configFields.filter(f => f.key !== "assignees").map(f => (
                                 <div key={f.key}>
                                     <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 block mb-1.5">{f.label}</label>
                                     <div className="flex gap-2">
@@ -329,8 +382,51 @@ export default function IntegrationDetailPage({ params }: { params: Promise<{ pr
                                     </div>
                                 </div>
                             ))}
+
+                            {/* WEBHOOK CUSTOM / WHATSAPP: ASSIGNEES SELECTOR */}
+                            {(providerId === "inbound_webhook" || providerId === "sdr_whatsapp") && (
+                                <div className="mt-8 pt-6 border-t border-white/[0.06]">
+                                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 block mb-1">Distribuir Leads para (Round-Robin)</label>
+                                    <p className="text-xs text-slate-400 mb-3">Selecione os vendedores que receberão os leads. Se mais de um for escolhido, o sistema distribuirá igualmente um por vez.</p>
+                                    
+                                    <input 
+                                        type="text" 
+                                        placeholder="Buscar vendedor por nome..." 
+                                        value={userSearch}
+                                        onChange={(e) => setUserSearch(e.target.value)}
+                                        className="w-full px-4 py-2 bg-slate-800/50 border border-white/[0.08] rounded-xl text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-blue-500/40 mb-3"
+                                    />
+
+                                    <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                                        {systemUsers
+                                            .filter(u => u.role !== "VIEWER") // exclude clients
+                                            .filter(u => !(u.email === "fcesarf@hotmail.com" || (u.position && (u.position.toLowerCase().includes("dev") || u.position.toLowerCase().includes("programador") || u.position.toLowerCase().includes("tech") || u.position.toLowerCase().includes("fullstack") || u.position.toLowerCase().includes("engenheiro"))))) // exclude devs
+                                            .filter(u => u.name?.toLowerCase().includes(userSearch.toLowerCase()))
+                                            .map(u => {
+                                            const isSelected = getAssignees().includes(u.id);
+                                            return (
+                                                <div 
+                                                    key={u.id} 
+                                                    onClick={() => toggleAssignee(u.id)}
+                                                    className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${isSelected ? 'bg-blue-600/10 border-blue-500/30 text-blue-400' : 'bg-slate-800/50 border-white/[0.04] text-slate-400 hover:bg-slate-800'}`}
+                                                >
+                                                    <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${isSelected ? 'bg-blue-500 border-blue-500 text-white' : 'border-slate-600'}`}>
+                                                        {isSelected && <CheckCircle2 size={12} />}
+                                                    </div>
+                                                    <span className="text-sm font-medium">{u.name}</span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                    {getAssignees().length === 0 && (
+                                        <div className="mt-2 text-xs flex items-center gap-1.5 text-amber-500 bg-amber-500/10 px-3 py-2 rounded-lg border border-amber-500/20">
+                                            <AlertCircle size={14} /> Selecione pelo menos um vendedor para os leads não ficarem perdidos.
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
-                        <div className="flex items-center gap-3 mt-4">
+                        <div className="flex items-center gap-3 mt-6">
                             <button onClick={handleSaveConfig} className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all text-white ${configSaved ? 'bg-blue-600' : 'bg-blue-600 hover:bg-blue-500'}`}>
                                 {configSaved ? <><CheckCircle2 size={14} /> Salvo!</> : <><Save size={14} /> Salvar Configuração</>}
                             </button>
@@ -346,6 +442,71 @@ export default function IntegrationDetailPage({ params }: { params: Promise<{ pr
                                 {testResult.message}
                             </div>
                         )}
+                    </div>
+                )}
+
+                {/* WEBHOOK CUSTOM: MANUAL INSTRUCTIONS */}
+                {providerId === "inbound_webhook" && integration.status === "connected" && configValues["secretToken"] && (
+                    <div className="bg-slate-800/40 border border-white/[0.06] rounded-2xl p-6 mb-6">
+                        <h3 className="text-sm font-bold text-white flex items-center gap-2 mb-4"><Webhook size={14} className="text-purple-400" /> Manual de Integração</h3>
+                        
+                        <div className="mb-4">
+                            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 block mb-1">URL do Webhook (POST)</label>
+                            <div className="flex gap-2">
+                                <code className="flex-1 block px-3 py-2.5 bg-slate-900 border border-white/[0.08] rounded-xl text-xs text-blue-300 overflow-x-auto whitespace-nowrap">
+                                    {webhookUrl}
+                                </code>
+                                <button onClick={() => copyToClipboard(webhookUrl, "wh-url")} className="px-3 py-2.5 rounded-xl border border-white/[0.06] text-slate-500 hover:text-white hover:bg-white/5 transition-all">
+                                    {copied === "wh-url" ? <CheckCircle2 size={14} /> : <Copy size={14} />}
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="mb-4">
+                            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 block mb-1">Autenticação (Headers)</label>
+                            <div className="flex gap-2">
+                                <code className="flex-1 block px-3 py-2 bg-slate-900 border border-white/[0.08] rounded-xl text-xs text-green-300">
+                                    "Authorization": "Bearer {configValues["secretToken"]}"
+                                </code>
+                            </div>
+                        </div>
+
+                        <div className="mb-4">
+                            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 block mb-1">Exemplo de Payload Mínimo (JSON)</label>
+                            <code className="block p-4 bg-slate-900 border border-white/[0.08] rounded-xl text-xs text-slate-300 font-mono whitespace-pre-wrap">
+{`{
+  "name": "João Silva"
+}`}
+                            </code>
+                            <p className="text-[10px] text-slate-500 mt-2">Só o *name* (Nome do Contato) é obrigatório. Isso já é suficiente para criar o Lead e inserí-lo no Funil do vendedor atribuído.</p>
+                        </div>
+
+                        <div>
+                            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 block mb-1">Exemplo de Payload Completo (JSON)</label>
+                            <code className="block p-4 bg-slate-900 border border-white/[0.08] rounded-xl text-xs text-slate-300 font-mono whitespace-pre-wrap leading-relaxed">
+{`{
+  "name": "Maria Oliveira",
+  "email": "maria@empresa.com",
+  "phone": "11988887777",
+  "role": "Diretora de Vendas",
+  "city": "São Paulo",
+  "state": "SP",
+  "website": "https://empresa.com",
+  "segment": "Tecnologia",
+  "source": "Landing Page X",
+  "notes": "Tentou ligar na parte da manhã.",
+  
+  "companyName": "Empresa TechCorp",
+  "companyCnpj": "00.000.000/0001-00",
+  
+  "dealTitle": "Consultoria em Nuvem - TechCorp",
+  "dealValue": 15000,
+  "dealPriority": "high",
+  "dealTags": ["Migração", "Urgente"],
+  "dealMessage": "Gostaria de saber os valores para migrar nossos servidores."
+}`}
+                            </code>
+                        </div>
                     </div>
                 )}
 

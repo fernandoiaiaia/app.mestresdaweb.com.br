@@ -23,8 +23,13 @@ RUN pnpm turbo run build --filter=web-dev...
 
 FROM base AS runner
 WORKDIR /app
-COPY --from=installer /app .
 ENV NODE_ENV=production
 ENV PORT=1200
+
+# Copy standalone output + static assets + public
+COPY --from=installer /app/apps/Web\ Dev/.next/standalone ./
+COPY --from=installer /app/apps/Web\ Dev/.next/static ./apps/Web\ Dev/.next/static
+COPY --from=installer /app/apps/Web\ Dev/public ./apps/Web\ Dev/public
+
 EXPOSE 1200
-CMD ["pnpm", "--filter", "web-dev", "start"]
+CMD ["node", "apps/Web Dev/server.js"]

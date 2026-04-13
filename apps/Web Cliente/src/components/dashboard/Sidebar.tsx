@@ -35,7 +35,7 @@ export default function Sidebar() {
             {/* Logo Area */}
             <div className={`flex shrink-0 items-center justify-center border-b border-slate-800 ${collapsed ? 'py-3' : 'py-4'}`}>
                 {!collapsed && (
-                    <span className="text-4xl font-bold tracking-tight text-white font-varela-round lowercase">cezani</span>
+                    <img src="/branding/logo-mdw.png" alt="Mestres da Web" className="w-full max-w-[180px] h-auto object-contain" />
                 )}
                 {collapsed && (
                     <span className="text-xl font-bold tracking-tight text-white font-varela-round lowercase">cz</span>
@@ -54,7 +54,7 @@ export default function Sidebar() {
                 {/* Principal */}
                 <div className="space-y-1">
                     {!collapsed && <div className="px-3 mb-2 text-[10px] font-bold tracking-widest text-slate-500 uppercase">Principal</div>}
-                    <Link href="/dashboard" className={`${navItemBase} ${pathname === '/dashboard' ? navItemActive : navItemInactive}`}>
+                    <Link id="tour-sidebar-dashboard" href="/dashboard" className={`${navItemBase} ${pathname === '/dashboard' ? navItemActive : navItemInactive}`}>
                         <Home size={20} className={pathname === '/dashboard' ? 'text-blue-500' : 'text-slate-400'} />
                         {!collapsed && <span>Dashboard</span>}
                     </Link>
@@ -63,20 +63,20 @@ export default function Sidebar() {
                 {/* Projetos */}
                 <div className="space-y-1">
                     {!collapsed && <div className="px-3 mb-2 text-[10px] font-bold tracking-widest text-slate-500 uppercase">Projetos</div>}
-                    <Link href="/dashboard/projects" className={`${navItemBase} ${pathname === '/dashboard/projects' ? navItemActive : navItemInactive}`}>
+                    <Link id="tour-sidebar-projects" href="/dashboard/projects" className={`${navItemBase} ${pathname === '/dashboard/projects' ? navItemActive : navItemInactive}`}>
                         <FolderKanban size={20} className={pathname === '/dashboard/projects' ? 'text-blue-500' : 'text-slate-400'} />
                         {!collapsed && <span>Todos os Projetos</span>}
                     </Link>
 
-                    <Link href="/dashboard/projects/documents" className={`${navItemBase} ${pathname.includes('/projects/documents') ? navItemActive : navItemInactive}`}>
+                    <Link id="tour-sidebar-documents" href="/dashboard/projects/documents" className={`${navItemBase} ${pathname.includes('/projects/documents') ? navItemActive : navItemInactive}`}>
                         <FileText size={20} className={pathname.includes('/projects/documents') ? 'text-blue-500' : 'text-slate-400'} />
                         {!collapsed && <span>Documentos</span>}
                     </Link>
-                    <Link href="/dashboard/projects/deliveries" className={`${navItemBase} ${pathname.includes('/projects/deliveries') ? navItemActive : navItemInactive}`}>
+                    <Link id="tour-sidebar-deliveries" href="/dashboard/projects/deliveries" className={`${navItemBase} ${pathname.includes('/projects/deliveries') ? navItemActive : navItemInactive}`}>
                         <Package size={20} className={pathname.includes('/projects/deliveries') ? 'text-blue-500' : 'text-slate-400'} />
                         {!collapsed && <span>Entregas</span>}
                     </Link>
-                    <Link href="/dashboard/proposals" className={`${navItemBase} ${pathname.includes('/proposals') ? navItemActive : navItemInactive}`}>
+                    <Link id="tour-sidebar-proposals" href="/dashboard/proposals" className={`${navItemBase} ${pathname.includes('/proposals') ? navItemActive : navItemInactive}`}>
                         <ScrollText size={20} className={pathname.includes('/proposals') ? 'text-blue-500' : 'text-slate-400'} />
                         {!collapsed && <span>Proposta</span>}
                     </Link>
@@ -85,11 +85,11 @@ export default function Sidebar() {
                 {/* Sistemas */}
                 <div className="space-y-1">
                     {!collapsed && <div className="px-3 mb-2 text-[10px] font-bold tracking-widest text-slate-500 uppercase">Sistemas</div>}
-                    <Link href="/dashboard/notifications" className={`${navItemBase} ${pathname.includes('/notifications') ? navItemActive : navItemInactive}`}>
+                    <Link id="tour-sidebar-notifications" href="/dashboard/notifications" className={`${navItemBase} ${pathname.includes('/notifications') ? navItemActive : navItemInactive}`}>
                         <Bell size={20} className={pathname.includes('/notifications') ? 'text-blue-500' : 'text-slate-400'} />
                         {!collapsed && <span>Notificações</span>}
                     </Link>
-                    <Link href="/dashboard/settings" className={`${navItemBase} ${pathname.includes('/settings') ? navItemActive : navItemInactive}`}>
+                    <Link id="tour-sidebar-settings" href="/dashboard/settings" className={`${navItemBase} ${pathname.includes('/settings') ? navItemActive : navItemInactive}`}>
                         <Settings size={20} className={pathname.includes('/settings') ? 'text-blue-500' : 'text-slate-400'} />
                         {!collapsed && <span>Configurações</span>}
                     </Link>
@@ -97,7 +97,7 @@ export default function Sidebar() {
             </div>
 
             {/* Bottom Actions */}
-            <div className="p-4 border-t border-slate-800 space-y-4">
+            <div id="tour-sidebar-profile" className="p-4 border-t border-slate-800 space-y-4">
                 {/* User Profile */}
                 <div className="flex items-center gap-3 p-2 rounded-lg bg-slate-800/50 border border-white/[0.06]">
                     <Link href="/dashboard/profile" className="flex items-center gap-3 flex-1 min-w-0 hover:opacity-80 transition-opacity">

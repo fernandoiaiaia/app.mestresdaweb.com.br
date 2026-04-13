@@ -25,6 +25,7 @@ import {
     Megaphone,
     Tags,
     MessageCircle,
+    FileText,
 } from "lucide-react";
 
 const settingsCards = [
@@ -164,6 +165,15 @@ const settingsCards = [
         href: "/dashboard/settings/integrations",
         badge: "2 ativas",
         badgeColor: "green",
+    },
+    {
+        id: "knowledge-base",
+        title: "Base de Dados",
+        description: "Upload de escopos de projetos exemplo em Markdown para referência da IA.",
+        icon: FileText,
+        href: "/dashboard/settings/knowledge-base",
+        badge: null,
+        badgeColor: null,
     },
 
     {

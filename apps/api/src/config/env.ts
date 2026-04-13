@@ -23,11 +23,11 @@ const envSchema = z.object({
     JWT_REFRESH_EXPIRES_IN: z.string().default("7d"),
 
     // CORS
-    CORS_ORIGIN: z.string().default("http://localhost:1100"),
+    CORS_ORIGIN: z.string().default("http://localhost:1100,http://localhost:1200,http://localhost:1300"),
 
     // Rate Limiting — 10.000 req per 15min window supports 20+ concurrent users
     RATE_LIMIT_WINDOW_MS: z.coerce.number().default(900_000),
-    RATE_LIMIT_MAX: z.coerce.number().default(10_000),
+    RATE_LIMIT_MAX: z.coerce.number().default(500),
 
     // Sentry (optional)
     SENTRY_DSN: z.string().optional(),

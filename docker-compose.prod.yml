@@ -12,25 +12,25 @@ services:
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
-      # Redireciona http para https
+      # Redirect HTTP → HTTPS
       - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
       - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
-      # Configuração do Let's Encrypt para gerar SSL (HTTPS)
+      # Let's Encrypt SSL
       - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
-      - "--certificatesresolvers.myresolver.acme.email=suporte@cezani.dev" # Substitua pelo seu e-mail
+      - "--certificatesresolvers.myresolver.acme.email=suporte@mestresdaweb.com.br"
       - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
     ports:
       - "80:80"
       - "443:443"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
-      - "./letsencrypt:/letsencrypt"
+      - "letsencrypt:/letsencrypt"
     restart: unless-stopped
     networks:
       - web
 
   postgres:
-    image: postgres:15-alpine
+    image: postgres:16-alpine
     container_name: postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
@@ -39,15 +39,26 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - internal
       
   redis:
     image: redis:7-alpine
     container_name: redis
+    command: redis-server --appendonly yes
     volumes:
       - redis_data:/data
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - internal
 
@@ -58,17 +69,24 @@ services:
     container_name: api
     restart: unless-stopped
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     env_file: .env
     environment:
       - PORT=8080
-      - FRONTEND_URL=https://advisor.cezani.dev
-      - CORS_ORIGIN=https://advisor.cezani.dev,https://www.advisor.cezani.dev,https://cliente.cezani.dev,https://www.cliente.cezani.dev,https://dev.cezani.dev,https://www.dev.cezani.dev,https://cezani.dev,https://www.cezani.dev
+      - NODE_ENV=production
+      - FRONTEND_URL=https://advisor.mestresdaweb.com.br
+      - CORS_ORIGIN=https://advisor.mestresdaweb.com.br,https://hub.mestresdaweb.com.br,https://dev.mestresdaweb.com.br
       - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-proposalai}?schema=public
+    volumes:
+      - api_uploads:/app/apps/api/storage/uploads
+      - api_documents:/app/apps/api/uploads
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.api.rule=Host(`tsapi.cezani.dev`) || Host(`www.tsapi.cezani.dev`)"
+      - "traefik.http.routers.api.rule=Host(`api.mestresdaweb.com.br`)"
       - "traefik.http.routers.api.entrypoints=websecure"
       - "traefik.http.routers.api.tls.certresolver=myresolver"
       - "traefik.http.services.api.loadbalancer.server.port=8080"
@@ -76,76 +94,6 @@ services:
     networks:
       - web
       - internal
-
-  web-comercial:
-    build:
-      context: .
-      dockerfile: apps/Web Comercial/Dockerfile
-      args:
-        - NEXT_PUBLIC_API_URL=https://tsapi.cezani.dev
-    container_name: web-comercial
-    restart: unless-stopped
-    env_file: .env
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.web-comercial.rule=Host(`advisor.cezani.dev`) || Host(`www.advisor.cezani.dev`)"
-      - "traefik.http.routers.web-comercial.entrypoints=websecure"
-      - "traefik.http.routers.web-comercial.tls.certresolver=myresolver"
-      - "traefik.http.services.web-comercial.loadbalancer.server.port=1100"
-    networks:
-      - web
-
-  web-cliente:
-    build:
-      context: .
-      dockerfile: apps/Web Cliente/Dockerfile
-      args:
-        - NEXT_PUBLIC_API_URL=https://tsapi.cezani.dev
-    container_name: web-cliente
-    restart: unless-stopped
-    env_file: .env
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.web-cliente.rule=Host(`cliente.cezani.dev`) || Host(`www.cliente.cezani.dev`)"
-      - "traefik.http.routers.web-cliente.entrypoints=websecure"
-      - "traefik.http.routers.web-cliente.tls.certresolver=myresolver"
-      - "traefik.http.services.web-cliente.loadbalancer.server.port=1300"
-    networks:
-      - web
-
-  web-dev:
-    build:
-      context: .
-      dockerfile: "apps/Web Dev/Dockerfile"
-      args:
-        - NEXT_PUBLIC_API_URL=https://tsapi.cezani.dev
-    container_name: web-dev
-    restart: unless-stopped
-    env_file: .env
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.web-dev.rule=Host(`dev.cezani.dev`) || Host(`www.dev.cezani.dev`)"
-      - "traefik.http.routers.web-dev.entrypoints=websecure"
-      - "traefik.http.routers.web-dev.tls.certresolver=myresolver"
-      - "traefik.http.services.web-dev.loadbalancer.server.port=1200"
-    networks:
-      - web
-
-  web-site:
-    build:
-      context: apps/Cz/
-      dockerfile: Dockerfile
-    container_name: web-site
-    restart: unless-stopped
-    labels:
-      - "traefik.enable=true"
-      # O Site público normalmente vai no domínio raiz (cezani.dev)
-      - "traefik.http.routers.web-site.rule=Host(`cezani.dev`) || Host(`www.cezani.dev`)"
-      - "traefik.http.routers.web-site.entrypoints=websecure"
-      - "traefik.http.routers.web-site.tls.certresolver=myresolver"
-      - "traefik.http.services.web-site.loadbalancer.server.port=80"
-    networks:
-      - web
 
 networks:
   web:
@@ -158,3 +106,5 @@ volumes:
   postgres_data:
   redis_data:
   letsencrypt:
+  api_uploads:
+  api_documents:

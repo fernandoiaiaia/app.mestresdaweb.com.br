@@ -115,11 +115,12 @@ export default function DocumentsPage() {
 
     return (
         <div className="p-6 md:p-8 space-y-8">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+            <motion.div id="tour-page-docs-header" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
                 <h1 className="text-3xl font-bold tracking-tight">Documentos</h1>
                 <p className="text-slate-400 mt-1">Acesse todos os documentos relacionados aos seus projetos.</p>
             </motion.div>
 
+            <div id="tour-page-docs-categories" className="space-y-8 mt-8">
             {DOC_CATEGORIES.map((category, catIdx) => (
                 <motion.div key={category.title} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: catIdx * 0.08 }}
                     className="space-y-3">
@@ -192,6 +193,7 @@ export default function DocumentsPage() {
                     </div>
                 </motion.div>
             ))}
+            </div>
 
             {/* ═══════════════════════════════════════ */}
             {/* PDF VIEWER MODAL                        */}
@@ -230,7 +232,7 @@ export default function DocumentsPage() {
                             <div className="flex-1 bg-slate-950/50 overflow-y-auto custom-scrollbar">
                                 {viewingDoc.real.mimeType === "application/pdf" ? (
                                     <iframe
-                                        src={downloadDocumentUrl(viewingDoc.real.id)}
+                                        src={`${downloadDocumentUrl(viewingDoc.real.id)}?view=1`}
                                         className="w-full h-full border-0"
                                         title={viewingDoc.real.title}
                                     />

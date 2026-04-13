@@ -11,6 +11,25 @@ const router = Router();
 router.use(authMiddleware);
 
 /**
+ * Subscribe this app to receive webhook events from a WhatsApp Business Account.
+ * Must be called whenever the WABA ID changes so the Meta servers know to
+ * dispatch incoming-message webhooks to our configured callback URL.
+ */
+async function subscribeAppToWaba(accessToken: string, wabaId: string): Promise<{ ok: boolean; error?: string }> {
+    try {
+        const r = await fetch(`https://graph.facebook.com/v23.0/${wabaId}/subscribed_apps`, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        const data = await r.json() as any;
+        if (data.success) return { ok: true };
+        return { ok: false, error: data.error?.message || `HTTP ${r.status}` };
+    } catch (err: any) {
+        return { ok: false, error: err.message || "Falha na conexão" };
+    }
+}
+
+/**
  * GET /api/integrations
  * List all integration settings for current user
  */
@@ -98,6 +117,16 @@ router.put("/:provider", async (req: Request, res: Response) => {
                 ...(isActive !== undefined && { isActive }),
             },
         });
+
+        // ── WhatsApp: auto-subscribe app to WABA for webhook delivery ──
+        if (provider === "whatsapp" && mergedCreds.accessToken && mergedCreds.businessAccountId) {
+            const sub = await subscribeAppToWaba(mergedCreds.accessToken, mergedCreds.businessAccountId);
+            if (sub.ok) {
+                logger.info({ userId, wabaId: mergedCreds.businessAccountId }, "Auto-subscribed app to WABA for webhooks");
+            } else {
+                logger.warn({ userId, wabaId: mergedCreds.businessAccountId, error: sub.error }, "Failed to auto-subscribe app to WABA");
+            }
+        }
 
         logger.info({ userId, provider, isActive: setting.isActive }, "Integration setting updated");
         res.json({ success: true, data: setting });
@@ -214,11 +243,25 @@ router.post("/:provider/test", async (req: Request, res: Response) => {
             case "whatsapp":
                 if (creds.accessToken && creds.phoneNumberId) {
                     try {
-                        const r = await fetch(`https://graph.facebook.com/v18.0/${creds.phoneNumberId}`, {
+                        // 1. Validate token + phone number
+                        const r = await fetch(`https://graph.facebook.com/v23.0/${creds.phoneNumberId}`, {
                             headers: { Authorization: `Bearer ${creds.accessToken}` },
                         });
-                        valid = r.ok;
-                        message = valid ? "Token válido" : `Erro: ${r.status}`;
+                        if (!r.ok) {
+                            const errBody = await r.json().catch(() => ({})) as any;
+                            message = `Token sem acesso ao Phone Number ID: ${errBody?.error?.message || `HTTP ${r.status}`}`;
+                            break;
+                        }
+                        // 2. Ensure app is subscribed to WABA for webhook delivery
+                        if (creds.businessAccountId) {
+                            const sub = await subscribeAppToWaba(creds.accessToken, creds.businessAccountId);
+                            if (!sub.ok) {
+                                message = `Token válido, mas falha ao inscrever webhooks no WABA: ${sub.error}`;
+                                break;
+                            }
+                        }
+                        valid = true;
+                        message = "Token válido — Webhooks ativos";
                     } catch { message = "Falha na conexão"; }
                 } else { message = "Token ou Phone ID não informados"; }
                 break;
@@ -278,32 +321,31 @@ router.post("/:provider/test", async (req: Request, res: Response) => {
                 break;
 
             case "proposal_minimax":
-                if (creds.apiKey && creds.groupId) {
+                if (creds.apiKey) {
                     try {
-                        const r = await fetch(`https://api.minimaxi.chat/v1/text/chatcompletion_v2?GroupId=${creds.groupId}`, {
+                        const r = await fetch("https://api.minimax.io/anthropic/v1/messages", {
                             method: "POST",
                             headers: {
                                 "Content-Type": "application/json",
-                                "Authorization": `Bearer ${creds.apiKey}`,
+                                "x-api-key": creds.apiKey,
+                                "anthropic-version": "2023-06-01",
                             },
                             body: JSON.stringify({
-                                model: creds.model || "MiniMax-M2.5",
-                                messages: [{ role: "user", name: "user", content: "Hi" }],
+                                model: creds.model || "MiniMax-M2.7",
+                                messages: [{ role: "user", content: "Hi" }],
                                 max_tokens: 10,
                             }),
                         });
                         if (r.ok) {
                             valid = true;
-                            message = "API Key e Group ID válidos — MiniMax M2.5 conectada";
+                            message = "API Key válida — MiniMax M2.7 conectada";
                         } else {
                             const body = await r.json().catch(() => ({})) as any;
-                            message = `Erro ${r.status}: ${body?.error?.message || body?.base_resp?.status_msg || "Credenciais inválidas"}`;
+                            message = `Erro ${r.status}: ${body?.error?.message || body?.error?.type || "Credenciais inválidas"}`;
                         }
                     } catch { message = "Falha na conexão com a MiniMax"; }
-                } else if (!creds.apiKey) {
-                    message = "API Key não informada";
                 } else {
-                    message = "Group ID não informado";
+                    message = "API Key não informada";
                 }
                 break;
 

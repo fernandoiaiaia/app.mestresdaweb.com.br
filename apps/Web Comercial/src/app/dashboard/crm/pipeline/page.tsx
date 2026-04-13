@@ -43,6 +43,7 @@ interface Deal {
     consultant?: { name: string };
     daysInStage?: number;
     lastActivity?: string;
+    status?: "open" | "won" | "lost";
 }
 
 interface Stage {
@@ -75,7 +76,7 @@ export default function PipelinePage() {
     const [draggedDeal, setDraggedDeal] = useState<{ dealId: string; fromStage: string } | null>(null);
     const router = useRouter();
 
-    const loadPipeline = async () => {
+    const loadFunnels = async () => {
         try {
             setIsLoading(true);
             const { data: funnelsData } = await api<any[]>('/api/funnels', { method: "GET" });
@@ -83,28 +84,46 @@ export default function PipelinePage() {
             setFunnels(funcs);
 
             let activeFunnel = funcs.find((f: any) => f.isDefault) || funcs[0];
-            if (!activeFunnel) return;
-
-            setSelectedFunnel(activeFunnel.id);
-            setStages(activeFunnel.stages || []);
-
-            const { data: dealsData } = await api<Deal[]>(`/api/deals?funnelId=${activeFunnel.id}`, { method: "GET" });
-            setDeals(dealsData || []);
+            if (!activeFunnel) {
+                setIsLoading(false);
+                return;
+            }
+            await selectFunnel(activeFunnel.id, funcs);
         } catch (error) {
             console.error(error);
-        } finally {
             setIsLoading(false);
         }
     };
 
+    const selectFunnel = async (funnelId: string, currentFunnels = funnels) => {
+        setIsLoading(true);
+        setSelectedFunnel(funnelId);
+        
+        const active = currentFunnels.find(f => f.id === funnelId);
+        if (active) setStages(active.stages || []);
+
+        try {
+            const { data: dealsData } = await api<Deal[]>(`/api/deals?funnelId=${funnelId}`, { method: "GET" });
+            const openDeals = (dealsData || []).filter(d => !d.status || d.status === "open");
+            setDeals(openDeals);
+        } catch(e) { console.error(e); }
+        finally { setIsLoading(false); }
+    };
+
     useEffect(() => {
-        loadPipeline();
+        loadFunnels();
     }, []);
 
     const pipelineStages = stages.map(stage => ({
         ...stage,
         deals: deals.filter(d => d.stageId === stage.id)
-    }));
+    })).filter(stage => {
+        // Ocultar colunas de finalização no quadro de visualização se estiverem vazias (já que o negócio saiu do Kanban)
+        if (stage.deals.length === 0 && (stage.name.toLowerCase().includes("fechado") || stage.name.toLowerCase().includes("perdido"))) {
+            return false;
+        }
+        return true;
+    });
 
     const totalPipeline = deals.reduce((s, d) => s + (d.value || 0), 0);
     const totalDeals = deals.length;
@@ -134,7 +153,7 @@ export default function PipelinePage() {
             });
         } catch (e) {
             console.error(e);
-            loadPipeline(); // Rollback
+            if (selectedFunnel) selectFunnel(selectedFunnel); // Rollback
         }
     };
 
@@ -153,6 +172,20 @@ export default function PipelinePage() {
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
+                        {funnels.length > 0 && (
+                            <div className="relative">
+                                <select
+                                    value={selectedFunnel || ""}
+                                    onChange={(e) => selectFunnel(e.target.value)}
+                                    className="appearance-none pl-4 pr-10 py-2 bg-slate-800/50 border border-white/[0.08] rounded-xl text-sm text-white focus:outline-none focus:border-blue-500/40 font-medium cursor-pointer"
+                                >
+                                    {funnels.map(f => (
+                                        <option key={f.id} value={f.id} className="bg-slate-900 text-white">{f.name}</option>
+                                    ))}
+                                </select>
+                                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+                            </div>
+                        )}
                         <div className="relative">
                             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
                             <input type="text" placeholder="Buscar deal..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9 pr-4 py-2 bg-slate-800/50 border border-white/[0.08] rounded-xl text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500/40 w-56" />

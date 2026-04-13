@@ -70,7 +70,7 @@ export default function Sidebar() {
             {/* Logo Area */}
             <div className={`flex shrink-0 items-center justify-center border-b border-slate-800 ${collapsed && !isMobile ? 'py-3' : 'py-4'}`}>
                 {(!collapsed || isMobile) && (
-                    <span className="text-4xl font-bold tracking-tight text-white font-varela-round lowercase">cezani</span>
+                    <img src="/branding/logo-mdw.png" alt="Mestres da Web" className="w-full max-w-[180px] h-auto object-contain" />
                 )}
                 {collapsed && !isMobile && (
                     <span className="text-xl font-bold tracking-tight text-white font-varela-round lowercase">cz</span>

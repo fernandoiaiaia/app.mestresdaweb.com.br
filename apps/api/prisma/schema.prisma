@@ -29,20 +29,22 @@ enum DataScope {
 // ═══ MODELS ═══
 
 model User {
-  id       String  @id @default(uuid())
-  name     String
-  email    String  @unique
-  password String
-  role     Role    @default(USER)
-  avatar   String?
-  phone    String?
-  position String?
-  active   Boolean  @default(true)
+  id          String   @id @default(uuid())
+  name        String
+  email       String   @unique
+  password    String
+  role        Role     @default(USER)
+  avatar      String?
+  phone       String?
+  position    String?
+  active      Boolean  @default(true)
   allowedApps String[] @default([]) @map("allowed_apps") // "growth", "dev"
+  allowedFunnels String[] @default([]) @map("allowed_funnels")
 
   // OAuth
-  googleId         String?  @unique @map("google_id")
-  twoFactorEnabled Boolean  @default(true) @map("two_factor_enabled")
+  googleId         String? @unique @map("google_id")
+  appleId          String? @unique @map("apple_id")
+  twoFactorEnabled Boolean @default(true) @map("two_factor_enabled")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -57,59 +59,65 @@ model User {
   // Pipeline & Relacionamentos
   funnels           Funnel[]
   cadences          Cadence[]
-  dealsAsConsultant Deal[]    @relation("ConsultantDeals")
-  dealsAsOwner      Deal[]    @relation("AccountOwner")
+  dealsAsConsultant Deal[]     @relation("ConsultantDeals")
+  dealsAsOwner      Deal[]     @relation("AccountOwner")
   tasks             Task[]
   dealNotes         DealNote[]
   dealFiles         DealFile[]
 
   // SDR Automático
-  sdrLeads          SdrLead[]          @relation("SdrConsultant")
-  sdrMeetings       ScheduledMeeting[] @relation("SdrMeetings")
-  integrationSettings IntegrationSetting[]
-  salesCadences   SalesCadence[]
-  professionals   Professional[]
-  lossReasonCategories LossReasonCategory[]
-  lossReasons     LossReason[]
-  productCategories ProductCategory[]
-  products         Product[]
-  sourceTypes      SourceType[]
-  sources          Source[]
-  sourceCampaigns  SourceCampaign[]
-  segments         Segment[]
-  objectionCategories ObjectionCategory[]
-  objections         Objection[]
-  institutionalProfile InstitutionalProfile?
-  paymentConditions PaymentCondition[]
-  checklistCategories ChecklistCategory[]
-  checklistQuestions  ChecklistQuestion[]
-  securitySettings SecuritySettings?
-  notificationSettings NotificationSettings?
+  sdrLeads                SdrLead[]                @relation("SdrConsultant")
+  sdrMeetings             ScheduledMeeting[]       @relation("SdrMeetings")
+  integrationSettings     IntegrationSetting[]
+  salesCadences           SalesCadence[]
+  professionals           Professional[]
+  lossReasons             LossReason[]
+  productCategories       ProductCategory[]
+  products                Product[]
+  sourceTypes             SourceType[]
+  sources                 Source[]
+  sourceCampaigns         SourceCampaign[]
+  segments                Segment[]
+  objectionCategories     ObjectionCategory[]
+  objections              Objection[]
+  institutionalProfile    InstitutionalProfile?
+  paymentConditions       PaymentCondition[]
+  checklistCategories     ChecklistCategory[]
+  checklistQuestions      ChecklistQuestion[]
+  securitySettings        SecuritySettings?
+  notificationSettings    NotificationSettings?
   notificationPreferences NotificationPreference[]
-  loginLogs        LoginLog[]
-  notifications    Notification[]
+  loginLogs               LoginLog[]
+  notifications           Notification[]
 
-  backupSettings   BackupSettings?
-  backupEntries    BackupEntry[]
-  domainSettings   DomainSettings?
-  activityLogs     ActivityLog[]
+  backupSettings BackupSettings?
+  backupEntries  BackupEntry[]
+  domainSettings DomainSettings?
+  activityLogs   ActivityLog[]
 
-  devProjects      DevProject[]
-  devTasksAssigned DevTask[]     @relation("TaskAssignee")
-  devProjectMemberships DevProjectMember[] @relation("DevProjectMembers")
-  taskComments     DevTaskComment[] @relation("TaskComments")
-  taskTimeLogs     DevTaskTimeLog[] @relation("TaskTimeLogs")
-  taskBugsReported DevTaskBug[]     @relation("TaskBugsReported")
-  taskBugsAssigned DevTaskBug[]     @relation("TaskBugsAssigned")
-  taskAttachments  DevTaskAttachment[] @relation("TaskAttachments")
-  taskHistory      DevTaskHistory[]    @relation("TaskHistory")
-  uploadedDocs     DevProjectDocument[] @relation("DocUploader")
-  devProjectSettings DevProjectSettings?
+  devProjects           DevProject[]
+  devTasksAssigned      DevTask[]            @relation("TaskAssignee")
+  devProjectMemberships DevProjectMember[]   @relation("DevProjectMembers")
+  taskComments          DevTaskComment[]     @relation("TaskComments")
+  taskTimeLogs          DevTaskTimeLog[]     @relation("TaskTimeLogs")
+  taskBugsReported      DevTaskBug[]         @relation("TaskBugsReported")
+  taskBugsAssigned      DevTaskBug[]         @relation("TaskBugsAssigned")
+  taskAttachments       DevTaskAttachment[]  @relation("TaskAttachments")
+  taskHistory           DevTaskHistory[]     @relation("TaskHistory")
+  uploadedDocs          DevProjectDocument[] @relation("DocUploader")
+  devProjectSettings    DevProjectSettings?
 
   featureCategories FeatureCategory[]
-  leads            Lead[]              @relation("LeadOwner")
-  proposals        Proposal[]
-  proposalsAsViewer Proposal[]       @relation("ProposalViewer")
+  leads             Lead[]            @relation("LeadOwner")
+  tasksAsViewer     Task[]            @relation("TaskViewer")
+  proposals         Proposal[]
+  viewedProposals   Proposal[]        @relation("ProposalViewer")
+  assembledProposals AssembledProposal[] @relation("ProposalAccountOwner")
+  viewedAssembledProposals AssembledProposal[] @relation("AssembledProposalViewer")
+
+  whatsappConversations WhatsappConversation[] @relation("WhatsappAssignee")
+  whatsappLabels WhatsappLabel[]
+  knowledgeBaseFiles KnowledgeBaseFile[]
 
   @@index([email])
   @@map("users")
@@ -118,8 +126,8 @@ model User {
 model VerificationCode {
   id        String   @id @default(uuid())
   userId    String   @map("user_id")
-  code      String   // 6-digit code
-  type      String   // login_2fa, password_reset
+  code      String // 6-digit code
+  type      String // login_2fa, password_reset
   expiresAt DateTime @map("expires_at")
   used      Boolean  @default(false)
 
@@ -131,7 +139,6 @@ model VerificationCode {
   @@index([code])
   @@map("verification_codes")
 }
-
 
 model Permission {
   id        String    @id @default(uuid())
@@ -183,11 +190,11 @@ model Session {
 }
 
 model LoginLog {
-  id       String   @id @default(uuid())
-  userId   String   @map("user_id")
-  ip       String?
-  device   String?
-  status   String   // "success", "failed"
+  id     String  @id @default(uuid())
+  userId String  @map("user_id")
+  ip     String?
+  device String?
+  status String // "success", "failed"
 
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -201,15 +208,15 @@ model Company {
   id     String @id @default(uuid())
   userId String @map("user_id")
 
-  name      String
-  cnpj      String?
-  segment   String?
-  website   String?
-  city      String?
-  state     String?
-  address   String?
-  notes     String? @db.Text
-  status    String  @default("active")
+  name    String
+  cnpj    String?
+  segment String?
+  website String?
+  city    String?
+  state   String?
+  address String?
+  notes   String? @db.Text
+  status  String  @default("active")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -228,7 +235,7 @@ model Client {
   // Dados Básicos
   name       String
   company    String?
-  companyId  String?  @map("company_id")
+  companyId  String? @map("company_id")
   email      String?
   phone      String?
   role       String?
@@ -242,19 +249,21 @@ model Client {
   notes      String? @db.Text
 
   // Métricas de Vendas / CRM
-  lastContact   DateTime? @map("last_contact")
+  lastContact DateTime? @map("last_contact")
 
-  totalRevenue  Float     @default(0) @map("total_revenue")
+  totalRevenue Float @default(0) @map("total_revenue")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  companyRef  Company?        @relation(fields: [companyId], references: [id], onDelete: SetNull)
-  deals       Deal[]
-  contacts    ClientContact[]
-  tasks       Task[]
-  proposals   Proposal[]
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyRef Company?        @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  deals      Deal[]
+  contacts   ClientContact[]
+  tasks      Task[]
+  proposals  Proposal[]
+  assembledProposals AssembledProposal[]
+  whatsappContact WhatsappContact?
 
   @@index([userId])
   @@index([email])
@@ -293,9 +302,10 @@ model Funnel {
   active      Boolean @default(true)
   orderIndex  Int     @default(0) @map("order_index")
 
-  stages FunnelStage[]
-  deals  Deal[]
+  stages        FunnelStage[]
+  deals         Deal[]
   salesCadences SalesCadence[]
+  lossReasons   LossReason[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -313,8 +323,9 @@ model FunnelStage {
   color      String @default("blue")
   orderIndex Int    @default(0) @map("order_index")
 
-  deals Deal[]
+  deals         Deal[]
   salesCadences SalesCadence[]
+  lossReasons   LossReason[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -326,25 +337,25 @@ model FunnelStage {
 }
 
 model Cadence {
-  id              String  @id @default(uuid())
-  userId          String  @map("user_id")
-  name            String
-  description     String?
-  status          String  @default("draft") // active, paused, draft, archived
-  contactsCount   Int     @default(0) @map("contacts_count")
-  conversions     Int     @default(0)
+  id            String  @id @default(uuid())
+  userId        String  @map("user_id")
+  name          String
+  description   String?
+  status        String  @default("draft") // active, paused, draft, archived
+  contactsCount Int     @default(0) @map("contacts_count")
+  conversions   Int     @default(0)
 
   // ═══ SDR Fields ═══
-  tone            String  @default("formal") // formal, casual, tecnico
-  targetSegment   String? @map("target_segment")
-  businessHoursStart String @default("08:00") @map("business_hours_start")
-  businessHoursEnd   String @default("18:00") @map("business_hours_end")
-  timezone        String  @default("America/Sao_Paulo")
-  maxAttempts     Int     @default(5) @map("max_attempts")
-  automationLevel String  @default("semi") @map("automation_level") // autopilot, semi, assisted
-  playbookData    Json?   @map("playbook_data")  // Snapshot do Playbook
-  personaData     Json?   @map("persona_data")   // Snapshot da Persona
-  identityData    Json?   @map("identity_data")  // Snapshot da Identity
+  tone               String  @default("formal") // formal, casual, tecnico
+  targetSegment      String? @map("target_segment")
+  businessHoursStart String  @default("08:00") @map("business_hours_start")
+  businessHoursEnd   String  @default("18:00") @map("business_hours_end")
+  timezone           String  @default("America/Sao_Paulo")
+  maxAttempts        Int     @default(5) @map("max_attempts")
+  automationLevel    String  @default("semi") @map("automation_level") // autopilot, semi, assisted
+  playbookData       Json?   @map("playbook_data") // Snapshot do Playbook
+  personaData        Json?   @map("persona_data") // Snapshot da Persona
+  identityData       Json?   @map("identity_data") // Snapshot da Identity
 
   steps       CadenceStep[]
   enrollments LeadCadenceEnrollment[]
@@ -360,13 +371,13 @@ model Cadence {
 }
 
 model CadenceStep {
-  id          String  @id @default(uuid())
-  cadenceId   String  @map("cadence_id")
-  type        String  // email, whatsapp, phone, task (legacy)
-  title       String
-  delay       Int     @default(0)
-  delayUnit   String  @default("days") // hours, days
-  orderIndex  Int     @default(0) @map("order_index")
+  id         String @id @default(uuid())
+  cadenceId  String @map("cadence_id")
+  type       String // email, whatsapp, phone, task (legacy)
+  title      String
+  delay      Int    @default(0)
+  delayUnit  String @default("days") // hours, days
+  orderIndex Int    @default(0) @map("order_index")
 
   // ═══ SDR Fields ═══
   channel         String  @default("email") // email, whatsapp, phone, wait
@@ -387,29 +398,29 @@ model CadenceStep {
 // ═══════════════════════════════════════
 
 model SdrLead {
-  id            String   @id @default(uuid())
-  consultantId  String?  @map("consultant_id")
-  name          String
-  email         String?
-  phone         String?
-  company       String?
-  segment       String?
-  role          String?
-  tags          String[]
-  notes         String?  @db.Text
-  origin        String?  // manual, csv_import, crm, api
+  id           String   @id @default(uuid())
+  consultantId String?  @map("consultant_id")
+  name         String
+  email        String?
+  phone        String?
+  company      String?
+  segment      String?
+  role         String?
+  tags         String[]
+  notes        String?  @db.Text
+  origin       String? // manual, csv_import, crm, api
 
-  status        String   @default("novo") // novo, em_cadencia, respondeu, qualificado, agendado, sem_contato, opt_out, desqualificado
-  score         Int      @default(0)
-  temperature   String   @default("frio") // quente, morno, frio
+  status      String @default("novo") // novo, em_cadencia, respondeu, qualificado, agendado, sem_contato, opt_out, desqualificado
+  score       Int    @default(0)
+  temperature String @default("frio") // quente, morno, frio
 
-  qualificationData Json? @map("qualification_data") // BANT extracted by AI
-  optedOutAt    DateTime? @map("opted_out_at")
+  qualificationData Json?     @map("qualification_data") // BANT extracted by AI
+  optedOutAt        DateTime? @map("opted_out_at")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  consultant  User? @relation("SdrConsultant", fields: [consultantId], references: [id], onDelete: SetNull)
+  consultant User? @relation("SdrConsultant", fields: [consultantId], references: [id], onDelete: SetNull)
 
   enrollments       LeadCadenceEnrollment[]
   actions           CadenceAction[]
@@ -424,22 +435,22 @@ model SdrLead {
 }
 
 model LeadCadenceEnrollment {
-  id          String   @id @default(uuid())
-  leadId      String   @map("lead_id")
-  cadenceId   String   @map("cadence_id")
-  currentStep Int      @default(1) @map("current_step")
-  status      String   @default("ativo") // ativo, pausado, concluido, respondeu, agendou, opt_out
+  id          String @id @default(uuid())
+  leadId      String @map("lead_id")
+  cadenceId   String @map("cadence_id")
+  currentStep Int    @default(1) @map("current_step")
+  status      String @default("ativo") // ativo, pausado, concluido, respondeu, agendou, opt_out
 
-  startedAt   DateTime  @default(now()) @map("started_at")
-  pausedAt    DateTime? @map("paused_at")
-  completedAt DateTime? @map("completed_at")
+  startedAt    DateTime  @default(now()) @map("started_at")
+  pausedAt     DateTime? @map("paused_at")
+  completedAt  DateTime? @map("completed_at")
   nextActionAt DateTime? @map("next_action_at")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  lead    SdrLead   @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  cadence Cadence   @relation(fields: [cadenceId], references: [id], onDelete: Cascade)
+  lead    SdrLead         @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  cadence Cadence         @relation(fields: [cadenceId], references: [id], onDelete: Cascade)
   actions CadenceAction[]
 
   @@index([leadId])
@@ -450,16 +461,16 @@ model LeadCadenceEnrollment {
 }
 
 model CadenceAction {
-  id            String  @id @default(uuid())
-  enrollmentId  String? @map("enrollment_id")
-  leadId        String  @map("lead_id")
+  id           String  @id @default(uuid())
+  enrollmentId String? @map("enrollment_id")
+  leadId       String  @map("lead_id")
 
-  channel       String  // email, whatsapp, phone
-  actionType    String  @map("action_type") // sent, received, opened, clicked, answered, missed, voicemail, opted_out, qualified, escalated, scheduled
+  channel    String // email, whatsapp, phone
+  actionType String @map("action_type") // sent, received, opened, clicked, answered, missed, voicemail, opted_out, qualified, escalated, scheduled
 
-  content       String? @db.Text
-  aiReasoning   String? @map("ai_reasoning") @db.Text
-  metadata      Json?   // email_id, whatsapp_message_id, call_recording_url, call_duration, transcription
+  content     String? @db.Text
+  aiReasoning String? @map("ai_reasoning") @db.Text
+  metadata    Json? // email_id, whatsapp_message_id, call_recording_url, call_duration, transcription
 
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -526,11 +537,11 @@ model ScheduledMeeting {
 }
 
 model Deal {
-  id           String @id @default(uuid())
-  userId       String @map("user_id") // Dono da Conta
-  clientId     String @map("client_id")
-  funnelId     String @map("funnel_id")
-  stageId      String @map("stage_id")
+  id           String  @id @default(uuid())
+  userId       String  @map("user_id") // Dono da Conta
+  clientId     String  @map("client_id")
+  funnelId     String  @map("funnel_id")
+  stageId      String  @map("stage_id")
   consultantId String? @map("consultant_id") // Vendedor responsável
 
   title         String
@@ -544,15 +555,19 @@ model Deal {
   nextAction    String?   @map("next_action")
   lastActivity  String?   @map("last_activity")
   tags          String[]
-  assigneeIds   String[] @default([]) @map("assignee_ids")
+  assigneeIds   String[]  @default([]) @map("assignee_ids")
 
-  notes         DealNote[]
-  files         DealFile[]
-  tasks         Task[]
+  notes                  DealNote[]
+  files                  DealFile[]
+  tasks                  Task[]
   salesCadenceExecutions SalesCadenceExecution[]
+  assembledProposals     AssembledProposal[]
 
   // Controle de SLA (Tempo na etapa)
   stageEnteredAt DateTime @default(now()) @map("stage_entered_at")
+
+  lossReasonId   String?     @map("loss_reason_id")
+  lossReason     LossReason? @relation(fields: [lossReasonId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -570,16 +585,16 @@ model Deal {
 
 model SalesCadenceExecution {
   // forward declared for Deal relation — full model below
-  id              String   @id @default(uuid())
-  salesCadenceId  String   @map("sales_cadence_id")
-  dealId          String   @map("deal_id")
-  currentStepIdx  Int      @default(0) @map("current_step_idx")
-  status          String   @default("running") // running, completed, cancelled
-  nextActionAt    DateTime? @map("next_action_at")
-  startedAt       DateTime @default(now()) @map("started_at")
-  completedAt     DateTime? @map("completed_at")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  id             String    @id @default(uuid())
+  salesCadenceId String    @map("sales_cadence_id")
+  dealId         String    @map("deal_id")
+  currentStepIdx Int       @default(0) @map("current_step_idx")
+  status         String    @default("running") // running, completed, cancelled
+  nextActionAt   DateTime? @map("next_action_at")
+  startedAt      DateTime  @default(now()) @map("started_at")
+  completedAt    DateTime? @map("completed_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
 
   salesCadence SalesCadence @relation(fields: [salesCadenceId], references: [id], onDelete: Cascade)
   deal         Deal         @relation(fields: [dealId], references: [id], onDelete: Cascade)
@@ -604,9 +619,11 @@ model Task {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  client Client? @relation(fields: [clientId], references: [id], onDelete: SetNull)
-  deal   Deal?   @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  user     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  viewerId String? @map("viewer_id")
+  viewer   User?   @relation("TaskViewer", fields: [viewerId], references: [id], onDelete: SetNull)
+  client   Client? @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  deal     Deal?   @relation(fields: [dealId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@index([clientId])
@@ -615,12 +632,12 @@ model Task {
 }
 
 model DealNote {
-  id        String   @id @default(uuid())
-  dealId    String   @map("deal_id")
-  userId    String   @map("user_id") // Who wrote the note
-  content   String   @db.Text
-  type      String   @default("note") // "note", "email", "call", "meeting", "system_event"
-  
+  id      String @id @default(uuid())
+  dealId  String @map("deal_id")
+  userId  String @map("user_id") // Who wrote the note
+  content String @db.Text
+  type    String @default("note") // "note", "email", "call", "meeting", "system_event"
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -633,14 +650,14 @@ model DealNote {
 }
 
 model DealFile {
-  id           String   @id @default(uuid())
-  dealId       String   @map("deal_id")
-  userId       String   @map("user_id")
-  originalName String   @map("original_name")
-  storedName   String   @map("stored_name")
-  mimeType     String   @map("mime_type")
+  id           String @id @default(uuid())
+  dealId       String @map("deal_id")
+  userId       String @map("user_id")
+  originalName String @map("original_name")
+  storedName   String @map("stored_name")
+  mimeType     String @map("mime_type")
   size         Int
-  
+
   createdAt DateTime @default(now()) @map("created_at")
 
   deal Deal @relation(fields: [dealId], references: [id], onDelete: Cascade)
@@ -653,18 +670,18 @@ model DealFile {
 // ═══ PROFESSIONALS & HOURLY RATES ═══
 
 model Professional {
-  id          String   @id @default(uuid())
-  userId      String   @map("user_id")
-  role        String
-  seniority   String   @default("Pleno")
-  seniorityColor String @default("#22c55e") @map("seniority_color")
-  hourlyRate  Float    @map("hourly_rate")
-  currency    String   @default("BRL")
-  isActive    Boolean  @default(true) @map("is_active")
-  history     Json     @default("[]") @db.JsonB
+  id             String  @id @default(uuid())
+  userId         String  @map("user_id")
+  role           String
+  seniority      String  @default("Pleno")
+  seniorityColor String  @default("#22c55e") @map("seniority_color")
+  hourlyRate     Float   @map("hourly_rate")
+  currency       String  @default("BRL")
+  isActive       Boolean @default(true) @map("is_active")
+  history        Json    @default("[]") @db.JsonB
 
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -676,15 +693,15 @@ model Professional {
 // ═══ INTEGRATION SETTINGS ═══
 
 model IntegrationSetting {
-  id          String   @id @default(cuid())
-  userId      String   @map("user_id")
-  provider    String   // anthropic, sendgrid, whatsapp, synthflow, google_calendar
-  isActive    Boolean  @default(false) @map("is_active")
-  credentials Json     @default("{}") // Encrypted API keys / tokens
-  metadata    Json     @default("{}") // Extra config (model, limits, etc.)
+  id          String    @id @default(cuid())
+  userId      String    @map("user_id")
+  provider    String // anthropic, sendgrid, whatsapp, synthflow, google_calendar
+  isActive    Boolean   @default(false) @map("is_active")
+  credentials Json      @default("{}") // Encrypted API keys / tokens
+  metadata    Json      @default("{}") // Extra config (model, limits, etc.)
   lastSyncAt  DateTime? @map("last_sync_at")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -725,7 +742,7 @@ model SalesCadenceStep {
   id              String  @id @default(uuid())
   salesCadenceId  String  @map("sales_cadence_id")
   orderIndex      Int     @default(0) @map("order_index")
-  type            String  // whatsapp_auto, email_auto, task_call, task_generic
+  type            String // whatsapp_auto, email_auto, task_call, task_generic
   title           String
   delayDays       Int     @default(0) @map("delay_days")
   delayHours      Int     @default(0) @map("delay_hours")
@@ -741,46 +758,27 @@ model SalesCadenceStep {
   @@map("sales_cadence_steps")
 }
 
-
 // ═══ LOSS REASONS ═══
 
-model LossReasonCategory {
-  id     String @id @default(uuid())
-  userId String @map("user_id")
-
-  name  String
-  emoji String @default("📋")
-  color String @default("#64748b")
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  reasons LossReason[]
-
-  @@index([userId])
-  @@map("loss_reason_categories")
-}
 
 model LossReason {
   id     String @id @default(uuid())
   userId String @map("user_id")
 
   name        String
-  description String? @db.Text
-  categoryId  String  @map("category_id")
-  active      Boolean @default(true)
-  usageCount  Int     @default(0) @map("usage_count")
-  lastUsed    DateTime? @map("last_used")
+  description String?   @db.Text
+  funnelId    String?   @map("funnel_id")
+  stageId     String?   @map("stage_id")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   user     User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  category LossReasonCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  funnel   Funnel?            @relation(fields: [funnelId], references: [id], onDelete: Cascade)
+  stage    FunnelStage?       @relation(fields: [stageId], references: [id], onDelete: Cascade)
+  deals    Deal[]
 
   @@index([userId])
-  @@index([categoryId])
   @@map("loss_reasons")
 }
 
@@ -807,21 +805,21 @@ model Product {
   id     String @id @default(uuid())
   userId String @map("user_id")
 
-  name               String
-  internalCode       String?  @map("internal_code")
-  description        String?  @db.Text
+  name                String
+  internalCode        String? @map("internal_code")
+  description         String? @db.Text
   detailedDescription String? @map("detailed_description") @db.Text
-  type               String   @default("servico")
-  categoryId         String   @map("category_id")
+  type                String  @default("servico")
+  categoryId          String  @map("category_id")
 
-  priceMin     Float?  @default(0)   @map("price_min")
-  priceMax     Float?  @default(0)   @map("price_max")
-  billingModel String  @default("unico") @map("billing_model")
-  setupFee     Float?  @default(0)   @map("setup_fee")
+  priceMin     Float? @default(0) @map("price_min")
+  priceMax     Float? @default(0) @map("price_max")
+  billingModel String @default("unico") @map("billing_model")
+  setupFee     Float? @default(0) @map("setup_fee")
 
-  marginPercent  Float?  @default(0) @map("margin_percent")
-  discountMax    Float?  @default(0) @map("discount_max")
-  warrantyMonths Int?    @default(3) @map("warranty_months")
+  marginPercent  Float? @default(0) @map("margin_percent")
+  discountMax    Float? @default(0) @map("discount_max")
+  warrantyMonths Int?   @default(3) @map("warranty_months")
 
   complexity     String  @default("medium")
   estimatedHours Int?    @map("estimated_hours")
@@ -836,6 +834,9 @@ model Product {
   featured        Boolean @default(false)
 
   usageCount Int @default(0) @map("usage_count")
+
+  fixedCost    Float @default(0) @map("fixed_cost") // Custo fixo
+  profitMargin Float @default(0) @map("profit_margin") // Margem %
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -1011,13 +1012,13 @@ model PaymentCondition {
   userId String @map("user_id")
 
   name         String
-  description  String?  @db.Text
-  entryPercent Float    @default(0) @map("entry_percent")
-  installments Int      @default(1)
-  discount     Float    @default(0)
-  validityDays Int      @default(15) @map("validity_days")
-  methods      Json     @default("[]")
-  active       Boolean  @default(true)
+  description  String? @db.Text
+  entryPercent Float   @default(0) @map("entry_percent")
+  installments Int     @default(1)
+  discount     Float   @default(0)
+  validityDays Int     @default(15) @map("validity_days")
+  methods      Json    @default("[]")
+  active       Boolean @default(true)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -1040,7 +1041,7 @@ model ChecklistCategory {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   questions ChecklistQuestion[]
 
   @@index([userId])
@@ -1093,18 +1094,17 @@ model SecuritySettings {
 // ═══ NOTIFICATIONS ═══
 
 model Notification {
-  id          String   @id @default(uuid())
-  userId      String   @map("user_id")
-  type        String   // task_assigned, comment_mention, task_blocked, sprint_completed, delivery_approved, delivery_revision, ai_alert, report_pending, deadline_risk, acceptance_signed
+  id          String  @id @default(uuid())
+  userId      String  @map("user_id")
+  type        String // task_assigned, comment_mention, task_blocked, sprint_completed, delivery_approved, delivery_revision, ai_alert, report_pending, deadline_risk, acceptance_signed
   title       String
-  description String   @db.Text
-  read        Boolean  @default(false)
-  link        String?  // frontend route to navigate on click
-  proposalId  String?  @map("proposal_id")
-  dealId      String?  @map("deal_id")
-  metadata    Json?    @db.JsonB
+  description String  @db.Text
+  read        Boolean @default(false)
+  link        String? // frontend route to navigate on click
+  dealId      String? @map("deal_id")
+  metadata    Json?   @db.JsonB
 
-  createdAt   DateTime @default(now()) @map("created_at")
+  createdAt DateTime @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -1119,12 +1119,12 @@ model NotificationSettings {
   id     String @id @default(uuid())
   userId String @unique @map("user_id")
 
-  globalEnabled    Boolean @default(true) @map("global_enabled")
+  globalEnabled     Boolean @default(true) @map("global_enabled")
   quietHoursEnabled Boolean @default(true) @map("quiet_hours_enabled")
-  quietStart       String  @default("22:00") @map("quiet_start")
-  quietEnd         String  @default("07:00") @map("quiet_end")
-  digestEnabled    Boolean @default(true) @map("digest_enabled")
-  digestFrequency  String  @default("daily") @map("digest_frequency")
+  quietStart        String  @default("22:00") @map("quiet_start")
+  quietEnd          String  @default("07:00") @map("quiet_end")
+  digestEnabled     Boolean @default(true) @map("digest_enabled")
+  digestFrequency   String  @default("daily") @map("digest_frequency")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -1153,21 +1153,19 @@ model NotificationPreference {
   @@map("notification_preferences")
 }
 
-
-
 // ═══ BACKUP SETTINGS ═══
 
 model BackupSettings {
-  id               String  @id @default(uuid())
-  userId           String  @unique @map("user_id")
+  id     String @id @default(uuid())
+  userId String @unique @map("user_id")
 
-  autoBackup       Boolean @default(true) @map("auto_backup")
-  retentionDays    Int     @default(30) @map("retention_days")
-  backupTime       String  @default("03:00") @map("backup_time")
+  autoBackup     Boolean @default(true) @map("auto_backup")
+  retentionDays  Int     @default(30) @map("retention_days")
+  backupTime     String  @default("03:00") @map("backup_time")
+  includeClients Boolean @default(true) @map("include_clients")
+  includeConfig  Boolean @default(true) @map("include_config")
+  includeUsers   Boolean @default(false) @map("include_users")
   includeProposals Boolean @default(true) @map("include_proposals")
-  includeClients   Boolean @default(true) @map("include_clients")
-  includeConfig    Boolean @default(true) @map("include_config")
-  includeUsers     Boolean @default(false) @map("include_users")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -1198,25 +1196,25 @@ model BackupEntry {
 // ═══ DOMAIN & WHITE LABEL SETTINGS ═══
 
 model DomainSettings {
-  id                    String  @id @default(uuid())
-  userId                String  @unique @map("user_id")
+  id     String @id @default(uuid())
+  userId String @unique @map("user_id")
 
   // Subdomain
-  portalSubdomain       String  @default("") @map("portal_subdomain")
+  portalSubdomain String @default("") @map("portal_subdomain")
 
   // Custom Domain
-  customDomain          String  @default("") @map("custom_domain")
-  domainVerified        Boolean @default(false) @map("domain_verified")
-  verificationToken     String  @default("") @map("verification_token")
-  sslActive             Boolean @default(false) @map("ssl_active")
+  customDomain      String  @default("") @map("custom_domain")
+  domainVerified    Boolean @default(false) @map("domain_verified")
+  verificationToken String  @default("") @map("verification_token")
+  sslActive         Boolean @default(false) @map("ssl_active")
 
   // White Label
-  whitelabelEnabled     Boolean @default(false) @map("whitelabel_enabled")
-  whitelabelName        String  @default("") @map("whitelabel_name")
-  whitelabelPrimaryColor String @default("#10b981") @map("whitelabel_primary_color")
-  whitelabelLogo        String? @map("whitelabel_logo")
-  whitelabelFavicon     String? @map("whitelabel_favicon")
-  whitelabelFooter      String  @default("") @map("whitelabel_footer")
+  whitelabelEnabled       Boolean @default(false) @map("whitelabel_enabled")
+  whitelabelName          String  @default("") @map("whitelabel_name")
+  whitelabelPrimaryColor  String  @default("#10b981") @map("whitelabel_primary_color")
+  whitelabelLogo          String? @map("whitelabel_logo")
+  whitelabelFavicon       String? @map("whitelabel_favicon")
+  whitelabelFooter        String  @default("") @map("whitelabel_footer")
   whitelabelHidePoweredBy Boolean @default(false) @map("whitelabel_hide_powered_by")
 
   createdAt DateTime @default(now()) @map("created_at")
@@ -1248,8 +1246,6 @@ model ActivityLog {
   @@index([category])
   @@map("activity_logs")
 }
-
-
 
 // ═══════════════════════════════════════
 // DEV PROJECTS (Web Dev Platform)
@@ -1285,73 +1281,76 @@ enum DevTaskPriority {
 }
 
 model DevProject {
-  id            String           @id @default(uuid())
-  name          String
-  client        String
-  phase         DevProjectPhase  @default(requirements)
-  health        DevProjectHealth @default(on_track)
-  progress      Int              @default(0)
-  archived      Boolean          @default(false)
+  id       String           @id @default(uuid())
+  name     String
+  client   String
+  phase    DevProjectPhase  @default(requirements)
+  health   DevProjectHealth @default(on_track)
+  progress Int              @default(0)
+  archived Boolean          @default(false)
 
-  startDate     DateTime?        @map("start_date")
-  deadline      DateTime?
+  proposalId String? @unique @map("proposal_id")
+  proposal   Proposal? @relation(fields: [proposalId], references: [id], onDelete: SetNull)
 
-  hoursEstimated Int             @default(0) @map("hours_estimated")
-  hoursUsed      Int             @default(0) @map("hours_used")
+  assembledProposalId String? @unique @map("assembled_proposal_id")
+  assembledProposal   AssembledProposal? @relation(fields: [assembledProposalId], references: [id], onDelete: SetNull)
+
+  startDate DateTime? @map("start_date")
+  deadline  DateTime?
+
+  hoursEstimated Int @default(0) @map("hours_estimated")
+  hoursUsed      Int @default(0) @map("hours_used")
 
   // Creator
-  createdById   String           @map("created_by_id")
-  createdBy     User             @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  createdById String @map("created_by_id")
+  createdBy   User   @relation(fields: [createdById], references: [id], onDelete: Cascade)
 
-  createdAt     DateTime         @default(now()) @map("created_at")
-  updatedAt     DateTime         @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  tasks         DevTask[]
-  members       DevProjectMember[]
-  contacts      DevProjectContact[]
-  signatories   DevProjectSignatory[]
-  documents     DevProjectDocument[]
-  sprints       DevSprint[]
-
-  proposalId    String?          @unique @map("proposal_id")
-  proposal      Proposal?        @relation(fields: [proposalId], references: [id], onDelete: SetNull)
+  tasks       DevTask[]
+  members     DevProjectMember[]
+  contacts    DevProjectContact[]
+  signatories DevProjectSignatory[]
+  documents   DevProjectDocument[]
+  sprints     DevSprint[]
 
   @@index([createdById])
   @@map("dev_projects")
 }
 
 model DevTask {
-  id              String          @id @default(uuid())
-  title           String
-  description     String?         @db.Text
-  status          DevTaskStatus   @default(todo)
-  priority        DevTaskPriority @default(medium)
-  epic            String?
-  story           String?         @db.Text
-  tags            String[]        @default([])
-  blocked         Boolean         @default(false)
+  id          String          @id @default(uuid())
+  title       String
+  description String?         @db.Text
+  status      DevTaskStatus   @default(todo)
+  priority    DevTaskPriority @default(medium)
+  epic        String?
+  story       String?         @db.Text
+  tags        String[]        @default([])
+  blocked     Boolean         @default(false)
 
-  estimatedHours  Float           @default(0) @map("estimated_hours")
-  loggedHours     Float           @default(0) @map("logged_hours")
-  deadline        DateTime?
+  estimatedHours Float     @default(0) @map("estimated_hours")
+  loggedHours    Float     @default(0) @map("logged_hours")
+  deadline       DateTime?
 
-  projectId       String          @map("project_id")
-  project         DevProject      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String     @map("project_id")
+  project   DevProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  assigneeId      String?         @map("assignee_id")
-  assignee        User?           @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  assigneeId String? @map("assignee_id")
+  assignee   User?   @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
 
-  sprintId        String?         @map("sprint_id")
-  sprint          DevSprint?      @relation(fields: [sprintId], references: [id], onDelete: SetNull)
+  sprintId String?    @map("sprint_id")
+  sprint   DevSprint? @relation(fields: [sprintId], references: [id], onDelete: SetNull)
 
-  createdAt       DateTime        @default(now()) @map("created_at")
-  updatedAt       DateTime        @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  comments        DevTaskComment[]
-  timeLogs        DevTaskTimeLog[]
-  bugs            DevTaskBug[]
-  attachments     DevTaskAttachment[]
-  history         DevTaskHistory[]
+  comments    DevTaskComment[]
+  timeLogs    DevTaskTimeLog[]
+  bugs        DevTaskBug[]
+  attachments DevTaskAttachment[]
+  history     DevTaskHistory[]
 
   @@index([projectId])
   @@index([assigneeId])
@@ -1365,15 +1364,15 @@ model DevTask {
 // ═══ DEV PROJECT — TEAM MEMBERS ═══
 
 model DevProjectMember {
-  id          String     @id @default(uuid())
-  projectId   String     @map("project_id")
-  userId      String     @map("user_id")
-  role        String     @default("DEV") // DEV, TECH_LEAD, QA, DESIGNER, PO, GESTOR
+  id        String @id @default(uuid())
+  projectId String @map("project_id")
+  userId    String @map("user_id")
+  role      String @default("DEV") // DEV, TECH_LEAD, QA, DESIGNER, PO, GESTOR
 
-  createdAt   DateTime   @default(now()) @map("created_at")
+  createdAt DateTime @default(now()) @map("created_at")
 
-  project     DevProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  user        User       @relation("DevProjectMembers", fields: [userId], references: [id], onDelete: Cascade)
+  project DevProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User       @relation("DevProjectMembers", fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([projectId, userId])
   @@index([projectId])
@@ -1384,15 +1383,15 @@ model DevProjectMember {
 // ═══ DEV PROJECT — CLIENT CONTACTS ═══
 
 model DevProjectContact {
-  id          String     @id @default(uuid())
-  projectId   String     @map("project_id")
-  name        String
-  email       String?
-  phone       String?
+  id        String  @id @default(uuid())
+  projectId String  @map("project_id")
+  name      String
+  email     String?
+  phone     String?
 
-  createdAt   DateTime   @default(now()) @map("created_at")
+  createdAt DateTime @default(now()) @map("created_at")
 
-  project     DevProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project DevProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId])
   @@map("dev_project_contacts")
@@ -1401,16 +1400,16 @@ model DevProjectContact {
 // ═══ DEV PROJECT — SIGNATORIES ═══
 
 model DevProjectSignatory {
-  id          String     @id @default(uuid())
-  projectId   String     @map("project_id")
-  role        String     // contratada, contratante, testemunha_1, testemunha_2
-  source      String     // team, client
-  sourceId    String     @map("source_id") // userId or contactId
-  name        String
+  id        String @id @default(uuid())
+  projectId String @map("project_id")
+  role      String // contratada, contratante, testemunha_1, testemunha_2
+  source    String // team, client
+  sourceId  String @map("source_id") // userId or contactId
+  name      String
 
-  createdAt   DateTime   @default(now()) @map("created_at")
+  createdAt DateTime @default(now()) @map("created_at")
 
-  project     DevProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project       DevProject        @relation(fields: [projectId], references: [id], onDelete: Cascade)
   docSignatures DevDocSignature[]
 
   @@unique([projectId, role])
@@ -1421,24 +1420,24 @@ model DevProjectSignatory {
 // ═══ DEV PROJECT — DOCUMENTS ═══
 
 model DevProjectDocument {
-  id            String   @id @default(uuid())
-  projectId     String   @map("project_id")
-  docType       String   @map("doc_type") // brd, contrato, frd, sad, brand-guide, design-system, story-map, sprint-review, roadmap, closure
-  title         String
-  fileName      String   @map("file_name")
-  storedName    String   @map("stored_name")
-  fileSize      Int      @map("file_size")
-  mimeType      String   @default("application/pdf") @map("mime_type")
-  status        String   @default("draft") // draft, sent, signed
-  notes         String?  @db.Text
-  uploadedById  String   @map("uploaded_by_id")
+  id           String  @id @default(uuid())
+  projectId    String  @map("project_id")
+  docType      String  @map("doc_type") // brd, contrato, frd, sad, brand-guide, design-system, story-map, sprint-review, roadmap, closure
+  title        String
+  fileName     String  @map("file_name")
+  storedName   String  @map("stored_name")
+  fileSize     Int     @map("file_size")
+  mimeType     String  @default("application/pdf") @map("mime_type")
+  status       String  @default("draft") // draft, sent, signed
+  notes        String? @db.Text
+  uploadedById String  @map("uploaded_by_id")
 
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  project       DevProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  uploadedBy    User       @relation("DocUploader", fields: [uploadedById], references: [id], onDelete: Cascade)
-  signatures    DevDocSignature[]
+  project    DevProject        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  uploadedBy User              @relation("DocUploader", fields: [uploadedById], references: [id], onDelete: Cascade)
+  signatures DevDocSignature[]
 
   @@index([projectId, docType])
   @@map("dev_project_documents")
@@ -1447,20 +1446,20 @@ model DevProjectDocument {
 // ═══ DEV DOCUMENT — SIGNATURES ═══
 
 model DevDocSignature {
-  id            String   @id @default(uuid())
-  documentId    String   @map("document_id")
-  signatoryId   String?  @map("signatory_id")
-  name          String
-  email         String
-  role          String   // contratada, contratante, testemunha_1, testemunha_2
-  status        String   @default("pending") // pending, code_sent, signed
-  code          String?
-  signedAt      DateTime? @map("signed_at")
+  id          String    @id @default(uuid())
+  documentId  String    @map("document_id")
+  signatoryId String?   @map("signatory_id")
+  name        String
+  email       String
+  role        String // contratada, contratante, testemunha_1, testemunha_2
+  status      String    @default("pending") // pending, code_sent, signed
+  code        String?
+  signedAt    DateTime? @map("signed_at")
 
-  createdAt     DateTime @default(now()) @map("created_at")
+  createdAt DateTime @default(now()) @map("created_at")
 
-  document      DevProjectDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  signatory     DevProjectSignatory? @relation(fields: [signatoryId], references: [id], onDelete: SetNull)
+  document  DevProjectDocument   @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  signatory DevProjectSignatory? @relation(fields: [signatoryId], references: [id], onDelete: SetNull)
 
   @@index([documentId])
   @@map("dev_doc_signatures")
@@ -1469,20 +1468,20 @@ model DevDocSignature {
 // ═══ DEV PROJECT — SPRINTS ═══
 
 model DevSprint {
-  id          String   @id @default(uuid())
-  projectId   String   @map("project_id")
-  name        String
-  goal        String?  @db.Text
-  startDate   DateTime? @map("start_date")
-  endDate     DateTime? @map("end_date")
-  status      String   @default("planned") // planned, active, completed
-  sortOrder   Int      @default(0) @map("sort_order")
+  id        String    @id @default(uuid())
+  projectId String    @map("project_id")
+  name      String
+  goal      String?   @db.Text
+  startDate DateTime? @map("start_date")
+  endDate   DateTime? @map("end_date")
+  status    String    @default("planned") // planned, active, completed
+  sortOrder Int       @default(0) @map("sort_order")
 
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  project     DevProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  tasks       DevTask[]
+  project DevProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks   DevTask[]
 
   @@index([projectId])
   @@map("dev_sprints")
@@ -1491,15 +1490,17 @@ model DevSprint {
 // ═══ DEV TASK — COMMENTS ═══
 
 model DevTaskComment {
-  id        String   @id @default(uuid())
-  taskId    String   @map("task_id")
-  userId    String   @map("user_id")
-  text      String   @db.Text
+  id     String @id @default(uuid())
+  taskId String @map("task_id")
+  userId String @map("user_id")
+  text   String @db.Text
+  isRead Boolean @default(false) @map("is_read")
+
 
   createdAt DateTime @default(now()) @map("created_at")
 
-  task      DevTask  @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  user      User     @relation("TaskComments", fields: [userId], references: [id], onDelete: Cascade)
+  task DevTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User    @relation("TaskComments", fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([taskId])
   @@map("dev_task_comments")
@@ -1515,10 +1516,10 @@ model DevTaskTimeLog {
   description String?  @db.Text
   date        DateTime @default(now())
 
-  createdAt   DateTime @default(now()) @map("created_at")
+  createdAt DateTime @default(now()) @map("created_at")
 
-  task        DevTask  @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  user        User     @relation("TaskTimeLogs", fields: [userId], references: [id], onDelete: Cascade)
+  task DevTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User    @relation("TaskTimeLogs", fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([taskId])
   @@map("dev_task_time_logs")
@@ -1527,23 +1528,23 @@ model DevTaskTimeLog {
 // ═══ DEV TASK — BUGS ═══
 
 model DevTaskBug {
-  id              String   @id @default(uuid())
-  taskId          String   @map("task_id")
-  description     String   @db.Text
-  category        String   @default("functional")
-  priority        String   @default("high")
-  status          String   @default("open") // open, fixing, fixed
-  reporterId      String   @map("reporter_id")
-  assigneeId      String?  @map("assignee_id")
-  hoursWorked     Float    @default(0) @map("hours_worked")
-  attachmentIds   String[] @default([]) @map("attachment_ids")
+  id            String   @id @default(uuid())
+  taskId        String   @map("task_id")
+  description   String   @db.Text
+  category      String   @default("functional")
+  priority      String   @default("high")
+  status        String   @default("open") // open, fixing, fixed
+  reporterId    String   @map("reporter_id")
+  assigneeId    String?  @map("assignee_id")
+  hoursWorked   Float    @default(0) @map("hours_worked")
+  attachmentIds String[] @default([]) @map("attachment_ids")
 
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  task            DevTask  @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  reporter        User     @relation("TaskBugsReported", fields: [reporterId], references: [id], onDelete: Cascade)
-  assignee        User?    @relation("TaskBugsAssigned", fields: [assigneeId], references: [id], onDelete: SetNull)
+  task     DevTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  reporter User    @relation("TaskBugsReported", fields: [reporterId], references: [id], onDelete: Cascade)
+  assignee User?   @relation("TaskBugsAssigned", fields: [assigneeId], references: [id], onDelete: SetNull)
 
   @@index([taskId])
   @@map("dev_task_bugs")
@@ -1552,18 +1553,18 @@ model DevTaskBug {
 // ═══ DEV TASK — ATTACHMENTS ═══
 
 model DevTaskAttachment {
-  id           String   @id @default(uuid())
-  taskId       String   @map("task_id")
-  userId       String   @map("user_id")
-  originalName String   @map("original_name")
-  storedName   String   @map("stored_name")
-  mimeType     String   @map("mime_type")
+  id           String @id @default(uuid())
+  taskId       String @map("task_id")
+  userId       String @map("user_id")
+  originalName String @map("original_name")
+  storedName   String @map("stored_name")
+  mimeType     String @map("mime_type")
   size         Int
 
-  createdAt    DateTime @default(now()) @map("created_at")
+  createdAt DateTime @default(now()) @map("created_at")
 
-  task         DevTask  @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  user         User     @relation("TaskAttachments", fields: [userId], references: [id], onDelete: Cascade)
+  task DevTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User    @relation("TaskAttachments", fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([taskId])
   @@map("dev_task_attachments")
@@ -1572,17 +1573,17 @@ model DevTaskAttachment {
 // ═══ DEV TASK — HISTORY (Activity Log) ═══
 
 model DevTaskHistory {
-  id          String   @id @default(uuid())
-  taskId      String   @map("task_id")
-  userId      String   @map("user_id")
-  action      String   // status_change, comment, bug_report, bug_fixed, time_log, attachment_upload, attachment_delete, assignment, priority_change, description_update, task_created
-  description String   @db.Text
-  metadata    Json?    @db.JsonB // extra data (e.g. old/new status, hours, etc.)
+  id          String @id @default(uuid())
+  taskId      String @map("task_id")
+  userId      String @map("user_id")
+  action      String // status_change, comment, bug_report, bug_fixed, time_log, attachment_upload, attachment_delete, assignment, priority_change, description_update, task_created
+  description String @db.Text
+  metadata    Json?  @db.JsonB // extra data (e.g. old/new status, hours, etc.)
 
-  createdAt   DateTime @default(now()) @map("created_at")
+  createdAt DateTime @default(now()) @map("created_at")
 
-  task        DevTask  @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  user        User     @relation("TaskHistory", fields: [userId], references: [id], onDelete: Cascade)
+  task DevTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User    @relation("TaskHistory", fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([taskId, createdAt])
   @@map("dev_task_history")
@@ -1591,12 +1592,12 @@ model DevTaskHistory {
 // ═══ DEV PROJECT — SETTINGS ═══
 
 model DevProjectSettings {
-  id       String @id @default(uuid())
-  userId   String @unique @map("user_id")
+  id     String @id @default(uuid())
+  userId String @unique @map("user_id")
 
-  phases   Json   @default("[]") @db.JsonB  // [{name, checklist: string[]}]
-  roles    Json   @default("[]") @db.JsonB  // [{name, permissions: string[]}]
-  aiRules  Json   @default("[]") @db.JsonB @map("ai_rules") // [{description, threshold, unit, enabled}]
+  phases  Json @default("[]") @db.JsonB // [{name, checklist: string[]}]
+  roles   Json @default("[]") @db.JsonB // [{name, permissions: string[]}]
+  aiRules Json @default("[]") @map("ai_rules") @db.JsonB // [{description, threshold, unit, enabled}]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -1653,22 +1654,22 @@ model FeatureModule {
 }
 
 model FeatureScreen {
-  id            String   @id @default(uuid())
-  moduleId      String   @map("module_id")
-  name          String
-  slug          String
-  description   String?  @db.Text
-  objective     String?  @db.Text
-  screenType    String   @default("Listagem") @map("screen_type")
-  complexityBase String  @default("Média") @map("complexity_base")
-  status        String   @default("active")
-  platforms     String[] @default(["Web"])
-  orderIndex    Int      @default(0) @map("order_index")
+  id             String   @id @default(uuid())
+  moduleId       String   @map("module_id")
+  name           String
+  slug           String
+  description    String?  @db.Text
+  objective      String?  @db.Text
+  screenType     String   @default("Listagem") @map("screen_type")
+  complexityBase String   @default("Média") @map("complexity_base")
+  status         String   @default("active")
+  platforms      String[] @default(["Web"])
+  orderIndex     Int      @default(0) @map("order_index")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  module   FeatureModule  @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  module   FeatureModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
   features FeatureItem[]
 
   @@index([moduleId])
@@ -1676,33 +1677,33 @@ model FeatureScreen {
 }
 
 model FeatureItem {
-  id                   String   @id @default(uuid())
-  screenId             String   @map("screen_id")
-  name                 String
-  slug                 String
-  descriptionFunc      String?  @db.Text @map("description_func")
-  useCase              String?  @db.Text @map("use_case")
-  businessIntent       String?  @db.Text @map("business_intent")
-  contextTriggers      String[] @default([]) @map("context_triggers")
-  interfaceExample     String?  @db.Text @map("interface_example")
-  techType             String?  @map("tech_type")
-  featurePattern       String?  @map("feature_pattern")
-  complexity           String   @default("Média")
-  algorithmicComplexity String  @default("baixa") @map("algorithmic_complexity")
-  usageFrequency       String   @default("Comum") @map("usage_frequency")
-  status               String   @default("active")
-  platforms            String[] @default(["Web"])
-  reusable             Boolean  @default(false)
-  baseWeight           Float    @default(1) @map("base_weight")
-  tags                 String[] @default([])
-  observations         String?  @db.Text
-  dependencies         String[] @default([])
-  dependsOn            String[] @default([]) @map("depends_on")
-  technicalComponents  String[] @default([]) @map("technical_components")
-  externalIntegrations String[] @default([]) @map("external_integrations")
-  applicableSegments   String[] @default([]) @map("applicable_segments")
-  rates                Json     @default("{}") @db.JsonB
-  orderIndex           Int      @default(0) @map("order_index")
+  id                    String   @id @default(uuid())
+  screenId              String   @map("screen_id")
+  name                  String
+  slug                  String
+  descriptionFunc       String?  @map("description_func") @db.Text
+  useCase               String?  @map("use_case") @db.Text
+  businessIntent        String?  @map("business_intent") @db.Text
+  contextTriggers       String[] @default([]) @map("context_triggers")
+  interfaceExample      String?  @map("interface_example") @db.Text
+  techType              String?  @map("tech_type")
+  featurePattern        String?  @map("feature_pattern")
+  complexity            String   @default("Média")
+  algorithmicComplexity String   @default("baixa") @map("algorithmic_complexity")
+  usageFrequency        String   @default("Comum") @map("usage_frequency")
+  status                String   @default("active")
+  platforms             String[] @default(["Web"])
+  reusable              Boolean  @default(false)
+  baseWeight            Float    @default(1) @map("base_weight")
+  tags                  String[] @default([])
+  observations          String?  @db.Text
+  dependencies          String[] @default([])
+  dependsOn             String[] @default([]) @map("depends_on")
+  technicalComponents   String[] @default([]) @map("technical_components")
+  externalIntegrations  String[] @default([]) @map("external_integrations")
+  applicableSegments    String[] @default([]) @map("applicable_segments")
+  rates                 Json     @default("{}") @db.JsonB
+  orderIndex            Int      @default(0) @map("order_index")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -1718,27 +1719,28 @@ model FeatureItem {
 // ═══════════════════════════════════════
 
 model Lead {
-  id       String @id @default(uuid())
-  userId   String? @map("user_id") // Responsável atribuído (nullable: leads chegam sem dono)
+  id     String  @id @default(uuid())
+  userId String? @map("user_id") // Responsável atribuído (nullable: leads chegam sem dono)
 
   // Dados do formulário
   name     String
   email    String
   phone    String
   company  String?
-  services String[]  @default([])    // IDs dos serviços selecionados
-  budget   Json?     @db.JsonB       // { serviceId: { status, range } }
-  message  String?   @db.Text
+  services String[] @default([]) // IDs dos serviços selecionados
+  budget   Json?    @db.JsonB // { serviceId: { status, range } }
+  message  String?  @db.Text
 
   // Gestão
-  status   String  @default("new")   // "new", "contacted", "qualified", "converted", "lost"
-  source   String  @default("website") // "website", "referral", "ads", etc.
-  notes    String? @db.Text
+  status String  @default("new") // "new", "contacted", "qualified", "converted", "lost"
+  source String  @default("website") // "website", "referral", "ads", etc.
+  notes  String? @db.Text
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   user User? @relation("LeadOwner", fields: [userId], references: [id], onDelete: SetNull)
+  whatsappContact WhatsappContact?
 
   @@index([userId])
   @@index([email])
@@ -1806,3 +1808,167 @@ model ProposalComment {
   @@map("proposal_comments")
 }
 
+// ═══════════════════════════════════════
+// ASSEMBLED PROPOSALS (Proposal AI)
+// ═══════════════════════════════════════
+
+model AssembledProposal {
+  id              String   @id @default(uuid())
+  userId          String   @map("user_id") // Account Owner
+  
+  title           String   @default("Nova Proposta")
+  clientId        String?  @map("client_id")
+  validityDays    Int      @default(15) @map("validity_days")
+  dealId          String?  @map("deal_id")
+  publicId        String?  @unique @map("public_id")
+  viewerId        String?  @map("viewer_id")
+  
+  // JSON structure holding the entire CompleteScope (Users -> Platforms -> Modules -> Screens -> Functionalities + Integrations)
+  scopeData       Json     @map("scope_data") @db.JsonB
+  
+  totalHours      Int      @default(0) @map("total_hours")
+  
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  user            User     @relation("ProposalAccountOwner", fields: [userId], references: [id], onDelete: Cascade)
+  viewer          User?    @relation("AssembledProposalViewer", fields: [viewerId], references: [id], onDelete: SetNull)
+  client          Client?  @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  deal            Deal?    @relation(fields: [dealId], references: [id], onDelete: SetNull)
+
+  devProject      DevProject?
+
+  @@index([userId])
+  @@index([viewerId])
+  @@index([clientId])
+  @@index([dealId])
+  @@map("assembled_proposals")
+}
+
+// ═══════════════════════════════════════
+// KNOWLEDGE BASE (Proposal AI Context)
+// ═══════════════════════════════════════
+
+model KnowledgeBaseFile {
+  id        String @id @default(uuid())
+  userId    String @map("user_id")
+  name      String
+  content   String @db.Text
+  sizeBytes Int    @default(0) @map("size_bytes")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("knowledge_base_files")
+}
+
+// ═══════════════════════════════════════
+// WHATSAPP - META CLOUD API MODULE
+// ═══════════════════════════════════════
+
+model WhatsappContact {
+  id        String   @id @default(uuid())
+  phone     String   @unique // O número de telefone com DDI e sem caracteres
+  profileName String? @map("profile_name") // Nome público recebido no webhook
+
+  // Optional links to CRM entities
+  leadId    String?  @unique @map("lead_id")
+  clientId  String?  @unique @map("client_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  lead      Lead?    @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  client    Client?  @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  conversations WhatsappConversation[]
+  labels        WhatsappContactLabel[]
+
+  @@index([phone])
+  @@map("whatsapp_contacts")
+}
+
+model WhatsappConversation {
+  id         String   @id @default(uuid())
+  contactId  String   @map("contact_id")
+  assigneeId String?  @map("assignee_id") // Dono (Round-Robin)
+
+  status     String   @default("open") // open, resolved, archived
+  unreadCount Int     @default(0) @map("unread_count") // para o UI
+  
+  // Quick lookup cache
+  lastMessageAt DateTime @default(now()) @map("last_message_at")
+  lastMessageSnippet String? @db.Text @map("last_message_snippet")
+
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  contact    WhatsappContact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  assignee   User?           @relation("WhatsappAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+
+  messages   WhatsappMessage[]
+
+  @@index([contactId])
+  @@index([assigneeId])
+  @@index([status])
+  @@map("whatsapp_conversations")
+}
+
+model WhatsappMessage {
+  id             String   @id @default(uuid()) // Our internal ID
+  conversationId String   @map("conversation_id")
+  metaMessageId  String?  @unique @map("meta_message_id") // ID from Meta wamid.xxxx
+
+  direction      String   // "inbound" (cliente para nois) | "outbound" (nois pro cliente)
+  type           String   @default("text") // text, image, document, audio, template
+  
+  content        String?  @db.Text
+  mediaUrl       String?  @map("media_url")
+  mimeType       String?  @map("mime_type")
+
+  status         String   @default("sent") // sent, delivered, read, failed
+
+  timestamp      DateTime @default(now())
+
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  conversation   WhatsappConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@index([metaMessageId])
+  @@map("whatsapp_messages")
+}
+
+model WhatsappLabel {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  name      String
+  color     String   @default("bg-blue-500")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contacts  WhatsappContactLabel[]
+
+  @@index([userId])
+  @@map("whatsapp_labels")
+}
+
+model WhatsappContactLabel {
+  id        String   @id @default(uuid())
+  contactId String   @map("contact_id")
+  labelId   String   @map("label_id")
+
+  contact   WhatsappContact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  label     WhatsappLabel   @relation(fields: [labelId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([contactId, labelId])
+  @@index([contactId])
+  @@index([labelId])
+  @@map("whatsapp_contact_labels")
+}

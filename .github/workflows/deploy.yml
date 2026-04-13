@@ -1,37 +1,40 @@
-name: Deploy to DigitalOcean Droplet
+name: Deploy API to DigitalOcean
 
 on:
   push:
     branches:
       - main
-  workflow_dispatch: # Permite rodar o deploy manualmente clicando no botão no GitHub
+    paths:
+      - 'apps/api/**'
+      - 'packages/**'
+      - 'docker-compose.prod.yml'
+      - '.env.example'
+      - 'pnpm-lock.yaml'
+  workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Executando Deploy via SSH
+      - name: Deploy API via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            echo "Conectado ao servidor da DigitalOcean!"
+            echo "🔗 Conectado ao servidor DigitalOcean"
             
-            # Navegando para a pasta do projeto (supondo que ficará na home root)
-            cd ~/proposal-ai
+            cd ~/app.mestresdaweb.com.br
             
-            # Baixando o código novo
-            echo "Fazendo git pull da branch main..."
+            echo "📥 Pulling latest code..."
             git pull origin main
             
-            # Reconstruindo os containers que tiveram modificação no código e subindo-os
-            echo "Realizando build e restart dos conteineres em plano de fundo..."
+            echo "🐳 Building and restarting API containers..."
             docker compose -f docker-compose.prod.yml up -d --build
             
-            # Em casa de acúmulo de imagens antigas, limpamos caches sem quebrar os containers ativos
+            echo "🧹 Cleaning up old images..."
             docker image prune -f
             
-            echo "🚀 Deploy finalizado com sucesso!"
+            echo "🚀 API Deploy finalizado com sucesso!"

@@ -35,7 +35,6 @@ const nodeTypeConfig: Record<string, { label: string; icon: any; color: string; 
     start: { label: "Início (Lead entra na fase)", icon: Flag, color: "text-blue-400", bg: "border-blue-500/40 bg-blue-500/10", category: "control" },
     whatsapp: { label: "Enviar WhatsApp", icon: MessageSquare, color: "text-blue-400", bg: "border-blue-500/40 bg-blue-500/10", category: "action" },
     email: { label: "Enviar E-mail", icon: Mail, color: "text-blue-400", bg: "border-blue-500/40 bg-blue-500/10", category: "action" },
-    phone_ai: { label: "Ligação com IA", icon: BrainCircuit, color: "text-orange-400", bg: "border-orange-500/40 bg-orange-500/10", category: "action" },
     task_call: { label: "Ligação Manual", icon: Phone, color: "text-blue-400", bg: "border-blue-500/40 bg-blue-500/10", category: "action" },
     task_generic: { label: "Tarefa Manual", icon: ClipboardList, color: "text-purple-400", bg: "border-purple-500/40 bg-purple-500/10", category: "action" },
     delay: { label: "Aguardar", icon: Clock, color: "text-amber-400", bg: "border-amber-500/40 bg-amber-500/10", category: "action" },
@@ -56,7 +55,7 @@ function CustomNode({ data }: { data: any }) {
     const isStart = nodeType === "start";
     const isEnd = nodeType.startsWith("end_");
     const hasContent = data.hasContent;
-    const needsContent = ["email", "whatsapp", "task_call", "task_generic", "phone_ai"].includes(nodeType);
+    const needsContent = ["email", "whatsapp", "task_call", "task_generic"].includes(nodeType);
     const showWarning = needsContent && !hasContent;
 
     return (
@@ -248,7 +247,7 @@ function SalesCadenceBuilderInner() {
                 <div className="w-60 shrink-0 bg-slate-900 border-r border-slate-800 overflow-y-auto custom-scrollbar">
                     <div className="p-4 space-y-4">
                         {[
-                            { title: "Ações", items: ["whatsapp", "email", "phone_ai", "task_call", "task_generic", "delay"] },
+                            { title: "Ações", items: ["whatsapp", "email", "task_call", "task_generic", "delay"] },
                             { title: "Condições", items: ["condition_email_opened", "condition_email_replied", "condition_whatsapp_replied", "condition_call_answered"] },
                             { title: "Controle", items: ["end_success", "end_no_contact"] },
                         ].map(group => (
@@ -376,46 +375,6 @@ function SalesCadenceBuilderInner() {
                                     </div>
                                 )}
 
-                                {/* Phone AI Editor (Synthflow) */}
-                                {selType === "phone_ai" && (
-                                    <div className="space-y-3">
-                                        <div className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-xl">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <BrainCircuit size={14} className="text-orange-400" />
-                                                <span className="text-[10px] font-bold text-orange-400 uppercase">Ligação com IA (Synthflow)</span>
-                                            </div>
-                                            <p className="text-[10px] text-slate-400">A IA fará a ligação automaticamente usando Synthflow.</p>
-                                        </div>
-                                        {[
-                                            { key: "opening", label: "1. Abertura", placeholder: "Olá {nome}, aqui é..." },
-                                            { key: "hook", label: "2. Gancho", placeholder: "Vi que a {empresa}..." },
-                                            { key: "pitch", label: "3. Pitch", placeholder: "Apresentação do produto..." },
-                                            { key: "questions", label: "4. Qualificação", placeholder: "Perguntas BANT..." },
-                                            { key: "scheduling", label: "5. Agendamento", placeholder: "Posso sugerir alguns horários?" },
-                                            { key: "voicemail", label: "6. Voicemail", placeholder: "Mensagem para caixa postal..." },
-                                        ].map(section => (
-                                            <div key={section.key}>
-                                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">{section.label}</label>
-                                                <textarea className="bg-slate-950 border border-slate-800 text-white text-sm rounded-lg w-full px-3 py-2 min-h-[60px] resize-none focus:border-orange-500 outline-none" placeholder={section.placeholder} value={editorContent[section.key] || ""} onChange={e => setEditorContent((c: any) => ({ ...c, [section.key]: e.target.value }))} />
-                                            </div>
-                                        ))}
-                                        <div>
-                                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Tom de Voz</label>
-                                            <select className="bg-slate-950 border border-slate-800 text-white text-sm rounded-lg w-full px-3 py-2 focus:border-orange-500 outline-none" value={editorContent.voiceTone || "female"} onChange={e => setEditorContent((c: any) => ({ ...c, voiceTone: e.target.value }))}>
-                                                <option value="female">Feminino</option>
-                                                <option value="male">Masculino</option>
-                                            </select>
-                                        </div>
-                                        <button className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-purple-500/10 border border-purple-500/20 rounded-xl text-xs text-purple-400 font-bold hover:bg-purple-500/20 transition-colors">
-                                            <Sparkles size={14} /> Gerar Script com IA
-                                        </button>
-                                        <button onClick={() => {
-                                            setNodes(ns => ns.map(n => n.id === selectedNode ? { ...n, data: { ...n.data, content: editorContent, hasContent: true } } : n));
-                                        }} className="w-full px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-colors">
-                                            Salvar Script
-                                        </button>
-                                    </div>
-                                )}
 
                                 {/* Task Call Manual / Generic Editor */}
                                 {(selType === "task_call" || selType === "task_generic") && (

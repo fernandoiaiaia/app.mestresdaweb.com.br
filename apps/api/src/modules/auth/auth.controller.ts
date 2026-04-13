@@ -141,6 +141,30 @@ async function googleLogin(req: Request, res: Response): Promise<void> {
     res.status(200).json({ success: true, data: result });
 }
 
+async function appleLogin(req: Request, res: Response): Promise<void> {
+    const ua = req.headers["user-agent"];
+    const ip = extractIp(req);
+    const device = extractDevice(ua);
+
+    const result = await authService.appleLogin(req.body);
+
+    try {
+        const r = result as any;
+        if (r.user) {
+            const session = await securityService.createSession(r.user.id, {
+                device: extractDevice(ua),
+                browser: extractBrowser(ua),
+                ip,
+            });
+            await securityService.logLogin(r.user.id, ip, device, "success");
+            res.status(200).json({ success: true, data: { ...result, sessionId: session.id } });
+            return;
+        }
+    } catch (_) { /* ignore errors */ }
+
+    res.status(200).json({ success: true, data: result });
+}
+
 async function refresh(req: Request, res: Response): Promise<void> {
     const result = await authService.refresh(req.body.refreshToken);
     res.status(200).json({ success: true, data: result });
@@ -183,6 +207,33 @@ async function me(req: Request, res: Response): Promise<void> {
         return;
     }
     const permissions = await authRepository.findPermissionsByUserId(userId);
+    let companyName = "Empresa Não Informada";
+    let phoneNum = user.phone;
+
+    try {
+        const { prisma } = await import("../../config/database.js");
+        
+        // 1. Try InstitutionalProfile (Admin/Owner)
+        const instProfile = await prisma.institutionalProfile.findUnique({
+            where: { userId: user.id }
+        });
+
+        if (instProfile) {
+            if (instProfile.companyName) companyName = instProfile.companyName;
+            if (instProfile.phone) phoneNum = instProfile.phone;
+        } else {
+            // 2. Try Client
+            const clientRec = await prisma.client.findFirst({
+                where: { email: user.email }
+            });
+            if (clientRec) {
+                if (clientRec.company) companyName = clientRec.company;
+                else if (clientRec.name) companyName = clientRec.name;
+                if (clientRec.phone && !phoneNum) phoneNum = clientRec.phone;
+            }
+        }
+    } catch(err) {}
+
     res.status(200).json({
         success: true,
         data: {
@@ -191,10 +242,23 @@ async function me(req: Request, res: Response): Promise<void> {
                 name: user.name,
                 email: user.email,
                 role: user.role,
+                phone: phoneNum,
+                company: companyName,
                 permissions,
             },
         },
     });
 }
 
-export const authController = { register, login, verify2fa, googleLogin, refresh, logout, me, forgotPassword, resetPassword };
+export const authController = {
+    register,
+    login,
+    googleLogin,
+    appleLogin,
+    refresh,
+    logout,
+    forgotPassword,
+    resetPassword,
+    verify2fa,
+    me,
+};

@@ -7,7 +7,7 @@ import {
     ArrowLeft, Upload, FileText, Trash2, Eye, Send, Clock, CheckCircle2,
     FileSignature, ShieldCheck, Mail, Lock, Unlock, X, Download,
     ClipboardList, Handshake, FileCheck, LayoutGrid, Palette, Map,
-    BarChart3, Route, FolderCheck,
+    BarChart3, Route, FolderCheck, FilePlus2,
 } from "lucide-react";
 import { api } from "@/lib/api";
 
@@ -36,6 +36,7 @@ const DOC_TYPES: Record<string, DocTypeConfig> = {
     "sprint-review": { id: "sprint-review", name: "Sprint Review Report", icon: <BarChart3 size={22} />, color: "text-blue-400", bgColor: "bg-blue-500/10", borderColor: "border-blue-500/20" },
     roadmap: { id: "roadmap", name: "RoadMap", icon: <Route size={22} />, color: "text-orange-400", bgColor: "bg-orange-500/10", borderColor: "border-orange-500/20" },
     closure: { id: "closure", name: "Project Closure Document", icon: <FolderCheck size={22} />, color: "text-teal-400", bgColor: "bg-teal-500/10", borderColor: "border-teal-500/20" },
+    outros: { id: "outros", name: "Outros", icon: <FilePlus2 size={22} />, color: "text-slate-400", bgColor: "bg-slate-500/10", borderColor: "border-slate-500/20" },
 };
 
 // ═══════════════════════════════════════════════════

@@ -137,6 +137,26 @@ export default function NewOpportunityPage() {
 
     useEffect(() => {
         loadDependencies();
+
+        // Pre-fill from query params (e.g., coming from WhatsApp Inbox unknown contact)
+        const urlParams = new URLSearchParams(window.location.search);
+        const autoPhone = urlParams.get('phone');
+        const autoName = urlParams.get('name');
+
+        if (autoPhone || autoName) {
+            setIsCreatingClient(true);
+            setNewClientForm(prev => ({
+                ...prev,
+                name: autoName || "",
+                phone: autoPhone || ""
+            }));
+            if (autoName && autoName !== "Novo Contato") {
+                setForm(prev => ({
+                    ...prev,
+                    title: `Negociação - ${autoName}`
+                }));
+            }
+        }
     }, []);
 
     const loadDependencies = async () => {

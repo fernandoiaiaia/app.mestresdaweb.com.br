@@ -1,21 +1,12 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { dealsService } from './src/modules/deals/deals.service.js';
 
 async function main() {
-    console.log("Fetching deals...");
-    const deals = await prisma.deal.findMany({
-        take: 3,
-        select: { id: true, title: true, userId: true }
-    });
-    console.log(JSON.stringify(deals, null, 2));
+    try {
+        const dummyJwt = { userId: "e29fb425-e7d7-4fc9-be14-352510e286a9", role: "USER" };
+        const deals = await dealsService.list(dummyJwt, { funnelId: "5a3ec88f-197a-46f4-9de7-49a9c7f82ce5" });
+        console.log("Deals for Duda in Funnel 5a3ec...:", deals.length);
+    } catch (e) {
+        console.error("ERROR:", e);
+    }
 }
-
-main()
-    .catch(e => {
-        console.error(e)
-        process.exit(1)
-    })
-    .finally(async () => {
-        await prisma.$disconnect()
-    })
+main();

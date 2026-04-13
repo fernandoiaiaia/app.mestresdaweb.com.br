@@ -106,18 +106,19 @@ const GROWTH_PERMISSIONS: ModuleGroup[] = [
         ],
     },
     {
-        section: "Propostas",
-        sectionIcon: <FileText size={16} />,
-        sectionColor: "text-violet-400",
+        section: "Montador de Proposta",
+        sectionIcon: <Package size={16} />,
+        sectionColor: "text-purple-400",
         modules: [
             {
-                name: "Propostas",
-                icon: <FolderOpen size={16} />,
+                name: "Montador de Proposta",
+                icon: <Package size={16} />,
                 permissions: [
                     { module: "crm.proposals", action: "view", label: "Visualizar", hasDataScope: true },
                     { module: "crm.proposals", action: "create", label: "Criar" },
                     { module: "crm.proposals", action: "edit", label: "Editar" },
-                    { module: "crm.proposals", action: "send", label: "Enviar" },
+                    { module: "crm.proposals", action: "delete", label: "Excluir" },
+                    { module: "crm.proposals", action: "mark_paid", label: "Marcar como Pago" },
                 ],
             },
         ],
@@ -304,6 +305,20 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
 
     // Permissions state
     const [perms, setPerms] = useState<PermState>({});
+    const [funnels, setFunnels] = useState<any[]>([]);
+    const [allowedFunnels, setAllowedFunnels] = useState<string[]>([]);
+
+    useEffect(() => {
+        const fetchFunnels = async () => {
+            try {
+                const res = await api<any[]>('/api/funnels');
+                if (res.data) setFunnels(res.data);
+            } catch (e) {
+                console.error(e);
+            }
+        };
+        fetchFunnels();
+    }, []);
 
     // Determine which permissions to show based on team
     const activePermissions = userTeam === "dev" ? DEV_PERMISSIONS
@@ -328,6 +343,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                     setRole(u.role || "USER");
                     setActive(u.active ?? true);
                     setAllowedApps(u.allowedApps || []);
+                    setAllowedFunnels(u.allowedFunnels || []);
                     setUserTeam(detectTeam(u.allowedApps || []));
 
                     // Load permissions into state
@@ -422,6 +438,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                     role,
                     active,
                     allowedApps,
+                    allowedFunnels,
                     permissions,
                 },
             });
@@ -725,6 +742,41 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                                                         );
                                                     })}
                                                 </div>
+                                                {mod.name === "Pipeline" && (perms[makeKey("crm.pipeline", "view")]?.enabled || perms[makeKey("crm.pipeline", "manage")]?.enabled) && (
+                                                    <div className="mt-4 pt-3 border-t border-white/[0.04]">
+                                                        <div className="flex items-center gap-2 mb-2">
+                                                            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Funis Permitidos</label>
+                                                            <span className="text-[9px] text-slate-500 bg-slate-800 px-1.5 py-0.5 rounded">Opcional</span>
+                                                        </div>
+                                                        {funnels.length === 0 ? (
+                                                            <div className="text-xs text-slate-500 italic">Nenhum funil cadastrado.</div>
+                                                        ) : (
+                                                            <div className="flex flex-wrap gap-2">
+                                                                {funnels.map(f => {
+                                                                    const isSelected = allowedFunnels.includes(f.id);
+                                                                    return (
+                                                                        <button
+                                                                            key={f.id}
+                                                                            type="button"
+                                                                            onClick={() => {
+                                                                                setAllowedFunnels(prev => isSelected ? prev.filter(v => v !== f.id) : [...prev, f.id]);
+                                                                            }}
+                                                                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${isSelected
+                                                                                ? "bg-purple-500/10 border-purple-500/20 text-purple-400"
+                                                                                : "bg-slate-800/50 border-white/[0.06] text-slate-500 hover:text-slate-300"
+                                                                            }`}
+                                                                        >
+                                                                            {f.name}
+                                                                        </button>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        )}
+                                                        <p className="text-[10px] text-slate-500 mt-2 leading-relaxed">
+                                                            Se nenhum funil for selecionado, os funis exibidos dependerão das permissões de &quot;Visualizar&quot; e &quot;Próprios/Todos&quot;. Selecionar um funil aqui força o acesso a ele.
+                                                        </p>
+                                                    </div>
+                                                )}
                                             </div>
                                         ))}
                                     </div>

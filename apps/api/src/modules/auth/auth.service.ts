@@ -7,7 +7,8 @@ import { send2faEmail } from "./email-2fa.service.js";
 import { sendPasswordResetEmail } from "./email-reset.service.js";
 import { env } from "../../config/env.js";
 import { logger } from "../../config/logger.js";
-import type { RegisterInput, LoginInput, Verify2faInput, GoogleLoginInput, ForgotPasswordInput, ResetPasswordInput } from "./auth.schemas.js";
+import jwt from "jsonwebtoken";
+import type { RegisterInput, LoginInput, Verify2faInput, GoogleLoginInput, AppleLoginInput, ForgotPasswordInput, ResetPasswordInput } from "./auth.schemas.js";
 
 // ═══════════════════════════════════════
 // UTILS
@@ -44,11 +45,40 @@ async function buildUserResponse(userId: string) {
 
     const permissions = await authRepository.findPermissionsByUserId(userId);
 
+    let companyName = "Empresa Não Informada";
+    let phoneNum = user.phone;
+
+    try {
+        const { prisma } = await import("../../config/database.js");
+        
+        // 1. Try InstitutionalProfile (Admin/Owner)
+        const instProfile = await prisma.institutionalProfile.findUnique({
+            where: { userId: user.id }
+        });
+
+        if (instProfile) {
+            if (instProfile.companyName) companyName = instProfile.companyName;
+            if (instProfile.phone) phoneNum = instProfile.phone;
+        } else {
+            // 2. Try Client
+            const clientRec = await prisma.client.findFirst({
+                where: { email: user.email }
+            });
+            if (clientRec) {
+                if (clientRec.company) companyName = clientRec.company;
+                else if (clientRec.name) companyName = clientRec.name;
+                if (clientRec.phone && !phoneNum) phoneNum = clientRec.phone;
+            }
+        }
+    } catch(err) {}
+
     return {
         id: user.id,
         name: user.name,
         email: user.email,
         role: user.role,
+        phone: phoneNum,
+        company: companyName,
         allowedApps: (user as any).allowedApps ?? [],
         permissions,
     };
@@ -176,6 +206,48 @@ export const authService = {
         if (!user.active) throw new UnauthorizedError("Conta desativada");
 
         // 2FA for Google users too
+        if (user.twoFactorEnabled) {
+            const tempToken = await trigger2fa(user.id, user.email, user.name);
+            return { requires2fa: true, tempToken };
+        }
+
+        const tokens = await issueTokens(user.id, user.role);
+        const userResponse = await buildUserResponse(user.id);
+        return { requires2fa: false, user: userResponse, ...tokens };
+    },
+
+    async appleLogin(input: AppleLoginInput) {
+        // Decode identityToken (header.payload.signature)
+        const decoded = jwt.decode(input.identityToken) as any;
+        if (!decoded || !decoded.sub || !decoded.email) {
+            throw new UnauthorizedError("Identity Token da Apple inválido ou sem e-mail");
+        }
+
+        const appleId = decoded.sub; // The unique user ID from Apple
+        const email = decoded.email;
+
+        // Verify if user exists by appleId first
+        let user = await authRepository.findUserByAppleId(appleId);
+
+        if (!user) {
+            // Check if user exists by email to link account
+            user = await authRepository.findUserByEmail(email);
+            if (user) {
+                await authRepository.linkAppleAccount(user.id, appleId);
+            } else {
+                // Create new user
+                const hashedPassword = await hashPassword(uuidv4());
+                user = await authRepository.createUser({
+                    name: input.fullName || "Usuário da Apple",
+                    email: email,
+                    password: hashedPassword,
+                    appleId: appleId,
+                });
+            }
+        }
+
+        if (!user.active) throw new UnauthorizedError("Conta desativada");
+
         if (user.twoFactorEnabled) {
             const tempToken = await trigger2fa(user.id, user.email, user.name);
             return { requires2fa: true, tempToken };

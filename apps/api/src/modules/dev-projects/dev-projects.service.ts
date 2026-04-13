@@ -30,15 +30,50 @@ class DevProjectsService {
             where: { createdById: userId },
             select: { id: true },
         });
+
+        // Try to match the logged in user's email to CRM Client records
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { email: true }
+        });
+        let clientIds: string[] = [];
+        if (user?.email) {
+            const matchedClients = await prisma.client.findMany({
+                where: { email: user.email },
+                select: { id: true }
+            });
+            clientIds = matchedClients.map(c => c.id);
+        }
+
         // Include projects where user is the Client (Viewer of the Proposal)
         const viewerProjects = await prisma.devProject.findMany({
-            where: { proposal: { viewerId: userId } },
+            where: { 
+                proposal: { 
+                    OR: [
+                        { viewerId: userId },
+                        ...(clientIds.length > 0 ? [{ clientId: { in: clientIds } }] : [])
+                    ]
+                } 
+            },
+            select: { id: true },
+        });
+        // Include projects where user is the Client (Viewer of the Assembled Proposal)
+        const assembledViewerProjects = await prisma.devProject.findMany({
+            where: { 
+                assembledProposal: { 
+                    OR: [
+                        { viewerId: userId },
+                        ...(clientIds.length > 0 ? [{ clientId: { in: clientIds } }] : [])
+                    ]
+                } 
+            },
             select: { id: true },
         });
         const ids = new Set([
             ...memberships.map(m => m.projectId),
             ...ownedProjects.map(p => p.id),
             ...viewerProjects.map(p => p.id),
+            ...assembledViewerProjects.map(p => p.id),
         ]);
         return Array.from(ids);
     }
@@ -173,6 +208,106 @@ class DevProjectsService {
                     create: tasks.map(t => ({
                         title: t.title,
                         description: t.description,
+                        epic: t.epic,
+                        tags: t.tags,
+                        estimatedHours: t.estimatedHours,
+                    })),
+                },
+            },
+            include: { tasks: true },
+        });
+
+        return project;
+    }
+
+    // ── CREATE FROM ASSEMBLED PROPOSAL (Assembler IA → Web Dev) ──
+    async createFromAssembledProposal(assembledProposalId: string, user: JwtUser) {
+        // 1. Fetch the assembled proposal
+        const assembled = await prisma.assembledProposal.findUnique({
+            where: { id: assembledProposalId },
+            include: { client: true },
+        });
+        if (!assembled) throw new Error("Proposta Assembler não encontrada.");
+
+        // 2. Derive project name, then check duplicate
+        const projectName = assembled.title || "Projeto Assembler";
+        const existing = await prisma.devProject.findFirst({
+            where: { name: projectName, createdById: user.userId },
+        });
+        if (existing) throw new Error("Um projeto já foi criado para esta proposta.");
+
+        // 3. Parse the scopeData JSON and build tasks (One DevTask per Screen)
+        let scope = assembled.scopeData as any;
+        
+        // [BUGFIX] Fallback for 'double-nesting' bug where scopeData was saved as { scopeData: { ... } }
+        if (scope && scope.scopeData && !scope.users) {
+            console.log(`[DevProjectsService] Detected nested scopeData for proposal ${assembledProposalId}. Flattening...`);
+            scope = scope.scopeData;
+        }
+
+        console.log(`[DevProjectsService] Generating tasks for project "${projectName}" from assembled proposal.`);
+        const taskList: { title: string; description: string; epic: string; story: string; tags: string[]; estimatedHours: number }[] = [];
+
+        const users: any[] = scope?.users || [];
+        for (const userNode of users) {
+            const userName: string = userNode.userName || "Usuário Geral";
+            for (const platform of (userNode.platforms || [])) {
+                const platformName: string = platform.platformName || "Plataforma Indefinida";
+                for (const mod of (platform.modules || [])) {
+                    const modName: string = mod.title || "Módulo Indefinido";
+                    
+                    for (const screen of (mod.screens || [])) {
+                        const screenTitle: string = screen.title || "Tela Sem Nome";
+                        
+                        let screenHours = 0;
+                        const functionalities = [];
+                        
+                        for (const func of (screen.functionalities || [])) {
+                            const hours = typeof func.estimatedHours === "number" ? func.estimatedHours : 4;
+                            screenHours += hours;
+                            functionalities.push({
+                                id: Math.random().toString(36).substring(2, 11),
+                                title: func.title || "Funcionalidade",
+                                description: func.description || "",
+                                estimatedHours: hours,
+                                done: false
+                            });
+                        }
+
+                        taskList.push({
+                            title: screenTitle,
+                            description: screen.description || `Esta tela agrupa ${functionalities.length} funcionalidades.`,
+                            story: JSON.stringify(functionalities),
+                            epic: modName.substring(0, 50),
+                            estimatedHours: screenHours,
+                            tags: [`user:${userName}`, `platform:${platformName}`],
+                        });
+                    }
+                }
+            }
+        }
+
+        console.log(`[DevProjectsService] Created ${taskList.length} tasks ready for insertion.`);
+
+        const totalHours = taskList.reduce((sum, t) => sum + t.estimatedHours, 0);
+        const deadline = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+        const clientName = (assembled as any).client?.name || scope?.users?.[0]?.userName || "Cliente";
+
+        // 4. Create the project (no proposalId — FK only covers CRM proposals)
+        const project = await prisma.devProject.create({
+            data: {
+                name: projectName,
+                client: clientName,
+                assembledProposalId: assembledProposalId,
+                createdById: user.userId,
+                startDate: new Date(),
+                deadline,
+                hoursEstimated: totalHours,
+                tasks: {
+                    create: taskList.map(t => ({
+                        title: t.title,
+                        description: t.description,
+                        story: t.story,
                         epic: t.epic,
                         tags: t.tags,
                         estimatedHours: t.estimatedHours,
@@ -421,6 +556,39 @@ class DevProjectsService {
     // TASK COMMENTS
     // ══════════════════════════════
 
+    async listProjectRecentComments(projectId: string) {
+        return prisma.devTaskComment.findMany({
+            where: { 
+                task: { projectId },
+                // @ts-ignore - isRead is valid but IDE might have stale generated client
+                isRead: false 
+            },
+            include: {
+                task: { select: { id: true, title: true } },
+                user: { select: { id: true, name: true, avatar: true, role: true } }
+            },
+            orderBy: { createdAt: "desc" },
+            take: 30
+        });
+    }
+
+    async markCommentAsRead(commentId: string) {
+        return prisma.devTaskComment.update({
+            where: { id: commentId },
+            // @ts-ignore - isRead is valid but IDE might have stale generated client
+            data: { isRead: true }
+        });
+    }
+
+    async markAllTaskCommentsAsRead(taskId: string) {
+        return prisma.devTaskComment.updateMany({
+            // @ts-ignore - isRead is valid but IDE might have stale generated client
+            where: { taskId, isRead: false },
+            // @ts-ignore - isRead is valid but IDE might have stale generated client
+            data: { isRead: true }
+        });
+    }
+
     async listComments(taskId: string) {
         return prisma.devTaskComment.findMany({
             where: { taskId },
@@ -578,6 +746,7 @@ class DevProjectsService {
     // ── DASHBOARD STATS ──
     async getStats(user: JwtUser) {
         const whereProject: any = { archived: false };
+        // DataScope filter: OWNER/ADMIN see all, others depend on permission
         if (user.role !== "OWNER" && user.role !== "ADMIN") {
             const scope = await this.getUserDataScope(user.userId, "projects", "view");
             if (scope === "OWN") {
@@ -635,6 +804,7 @@ class DevProjectsService {
     /** List all sprints across all accessible projects */
     async listAllSprints(user: JwtUser) {
         const whereProject: any = { archived: false };
+        // DataScope filter: OWNER/ADMIN see all, others depend on permission
         if (user.role !== "OWNER" && user.role !== "ADMIN") {
             const scope = await this.getUserDataScope(user.userId, "projects", "view");
             if (scope === "OWN") {

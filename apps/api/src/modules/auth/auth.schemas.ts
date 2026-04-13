@@ -24,6 +24,11 @@ export const googleLoginSchema = z.object({
     credential: z.string().min(1, "Credencial Google é obrigatória"),
 });
 
+export const appleLoginSchema = z.object({
+    identityToken: z.string().min(1, "Identity Token da Apple é obrigatório"),
+    fullName: z.string().optional(),
+});
+
 export const forgotPasswordSchema = z.object({
     email: z.string().email("E-mail inválido"),
 });
@@ -38,5 +43,6 @@ export type LoginInput = z.infer<typeof loginSchema>;
 export type RefreshInput = z.infer<typeof refreshSchema>;
 export type Verify2faInput = z.infer<typeof verify2faSchema>;
 export type GoogleLoginInput = z.infer<typeof googleLoginSchema>;
+export type AppleLoginInput = z.infer<typeof appleLoginSchema>;
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;

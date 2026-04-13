@@ -37,8 +37,24 @@ interface ReorderFunnelsDto {
 
 export const funnelsService = {
     async list(user: JwtUser) {
+        const dbUser = await prisma.user.findUnique({
+            where: { id: user.userId }
+        });
+
+        const allowedFunnels: string[] = (dbUser as any)?.allowedFunnels || [];
+        let whereClause: any = { userId: user.userId };
+        
+        if (allowedFunnels.length > 0) {
+            whereClause = {
+                OR: [
+                    { userId: user.userId },
+                    { id: { in: allowedFunnels } }
+                ]
+            };
+        }
+
         const funnels = await prisma.funnel.findMany({
-            where: { userId: user.userId },
+            where: whereClause,
             include: {
                 stages: {
                     orderBy: { orderIndex: 'asc' },

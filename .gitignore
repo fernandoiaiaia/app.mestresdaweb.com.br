@@ -23,6 +23,14 @@ Thumbs.db
 # Prisma
 prisma/dev.db
 
+# Uploads & Storage (production data)
+**/storage/uploads/
+**/storage/backups/
+**/uploads/task-attachments/
+**/uploads/project-documents/
+**/uploads/deal-files/
+letsencrypt/
+
 # Logs
 *.log
 logs/

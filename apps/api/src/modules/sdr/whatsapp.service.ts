@@ -124,13 +124,30 @@ export const whatsappService = {
 
     async processIncoming(msg: any, value: any): Promise<void> {
         const phone = msg.from;
-        const text = msg.text?.body || msg.button?.text || "";
+        
+        // --- NEW META API HANDLERS (Business-Scoped User IDs & Usernames) ---
+        // Find the profile block in the top-level contacts array matching the sender
+        const contactProfile = value?.contacts?.find((c: any) => c.wa_id === phone || c.user_id);
+        const bsuid = contactProfile?.user_id || undefined;
+        const username = contactProfile?.profile?.username || undefined;
+
+        let text = msg.text?.body || msg.button?.text || "";
+        
+        // If the user replied with a contact vCard (e.g. REQUEST_CONTACT_INFO)
+        if (msg.type === "contacts" && msg.contacts?.length > 0) {
+            const sharedPhone = msg.contacts[0]?.phones?.[0]?.phone;
+            if (sharedPhone) {
+                text = `[Contato Compartilhado]: ${sharedPhone}`;
+                logger.info({ phone, sharedPhone, bsuid }, "Contact info shared by user");
+            }
+        }
+
         if (!text) return;
 
         // Find lead by phone
         const lead = await prisma.sdrLead.findFirst({ where: { phone: { contains: phone.slice(-10) } } });
         if (!lead) {
-            logger.warn({ phone }, "WhatsApp message from unknown lead");
+            logger.warn({ phone, bsuid, username }, "WhatsApp message from unknown lead");
             return;
         }
 
@@ -141,7 +158,7 @@ export const whatsappService = {
                 channel: "whatsapp",
                 actionType: "received",
                 content: text,
-                metadata: { whatsappMessageId: msg.id, timestamp: msg.timestamp },
+                metadata: { whatsappMessageId: msg.id, timestamp: msg.timestamp, bsuid, username },
             },
         });
 

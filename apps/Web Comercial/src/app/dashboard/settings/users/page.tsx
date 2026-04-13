@@ -100,6 +100,7 @@ export default function UsersPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [roleFilter, setRoleFilter] = useState<string>("all");
     const [statusFilter, setStatusFilter] = useState<string>("all");
+    const [activeTab, setActiveTab] = useState<"todos" | "admins" | "advisors" | "devs" | "clientes">("todos");
     const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
     const [activeMenu, setActiveMenu] = useState<string | null>(null);
     const [showFilters, setShowFilters] = useState(false);
@@ -159,8 +160,33 @@ export default function UsersPage() {
             user.position.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesRole = roleFilter === "all" || user.role === roleFilter;
         const matchesStatus = statusFilter === "all" || user.status === statusFilter;
-        return matchesSearch && matchesRole && matchesStatus;
+        
+        if (!matchesSearch || !matchesRole || !matchesStatus) return false;
+
+        const isDev = user.email === "fcesarf@hotmail.com" || 
+            (user.position && (
+                user.position.toLowerCase().includes("dev") || 
+                user.position.toLowerCase().includes("programador") ||
+                user.position.toLowerCase().includes("tech") ||
+                user.position.toLowerCase().includes("fullstack") ||
+                user.position.toLowerCase().includes("engenheiro")
+            ));
+
+        if (activeTab === "admins" && user.role !== "ADMIN" && user.role !== "OWNER") return false;
+        if (activeTab === "advisors" && (user.role !== "MANAGER" && user.role !== "USER" || isDev)) return false;
+        if (activeTab === "clientes" && user.role !== "VIEWER") return false;
+        if (activeTab === "devs" && !isDev) return false;
+
+        return true;
     });
+
+    const activeCounts = {
+        total: users.length,
+        admins: users.filter(u => u.role === "ADMIN" || u.role === "OWNER").length,
+        advisors: users.filter(u => (u.role === "MANAGER" || u.role === "USER") && !(u.email === "fcesarf@hotmail.com" || (u.position && (u.position.toLowerCase().includes("dev") || u.position.toLowerCase().includes("programador") || u.position.toLowerCase().includes("tech") || u.position.toLowerCase().includes("fullstack") || u.position.toLowerCase().includes("engenheiro"))))).length,
+        devs: users.filter(u => u.email === "fcesarf@hotmail.com" || (u.position && (u.position.toLowerCase().includes("dev") || u.position.toLowerCase().includes("programador") || u.position.toLowerCase().includes("tech") || u.position.toLowerCase().includes("fullstack") || u.position.toLowerCase().includes("engenheiro")))).length,
+        clientes: users.filter(u => u.role === "VIEWER").length,
+    };
 
     const counts = {
         total: users.length,
@@ -255,6 +281,33 @@ export default function UsersPage() {
                         Novo Usuário
                     </Link>
                 </div>
+            </motion.div>
+
+            {/* Top Tabs */}
+            <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.05 }}
+                className="flex items-center gap-1 p-1 bg-slate-800/40 border border-white/[0.06] rounded-xl mb-6 overflow-x-auto w-fit max-w-full"
+            >
+                {[
+                    { id: "todos", label: "Todos os Usuários", count: activeCounts.total },
+                    { id: "admins", label: "Administradores", count: activeCounts.admins },
+                    { id: "advisors", label: "Advisors / Vendas", count: activeCounts.advisors },
+                    { id: "devs", label: "Time Dev", count: activeCounts.devs },
+                    { id: "clientes", label: "Clientes (Portal)", count: activeCounts.clientes },
+                ].map(tab => (
+                    <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id as any)}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all ${activeTab === tab.id ? 'bg-blue-600/20 text-blue-400' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
+                    >
+                        {tab.label}
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] ${activeTab === tab.id ? 'bg-blue-500/20' : 'bg-slate-700'}`}>
+                            {tab.count}
+                        </span>
+                    </button>
+                ))}
             </motion.div>
 
             {/* Stats Cards */}

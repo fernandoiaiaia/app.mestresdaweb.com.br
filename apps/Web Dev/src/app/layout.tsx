@@ -8,8 +8,9 @@ const spaceGrotesk = Space_Grotesk({ subsets: ['latin'], variable: '--font-space
 const valeraRound = Varela_Round({ subsets: ['latin'], weight: '400', variable: '--font-varela-round' });
 
 export const metadata: Metadata = {
-    title: 'ProposalAI Dev | Cezani',
+    title: 'ProposalAI Dev | Mestres da Web',
     description: 'Plataforma de Gestão de Projetos - Time Interno',
+  icons: { icon: "/branding/favicon-mdw.png" },
 };
 
 export default function RootLayout({

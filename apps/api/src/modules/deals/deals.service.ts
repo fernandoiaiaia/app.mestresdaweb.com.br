@@ -38,12 +38,46 @@ interface UpdateDealDto {
     nextAction?: string | null;
 }
 
+async function _checkDealAccess(id: string, user: JwtUser) {
+    const deal = await prisma.deal.findUnique({ where: { id } });
+    if (!deal) throw new Error("Negócio não encontrado.");
+    if (deal.userId === user.userId) return deal;
+    
+    const dbUser = await prisma.user.findUnique({ where: { id: user.userId } });
+    if (dbUser?.role === 'OWNER' || dbUser?.role === 'ADMIN') return deal;
+    
+    const allowedFunnels = (dbUser as any)?.allowedFunnels || [];
+    if (deal.funnelId && allowedFunnels.includes(deal.funnelId)) return deal;
+    
+    throw new Error("Acesso negado ao negócio.");
+}
+
 export const dealsService = {
     async list(user: JwtUser, query: { funnelId?: string; search?: string }) {
+        const dbUser = await prisma.user.findUnique({ where: { id: user.userId } });
+        const allowedFunnels = (dbUser as any)?.allowedFunnels || [];
+        
         let whereClause: any = { userId: user.userId };
 
-        if (query.funnelId) {
-            whereClause.funnelId = query.funnelId;
+        if (allowedFunnels.length > 0) {
+            if (query.funnelId) {
+                if (allowedFunnels.includes(query.funnelId)) {
+                    whereClause = { funnelId: query.funnelId };
+                } else {
+                    whereClause = { funnelId: { in: allowedFunnels } };
+                }
+            } else {
+                whereClause = { 
+                    OR: [
+                        { userId: user.userId },
+                        { funnelId: { in: allowedFunnels } }
+                    ]
+                 };
+            }
+        } else {
+            if (query.funnelId) {
+                whereClause.funnelId = query.funnelId;
+            }
         }
 
         if (query.search) {
@@ -54,13 +88,16 @@ export const dealsService = {
             where: whereClause,
             include: {
                 client: {
-                    select: { id: true, name: true, email: true, company: true }
+                    select: { id: true, name: true, email: true, company: true, phone: true }
                 },
                 consultant: {
                     select: { id: true, name: true, avatar: true }
                 },
                 stage: {
                     select: { id: true, name: true, color: true }
+                },
+                lossReason: {
+                    select: { id: true, name: true }
                 }
             },
             orderBy: { createdAt: 'desc' }
@@ -68,8 +105,9 @@ export const dealsService = {
     },
 
     async getById(id: string, user: JwtUser) {
+        await _checkDealAccess(id, user);
         const deal = await prisma.deal.findUnique({
-            where: { id, userId: user.userId },
+            where: { id },
             include: {
                 client: {
                     select: { id: true, name: true, email: true, company: true, phone: true }
@@ -96,6 +134,9 @@ export const dealsService = {
                 },
                 tasks: {
                     orderBy: { date: 'asc' }
+                },
+                lossReason: {
+                    select: { id: true, name: true }
                 }
             }
         });
@@ -129,20 +170,33 @@ export const dealsService = {
         let funnelId = data.funnelId;
         let stageId = data.stageId;
 
+        const dbUser = await prisma.user.findUnique({ where: { id: user.userId } });
+        const allowedFunnels = (dbUser as any)?.allowedFunnels || [];
+
         if (!funnelId) {
             const defaultFunnel = await prisma.funnel.findFirst({
                 where: { userId: user.userId, isDefault: true }
             });
-            if (defaultFunnel) funnelId = defaultFunnel.id;
+            if (defaultFunnel) {
+                funnelId = defaultFunnel.id;
+            } else if (allowedFunnels.length > 0) {
+                // If the user hasn't created a default funnel, but has allowed funnels, use the first allowed
+                funnelId = allowedFunnels[0];
+            }
         }
 
         if (!funnelId) {
             const anyFunnel = await prisma.funnel.findFirst({
                 where: { userId: user.userId }
             });
-            if (!anyFunnel) throw new Error("Nenhum funil encontrado. Crie um primeiro.");
-            funnelId = anyFunnel.id;
+            if (anyFunnel) {
+                funnelId = anyFunnel.id;
+            } else if (allowedFunnels.length > 0) {
+                funnelId = allowedFunnels[0];
+            }
         }
+        
+        if (!funnelId) throw new Error("Nenhum funil encontrado. Crie um primeiro.");
 
         if (!stageId) {
             const stage = await prisma.funnelStage.findFirst({
@@ -165,8 +219,9 @@ export const dealsService = {
     },
 
     async update(id: string, data: UpdateDealDto, user: JwtUser) {
+        await _checkDealAccess(id, user);
         const updated = await prisma.deal.update({
-            where: { id, userId: user.userId },
+            where: { id },
             data,
             include: {
                 client: { select: { id: true, name: true, email: true, company: true, phone: true } },
@@ -186,7 +241,10 @@ export const dealsService = {
                     include: { user: { select: { id: true, name: true, avatar: true } } },
                     orderBy: { createdAt: 'desc' }
                 },
-                tasks: { orderBy: { date: 'asc' } }
+                tasks: { orderBy: { date: 'asc' } },
+                lossReason: {
+                    select: { id: true, name: true }
+                }
             }
         });
 
@@ -198,12 +256,51 @@ export const dealsService = {
             })
             : [];
 
+        // Integrar com WhatsApp e Propostas: Sincronizar responsável
+        if (data.assigneeIds !== undefined) {
+            const primaryAssigneeId = data.assigneeIds.length > 0 ? data.assigneeIds[0] : null;
+
+            if (primaryAssigneeId) {
+                // 1. WhatsApp
+                if (updated.clientId) {
+                    const wContact = await prisma.whatsappContact.findFirst({
+                        where: { clientId: updated.clientId }
+                    });
+                    
+                    if (wContact) {
+                        await prisma.whatsappConversation.updateMany({
+                            where: { contactId: wContact.id },
+                            data: { assigneeId: primaryAssigneeId }
+                        });
+                    }
+
+                    // 2. Propostas Regulares
+                    await prisma.proposal.updateMany({
+                        where: { clientId: updated.clientId },
+                        data: { userId: primaryAssigneeId }
+                    });
+
+                    // 3. Propostas AI (Assembled Proposals)
+                    await prisma.assembledProposal.updateMany({
+                        where: { 
+                            OR: [
+                                { clientId: updated.clientId },
+                                { dealId: updated.id }
+                            ]
+                        },
+                        data: { userId: primaryAssigneeId }
+                    });
+                }
+            }
+        }
+
         return { ...updated, assignees };
     },
 
     async updateStage(id: string, stageId: string, user: JwtUser) {
+        await _checkDealAccess(id, user);
         const deal = await prisma.deal.update({
-            where: { id, userId: user.userId },
+            where: { id },
             data: {
                 stageId: stageId,
                 stageEnteredAt: new Date()
@@ -229,8 +326,9 @@ export const dealsService = {
             throw new Error("O novo funil não possui etapas válidas.");
         }
 
+        await _checkDealAccess(id, user);
         return prisma.deal.update({
-            where: { id, userId: user.userId },
+            where: { id },
             data: {
                 funnelId: funnelId,
                 stageId: firstStage.id,
@@ -241,8 +339,9 @@ export const dealsService = {
     },
 
     async delete(id: string, user: JwtUser) {
+        await _checkDealAccess(id, user);
         return prisma.deal.delete({
-            where: { id, userId: user.userId }
+            where: { id }
         });
     },
 

@@ -8,7 +8,8 @@ const varelaRound = Varela_Round({ subsets: ['latin'], weight: '400', variable: 
 
 export const metadata: Metadata = {
   title: 'ProposalAI | Portal do Cliente',
-  description: 'Portal do Cliente — Cezani',
+  description: 'Portal do Cliente — Mestres da Web',
+  icons: { icon: "/branding/favicon-mdw.png" },
 };
 
 export default function RootLayout({

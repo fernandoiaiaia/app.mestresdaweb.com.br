@@ -11,6 +11,7 @@ const SELECT_SAFE = {
     position: true,
     active: true,
     allowedApps: true,
+    allowedFunnels: true,
     twoFactorEnabled: true,
     createdAt: true,
     updatedAt: true,
@@ -64,6 +65,7 @@ export const usersRepository = {
         position?: string | null;
         role?: string;
         allowedApps?: string[];
+        allowedFunnels?: string[];
         permissions?: Array<{ module: string; action: string; dataScope: DataScope }>;
     }) {
         const { permissions = [], ...userData } = data;
@@ -90,6 +92,7 @@ export const usersRepository = {
             role?: string;
             active?: boolean;
             allowedApps?: string[];
+            allowedFunnels?: string[];
         },
         permissions?: Array<{ module: string; action: string; dataScope: DataScope }>
     ) {

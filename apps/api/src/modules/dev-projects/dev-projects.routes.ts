@@ -55,6 +55,8 @@ router.get("/sprints/all", devProjectsController.listAllSprints);
 
 // ── Task-specific routes (MUST be before /:id catch-all) ──
 router.get("/tasks/all", devProjectsController.listAllTasks);
+router.patch("/tasks/:taskId/comments/read", devProjectsController.markAllTaskCommentsAsRead);
+router.patch("/tasks/comments/:id/read", devProjectsController.markCommentAsRead);
 router.patch("/tasks/:taskId", devProjectsController.updateTask);
 router.delete("/tasks/:taskId", devProjectsController.deleteTask);
 router.get("/tasks/:taskId/comments", devProjectsController.listComments);
@@ -76,8 +78,10 @@ router.get("/tasks/:taskId/attachments/:attachmentId/download", devProjectsContr
 router.get("/stats", devProjectsController.stats);
 router.get("/", devProjectsController.list);
 router.get("/:id", devProjectsController.getById);
+router.get("/:id/recent-comments", devProjectsController.listProjectRecentComments);
 router.post("/", devProjectsController.create);
 router.post("/from-proposal/:proposalId", devProjectsController.createFromProposal);
+router.post("/from-assembled/:proposalId", devProjectsController.createFromAssembledProposal);
 router.patch("/:id", devProjectsController.update);
 router.delete("/:id", devProjectsController.delete);
 

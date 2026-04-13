@@ -7,6 +7,8 @@ import { api } from "@/lib/api";
 import { useToast } from "@/components/ui/toast";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import confetti from "canvas-confetti";
+import { useAuthStore } from "@/stores/auth";
 import {
     ArrowLeft,
     MoreVertical,
@@ -134,6 +136,14 @@ interface Funnel {
     orderIndex: number;
 }
 
+interface LossReason {
+    id: string;
+    name: string;
+    description: string | null;
+    funnelId: string | null;
+    stageId: string | null;
+}
+
 const TABS = [
     { id: "historico", label: "Histórico" },
     { id: "tarefas", label: "Tarefas" },
@@ -173,6 +183,17 @@ export default function PipelineDealDetail() {
     const [isSubmittingNote, setIsSubmittingNote] = useState(false);
     const [editingField, setEditingField] = useState<string | null>(null);
     const [editValue, setEditValue] = useState("");
+
+    // User Session
+    const { user } = useAuthStore();
+    
+    // Status update 
+    const [showLossReasonModal, setShowLossReasonModal] = useState(false);
+    const [showWonConfirmModal, setShowWonConfirmModal] = useState(false);
+    const [showWonSuccess, setShowWonSuccess] = useState(false);
+    const [lossReasons, setLossReasons] = useState<LossReason[]>([]);
+    const [selectedLossReasonId, setSelectedLossReasonId] = useState("");
+    const [isSubmittingLoss, setIsSubmittingLoss] = useState(false);
 
     // New states for wiring all buttons
     const [showClientDetails, setShowClientDetails] = useState(false);
@@ -214,7 +235,7 @@ export default function PipelineDealDetail() {
     };
 
     // Proposals tab state
-    const [clientProposals, setClientProposals] = useState<{ id: string; clientName: string; status: string; totalValue: number | null; totalHours: number | null; createdAt: string; updatedAt: string; projectType: string[]; publicToken: string | null }[]>([]);
+    const [clientProposals, setClientProposals] = useState<any[]>([]);
     const [isLoadingProposals, setIsLoadingProposals] = useState(false);
 
     const loadProposals = async () => {
@@ -223,8 +244,9 @@ export default function PipelineDealDetail() {
         try {
             const params = new URLSearchParams();
             params.set("clientId", deal.client.id);
+            params.set("dealId", deal.id);
             if (deal.client.name) params.set("clientName", deal.client.name);
-            const res = await api<any[]>(`/api/proposals?${params.toString()}`);
+            const res = await api<any[]>(`/api/assembler/proposals?${params.toString()}`);
             if (res.success && res.data) setClientProposals(res.data);
         } catch (e) { console.error(e); }
         finally { setIsLoadingProposals(false); }
@@ -335,9 +357,10 @@ export default function PipelineDealDetail() {
     const loadDeal = async (id: string, background = false) => {
         try {
             if (!background) setIsLoading(true);
-            const [dealResponse, funnelsResponse] = await Promise.all([
+            const [dealResponse, funnelsResponse, lossRes] = await Promise.all([
                 api<DealDetail>(`/api/deals/${id}`, { method: "GET" }),
-                api<Funnel[]>('/api/funnels', { method: "GET" })
+                api<Funnel[]>('/api/funnels', { method: "GET" }),
+                api<LossReason[]>('/api/loss-reasons', { method: "GET" }),
             ]);
 
             if (dealResponse.success && dealResponse.data) {
@@ -348,6 +371,10 @@ export default function PipelineDealDetail() {
 
             if (funnelsResponse.success && funnelsResponse.data) {
                 setFunnels(funnelsResponse.data);
+            }
+
+            if (lossRes.success && lossRes.data) {
+                setLossReasons(lossRes.data);
             }
         } catch (error) {
             console.error("Error in loadDeal:", error);
@@ -411,6 +438,17 @@ export default function PipelineDealDetail() {
 
     const handleUpdateDealStatus = async (status: "won" | "lost") => {
         if (!deal) return;
+        
+        if (status === "lost") {
+            setShowLossReasonModal(true);
+            return;
+        }
+
+        if (status === "won" && !showWonConfirmModal) {
+            setShowWonConfirmModal(true);
+            return;
+        }
+
         try {
             // Find the matching closing stage in the funnel
             const stages = deal.funnel?.stages || [];
@@ -418,7 +456,7 @@ export default function PipelineDealDetail() {
             const targetStage = stages.find(s => s.name === targetStageName);
 
             // Update status
-            const response = await api<DealDetail>(`/api/deals/${deal.id}`, {
+            await api<DealDetail>(`/api/deals/${deal.id}`, {
                 method: "PUT",
                 body: { status }
             });
@@ -433,9 +471,65 @@ export default function PipelineDealDetail() {
 
             // Reload deal to get fresh data
             await loadDeal(deal.id, true);
+            toast.success(`Negócio marcado como ${status === "won" ? "ganho" : "perdido"}!`);
+
+            if (status === "won") {
+                setShowWonConfirmModal(false);
+                setShowWonSuccess(true);
+                
+                // Fire confetti
+                const duration = 3000;
+                const animationEnd = Date.now() + duration;
+                const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 9999 };
+
+                const interval: any = setInterval(function() {
+                    const timeLeft = animationEnd - Date.now();
+
+                    if (timeLeft <= 0) {
+                        return clearInterval(interval);
+                    }
+
+                    const particleCount = 50 * (timeLeft / duration);
+                    confetti({ ...defaults, particleCount, origin: { x: Math.random(), y: Math.random() - 0.2 } });
+                }, 250);
+                
+                setTimeout(() => {
+                    setShowWonSuccess(false);
+                }, 4000);
+            }
         } catch (error) {
             console.error(error);
             toast.error("Erro ao alterar status do negócio.");
+        }
+    };
+
+    const confirmLoss = async () => {
+        if (!deal || !selectedLossReasonId) return;
+        setIsSubmittingLoss(true);
+        try {
+            const stages = deal.funnel?.stages || [];
+            const targetStage = stages.find(s => s.name === "Fechado — Perdido");
+
+            await api<DealDetail>(`/api/deals/${deal.id}`, {
+                method: "PUT",
+                body: { status: "lost", lossReasonId: selectedLossReasonId }
+            });
+
+            if (targetStage) {
+                await api(`/api/deals/${deal.id}/stage`, {
+                    method: "PUT",
+                    body: { stageId: targetStage.id }
+                });
+            }
+
+            toast.success("Negócio marcado como perdido");
+            setShowLossReasonModal(false);
+            await loadDeal(deal.id, true);
+        } catch (error) {
+            console.error(error);
+            toast.error("Erro ao alterar status.");
+        } finally {
+            setIsSubmittingLoss(false);
         }
     };
 
@@ -1373,8 +1467,8 @@ export default function PipelineDealDetail() {
                                         <span className="text-sm font-bold text-slate-900 dark:text-white">Propostas deste cliente</span>
                                         <button
                                             onClick={() => {
-                                                const clientName = deal?.client?.name || '';
-                                                router.push(`/dashboard/proposals/new/step-1?clientName=${encodeURIComponent(clientName)}`);
+                                                const clientId = deal?.client?.id || '';
+                                                router.push(`/dashboard/crm/assembler/new?clientId=${clientId}&dealId=${deal?.id}`);
                                             }}
                                             className="flex items-center gap-2 px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs rounded-lg transition-colors"
                                         >
@@ -1389,62 +1483,87 @@ export default function PipelineDealDetail() {
                                     ) : clientProposals.length > 0 ? (
                                         <div className="space-y-3">
                                             {clientProposals.map(p => {
-                                                const statusMap: Record<string, { label: string; color: string }> = {
-                                                    DRAFT: { label: 'Rascunho', color: 'bg-slate-500/10 text-slate-500 border-slate-500/20' },
-                                                    REVIEW: { label: 'Em Revisão', color: 'bg-amber-500/10 text-amber-500 border-amber-500/20' },
-                                                    APPROVED: { label: 'Aprovada', color: 'bg-blue-500/10 text-blue-500 border-blue-500/20' },
-                                                    SENT: { label: 'Enviada', color: 'bg-blue-500/10 text-blue-500 border-blue-500/20' },
-                                                    ACCEPTED: { label: 'Aceita', color: 'bg-blue-500/10 text-blue-600 border-blue-500/20' },
-                                                    REJECTED: { label: 'Rejeitada', color: 'bg-red-500/10 text-red-500 border-red-500/20' },
-                                                };
-                                                const s = statusMap[p.status] || { label: p.status, color: 'bg-slate-500/10 text-slate-500 border-slate-500/20' };
+                                                const title = p.title && p.title !== "Nova Proposta" ? p.title : (p.scopeData?.projectSummary || "Escopo Sem Título");
+                                                const clientName = p.client?.name || p.clientName || "Sem Nome";
                                                 const d = new Date(p.createdAt);
+                                                
+                                                const totalHours = p.totalHours || 0;
+                                                let modsCount = 0;
+                                                let screensCount = 0;
+                                                if (p.scopeData) {
+                                                    (p.scopeData.users || []).forEach((u: any) => (u.platforms || []).forEach((plat: any) => {
+                                                        modsCount += (plat.modules || []).length;
+                                                        (plat.modules || []).forEach((m: any) => {
+                                                            screensCount += (m.screens || []).length;
+                                                        });
+                                                    }));
+                                                }
+                                                
                                                 return (
                                                     <div key={p.id} className="p-4 bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/10 rounded-xl hover:border-cyan-500/30 transition-all group">
                                                         <div className="flex items-start justify-between gap-3 mb-3">
                                                             <div className="flex-1 min-w-0">
                                                                 <div className="flex items-center gap-2 mb-1">
                                                                     <FileText size={14} className="text-cyan-500 shrink-0" />
-                                                                    <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">{p.clientName}</h4>
+                                                                    <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">{title}</h4>
                                                                 </div>
                                                                 <div className="flex items-center gap-2 flex-wrap">
-                                                                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border ${s.color}`}>
-                                                                        {s.label}
+                                                                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border bg-cyan-500/10 text-cyan-500 border-cyan-500/20">
+                                                                        IA
                                                                     </span>
-                                                                    {p.projectType && p.projectType.length > 0 && p.projectType.map((t, i) => (
-                                                                        <span key={i} className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-500 px-1.5 py-0.5 rounded">{t}</span>
-                                                                    ))}
+                                                                    <span className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-500 px-1.5 py-0.5 rounded">{clientName}</span>
+                                                                    {modsCount > 0 && (
+                                                                        <span className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-500 px-1.5 py-0.5 rounded">{modsCount} módulos ({screensCount} telas)</span>
+                                                                    )}
                                                                 </div>
                                                             </div>
                                                             <div className="text-right shrink-0">
-                                                                {p.totalValue && p.totalValue > 0 ? (
-                                                                    <p className="text-sm font-bold text-slate-900 dark:text-white">R$ {p.totalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                                                                {totalHours > 0 ? (
+                                                                    <p className="text-sm font-bold text-cyan-600 dark:text-cyan-400">{totalHours} Horas</p>
                                                                 ) : (
-                                                                    <p className="text-xs text-slate-400">Sem valor</p>
+                                                                    <p className="text-xs text-slate-400">Sem horas geradas</p>
                                                                 )}
                                                                 <p className="text-[10px] text-slate-400">{d.toLocaleDateString('pt-BR')}</p>
                                                             </div>
                                                         </div>
 
                                                         {/* Action Shortcuts */}
-                                                        <div className="flex items-center gap-2 pt-2 border-t border-slate-100 dark:border-white/5">
+                                                        <div className="flex items-center gap-2 pt-3 border-t border-slate-100 dark:border-white/5">
                                                             <button
-                                                                onClick={() => router.push(`/dashboard/proposals/new/step-5?id=${p.id}`)}
-                                                                className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-medium text-slate-600 dark:text-slate-400 hover:text-cyan-500 hover:bg-cyan-500/5 rounded-lg transition-colors"
+                                                                onClick={() => {
+                                                                    const scope = p.scopeData;
+                                                                    if (scope) {
+                                                                        scope.id = p.id;
+                                                                        if (typeof window !== "undefined") {
+                                                                            localStorage.setItem("proposals_assembler_current_scope", JSON.stringify(scope));
+                                                                            router.push("/dashboard/crm/assembler/new/editor");
+                                                                        }
+                                                                    }
+                                                                }}
+                                                                className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-bold text-slate-600 dark:text-slate-300 hover:text-cyan-600 dark:hover:text-cyan-400 hover:bg-cyan-50 dark:hover:bg-cyan-500/10 rounded-lg transition-colors"
                                                             >
-                                                                <Edit3 size={12} /> Editar
+                                                                <Edit3 size={12} /> Editar (IA)
                                                             </button>
-                                                            {p.publicToken && (
+                                                            {p.publicId && (
                                                                 <button
-                                                                    onClick={() => window.open(`/proposal/${p.id}`, '_blank')}
-                                                                    className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-medium text-slate-600 dark:text-slate-400 hover:text-cyan-500 hover:bg-cyan-500/5 rounded-lg transition-colors"
+                                                                    onClick={() => window.open(`/proposal/${p.publicId}`, '_blank')}
+                                                                    className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-bold text-slate-600 dark:text-slate-300 hover:text-cyan-600 dark:hover:text-cyan-400 hover:bg-cyan-50 dark:hover:bg-cyan-500/10 rounded-lg transition-colors"
                                                                 >
                                                                     <Presentation size={12} /> Apresentação
                                                                 </button>
                                                             )}
                                                             <button
-                                                                onClick={() => window.open(`/proposal/${p.id}`, '_blank')}
-                                                                className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-medium text-slate-600 dark:text-slate-400 hover:text-cyan-500 hover:bg-cyan-500/5 rounded-lg transition-colors ml-auto"
+                                                                onClick={() => {
+                                                                    const scope = p.scopeData;
+                                                                    if (scope) {
+                                                                        scope.id = p.id;
+                                                                        if (typeof window !== "undefined") {
+                                                                            localStorage.setItem("proposals_assembler_current_scope", JSON.stringify(scope));
+                                                                            router.push("/dashboard/crm/assembler/new/editor");
+                                                                        }
+                                                                    }
+                                                                }}
+                                                                className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-bold text-slate-600 dark:text-slate-300 hover:text-cyan-600 dark:hover:text-cyan-400 hover:bg-cyan-50 dark:hover:bg-cyan-500/10 rounded-lg transition-colors ml-auto"
                                                             >
                                                                 <ExternalLink size={12} /> Abrir
                                                             </button>
@@ -1460,8 +1579,8 @@ export default function PipelineDealDetail() {
                                             <p className="text-xs text-slate-400 mt-1">Crie uma nova proposta para {deal?.client?.name || 'este cliente'}</p>
                                             <button
                                                 onClick={() => {
-                                                    const clientName = deal?.client?.name || '';
-                                                    router.push(`/dashboard/proposals/new/step-1?clientName=${encodeURIComponent(clientName)}`);
+                                                    const clientId = deal?.client?.id || '';
+                                                    router.push(`/dashboard/crm/assembler/new?clientId=${clientId}&dealId=${deal?.id}`);
                                                 }}
                                                 className="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-sm rounded-lg transition-colors mt-4"
                                             >
@@ -1655,6 +1774,172 @@ export default function PipelineDealDetail() {
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {/* ═══ Loss Reason Modal ═══ */}
+            <AnimatePresence>
+                {showLossReasonModal && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
+                        onClick={() => setShowLossReasonModal(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.95, opacity: 0 }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl p-6"
+                        >
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-500/20 flex items-center justify-center shrink-0">
+                                    <ThumbsDown size={20} className="text-red-500" />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-bold text-slate-900 dark:text-white leading-tight">Marcar perda</h3>
+                                    <p className="text-xs text-slate-500">
+                                        Explique o motivo de ter perdido para a etapa <strong>{deal.stage?.name}</strong>.
+                                    </p>
+                                </div>
+                                <button title="Cancelar Perda" onClick={() => setShowLossReasonModal(false)} className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors ml-auto">
+                                    <X size={18} />
+                                </button>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="flex flex-col gap-1.5">
+                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Motivo da Perda *</label>
+                                    <div className="grid grid-cols-1 gap-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-1 -mr-1">
+                                        {lossReasons.filter(lr => lr.funnelId === deal.funnel?.id && lr.stageId === deal.stageId).length === 0 ? (
+                                            <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-white/5 text-center">
+                                                <p className="text-sm text-slate-500">Nenhum motivo configurado para esta etapa específica.</p>
+                                                <p className="text-xs text-slate-400 mt-1">Configure em <strong>Configurações &gt; Motivos de Perda</strong></p>
+                                            </div>
+                                        ) : (
+                                            lossReasons
+                                                .filter(lr => lr.funnelId === deal.funnel?.id && lr.stageId === deal.stageId)
+                                                .map(reason => (
+                                                    <label 
+                                                        key={reason.id} 
+                                                        className={`flex flex-col p-3 rounded-xl border relative cursor-pointer transition-all ${
+                                                            selectedLossReasonId === reason.id 
+                                                            ? 'border-red-500 bg-red-50 dark:bg-red-500/10' 
+                                                            : 'border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/50 hover:border-slate-300 dark:hover:border-white/20'
+                                                        }`}
+                                                    >
+                                                        <div className="flex items-center gap-3">
+                                                            <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${
+                                                                selectedLossReasonId === reason.id 
+                                                                ? 'border-red-500' 
+                                                                : 'border-slate-300 dark:border-slate-600'
+                                                            }`}>
+                                                                {selectedLossReasonId === reason.id && (
+                                                                    <div className="w-2 h-2 rounded-full bg-red-500" />
+                                                                )}
+                                                            </div>
+                                                            <span className="flex items-center gap-2 font-medium text-sm text-slate-900 dark:text-white">
+                                                                {reason.name}
+                                                            </span>
+                                                        </div>
+                                                        {reason.description && (
+                                                            <p className="text-xs text-slate-500 ml-7 mt-1">{reason.description}</p>
+                                                        )}
+                                                    </label>
+                                                ))
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-3 mt-6 pt-4 border-t border-slate-200 dark:border-white/10">
+                                <button
+                                    onClick={() => setShowLossReasonModal(false)}
+                                    className="flex-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 font-bold text-sm rounded-lg transition-colors"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={confirmLoss}
+                                    disabled={isSubmittingLoss || !selectedLossReasonId}
+                                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white font-bold text-sm rounded-lg transition-colors"
+                                >
+                                    {isSubmittingLoss ? "Marcando..." : "Confirmar perda"}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Won Confirm Modal */}
+            <AnimatePresence>
+                {showWonConfirmModal && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.95, opacity: 0 }}
+                            className="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl shadow-xl border border-slate-200 dark:border-white/10 overflow-hidden"
+                        >
+                            <div className="flex items-center gap-4 p-6 border-b border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-900/50">
+                                <div className="w-10 h-10 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0">
+                                    <ThumbsUp size={20} className="text-blue-500" />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-bold text-slate-900 dark:text-white leading-tight">Marcar venda ganha</h3>
+                                </div>
+                            </div>
+                            <div className="p-6">
+                                <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                    Você tem certeza que a venda foi finalizada? Cliente já pagou a entrada?
+                                </p>
+                                <div className="flex items-center gap-3 mt-6">
+                                    <button
+                                        onClick={() => setShowWonConfirmModal(false)}
+                                        className="flex-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 font-bold text-sm rounded-lg transition-colors"
+                                    >
+                                        Não
+                                    </button>
+                                    <button
+                                        onClick={() => handleUpdateDealStatus("won")}
+                                        className="flex-1 px-4 py-2.5 bg-blue-500 hover:bg-blue-600 text-white font-bold text-sm rounded-lg transition-colors"
+                                    >
+                                        Sim
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Won Success Message overlay */}
+            <AnimatePresence>
+                {showWonSuccess && (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.9 }}
+                        className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none p-4"
+                    >
+                        <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur border border-white/20 p-8 rounded-3xl shadow-2xl text-center max-w-xl shadow-blue-500/20">
+                            <h2 className="text-3xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-purple-500 mb-4 uppercase tracking-tight">
+                                Parabéns {user?.name || "Vendedor"}!
+                            </h2>
+                            <p className="text-xl md:text-2xl font-bold text-slate-800 dark:text-white">
+                                Vamooooooo! Uhuuuuuuuuuuuuuu! Pra cimaaaaaaaaaa! 🚀
+                            </p>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
         </div>
     );
 }

@@ -4,8 +4,9 @@ import { logger } from "../../lib/logger.js";
 
 export const leadsController = {
     async createPublic(req: Request, res: Response) {
-        const lead = await leadsService.createPublic(req.body);
-        res.status(201).json({ success: true, data: lead });
+        // DISCONNECTED: Returning dummy data to keep external site flow working
+        // const lead = await leadsService.createPublic(req.body);
+        res.status(201).json({ success: true, data: { id: "dummy-disconnected-lead-id" } });
     },
 
     async createPublicContact(req: Request, res: Response) {
@@ -16,7 +17,11 @@ export const leadsController = {
             if (!name?.trim() || !email?.trim() || !phone?.trim()) {
                 return res.status(400).json({ success: false, error: { message: "name, email e phone são obrigatórios." } });
             }
-            const result = await leadsService.createPublicContact({ name, email, phone, company });
+            
+            // DISCONNECTED: Bypass logic to avoid populating CRM while "desconectado"
+            // const result = await leadsService.createPublicContact({ name, email, phone, company });
+            const result = { clientId: "dummy-client-id-disconnected", companyId: null };
+            
             return res.status(201).json({ success: true, data: result });
         } catch (err) {
             logger.error({ err }, "[Cz Form] Error creating public contact");
@@ -31,10 +36,12 @@ export const leadsController = {
             // ── Temporary debug log to inspect what the frontend is actually sending ──
             logger.info({ id, body: req.body }, "[Cz Form] Incoming updatePublicOpportunity payload");
             
-            const { value, budgetText, message } = req.body as {
-                value?: number; budgetText?: string | null; message?: string | null;
-            };
-            await leadsService.updatePublicOpportunity(id, { value, budgetText, message });
+            // DISCONNECTED
+            // const { value, budgetText, message } = req.body as {
+            //     value?: number; budgetText?: string | null; message?: string | null;
+            // };
+            // await leadsService.updatePublicOpportunity(id, { value, budgetText, message });
+            
             return res.json({ success: true });
         } catch (err) {
             logger.error({ err }, "[Cz Form] Error updating public opportunity");
@@ -48,11 +55,15 @@ export const leadsController = {
             if (!clientId) {
                 return res.status(400).json({ success: false, error: { message: "clientId é obrigatório." } });
             }
-            const result = await leadsService.createPublicOpportunity({
-                clientId,
-                services: Array.isArray(services) ? services : [],
-            });
-            return res.status(result ? 201 : 200).json({ success: true, data: result });
+            
+            // DISCONNECTED
+            // const result = await leadsService.createPublicOpportunity({
+            //     clientId,
+            //     services: Array.isArray(services) ? services : [],
+            // });
+            const result = { dealId: "dummy-deal-id-disconnected" };
+            
+            return res.status(201).json({ success: true, data: result });
         } catch (err) {
             logger.error({ err }, "[Cz Form] Error creating public opportunity");
             return res.status(500).json({ success: false, error: { message: "Erro ao criar oportunidade." } });

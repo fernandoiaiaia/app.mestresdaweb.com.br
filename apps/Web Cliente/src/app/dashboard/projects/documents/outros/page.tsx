@@ -178,7 +178,7 @@ export default function OutrosDocumentsPage() {
                             {/* Document content */}
                             <div className="flex-1 bg-slate-950/50 overflow-y-auto custom-scrollbar">
                                 {viewingDoc.mimeType === "application/pdf" ? (
-                                    <iframe src={downloadDocumentUrl(viewingDoc.id)} className="w-full h-full border-0" title={viewingDoc.title} />
+                                    <iframe src={`${downloadDocumentUrl(viewingDoc.id)}?view=1`} className="w-full h-full border-0" title={viewingDoc.title} />
                                 ) : (
                                     <div className="flex flex-col items-center justify-center h-full gap-4 p-8">
                                         <div className="w-20 h-20 rounded-2xl bg-slate-700/30 border border-white/[0.06] flex items-center justify-center text-slate-400">

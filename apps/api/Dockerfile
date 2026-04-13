@@ -13,7 +13,6 @@ FROM base AS installer
 WORKDIR /app
 COPY --from=builder /app/out/json/ .
 COPY --from=builder /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
-# We need to install all dependencies for the api including prisma
 RUN pnpm install --frozen-lockfile
 
 COPY --from=builder /app/out/full/ .
@@ -26,5 +25,14 @@ FROM base AS runner
 WORKDIR /app
 COPY --from=installer /app .
 ENV NODE_ENV=production
+
+# Create upload directories so they exist as mount points
+RUN mkdir -p /app/apps/api/storage/uploads/avatars \
+             /app/apps/api/storage/uploads/domain \
+             /app/apps/api/storage/uploads/comments \
+             /app/apps/api/uploads/task-attachments \
+             /app/apps/api/uploads/project-documents \
+             /app/apps/api/uploads/deal-files
+
 EXPOSE 8080
-CMD ["pnpm", "--filter", "api", "start"]
+CMD ["sh", "-c", "pnpm --filter api exec prisma migrate deploy && pnpm --filter api start"]

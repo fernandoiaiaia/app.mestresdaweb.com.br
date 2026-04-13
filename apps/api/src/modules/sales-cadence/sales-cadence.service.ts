@@ -1,5 +1,6 @@
 import { prisma } from "../../config/database.js";
 import { logger } from "../../lib/logger.js";
+import { WhatsappService } from "../whatsapp/whatsapp.service.js";
 
 // ═══════════════════════════════════════
 // Sales Cadence Service — CRM
@@ -262,9 +263,20 @@ export const salesCadenceService = {
             case "whatsapp_auto":
                 logger.info(
                     { dealId: deal.id, phone: client?.phone, step: currentStep.title },
-                    "📱 [Sales Cadence] WhatsApp auto — would send message"
+                    "📱 [Sales Cadence] WhatsApp auto — Sending message"
                 );
-                // In production: call whatsappService.sendMessage(...)
+                if (client?.phone && currentStep.templateContent) {
+                    try {
+                        const credentials = await WhatsappService.getCredentials(deal.userId);
+                        if (credentials) {
+                            await WhatsappService.sendTextMessage(credentials, client.phone, currentStep.templateContent);
+                        } else {
+                            logger.warn({ dealId: deal.id }, "No active WhatsApp credentials found for Sales Cadence");
+                        }
+                    } catch(err) {
+                        logger.error({ err }, "Could not dispatch automated Whatsapp message");
+                    }
+                }
                 break;
 
             case "email_auto":

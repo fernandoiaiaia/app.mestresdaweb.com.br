@@ -257,15 +257,15 @@ const mockPersonas: Persona[] = [
 
 const mockIdentities: Identity[] = [
     {
-        id: "id_1", name: "João Silva", email: "joao@cezani.dev", emailStatus: "connected", warmupLevel: 85,
+        id: "id_1", name: "João Silva", email: "joao@mestresdaweb.com.br", emailStatus: "connected", warmupLevel: 85,
         whatsappNumber: "+5511999990001", whatsappConnected: true, phoneNumber: "+5511999990001", phoneConnected: true,
-        signature: "João Silva\nConsultor Sênior | Cezani\n📱 (11) 99999-0001\n🌐 cezani.dev",
+        signature: "João Silva\nConsultor Sênior | Mestres da Web\n📱 (11) 99999-0001\n🌐 mestresdaweb.com.br",
         dailyLimits: { email: 80, whatsapp: 50, phone: 20 }, createdAt: "2026-01-01T10:00:00Z"
     },
     {
-        id: "id_2", name: "Maria Santos", email: "maria@cezani.dev", emailStatus: "warming", warmupLevel: 45,
+        id: "id_2", name: "Maria Santos", email: "maria@mestresdaweb.com.br", emailStatus: "warming", warmupLevel: 45,
         whatsappNumber: "+5511999990002", whatsappConnected: true, phoneNumber: "", phoneConnected: false,
-        signature: "Maria Santos\nConsultora | Cezani\n📱 (11) 99999-0002",
+        signature: "Maria Santos\nConsultora | Mestres da Web\n📱 (11) 99999-0002",
         dailyLimits: { email: 30, whatsapp: 50, phone: 0 }, createdAt: "2026-02-10T10:00:00Z"
     }
 ];

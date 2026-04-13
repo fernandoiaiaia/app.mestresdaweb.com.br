@@ -198,7 +198,6 @@ export default function DashboardPage() {
                             <BarChart3 size={14} className="text-blue-400" /> Horas por Projeto
                         </h3>
                         <div className="flex items-center gap-4 text-[10px] text-slate-500">
-                            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-blue-500" /> Estimadas</span>
                             <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-green-500" /> Usadas</span>
                         </div>
                     </div>
@@ -210,7 +209,7 @@ export default function DashboardPage() {
                                     <XAxis dataKey="name" tick={{ fill: "#64748b", fontSize: 10 }} axisLine={false} tickLine={false} />
                                     <YAxis tick={{ fill: "#64748b", fontSize: 10 }} axisLine={false} tickLine={false} />
                                     <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
-                                    <Bar dataKey="estimadas" fill="#3b82f6" radius={[6, 6, 0, 0]} name="Estimadas" />
+
                                     <Bar dataKey="usadas" fill="#22c55e" radius={[6, 6, 0, 0]} name="Usadas" />
                                 </BarChart>
                             </ResponsiveContainer>
@@ -227,34 +226,14 @@ export default function DashboardPage() {
                             <Clock size={14} className="text-blue-400" /> Resumo de Horas
                         </h3>
                         <div className="space-y-4">
-                            <div className="text-center p-4 rounded-xl bg-slate-800/50 border border-slate-700/30">
-                                <p className="text-[9px] font-bold tracking-widest uppercase text-slate-500">Eficiência</p>
-                                <p className={`text-4xl font-bold mt-1 ${hoursEfficiency > 100 ? "text-red-400" : hoursEfficiency > 80 ? "text-amber-400" : "text-blue-400"}`}>
-                                    {hoursEfficiency}%
-                                </p>
-                                <p className="text-[10px] text-slate-500 mt-1">
-                                    {hoursEfficiency > 100 ? "Acima do orçado" : hoursEfficiency > 80 ? "Próximo do limite" : "Dentro do orçado"}
-                                </p>
-                            </div>
-                            <div className="grid grid-cols-2 gap-2">
+
                                 <div className="text-center p-3 rounded-lg bg-blue-500/5 border border-blue-500/10">
-                                    <p className="text-[9px] font-bold text-slate-500 uppercase">Estimadas</p>
-                                    <p className="text-lg font-bold text-blue-400 mt-0.5">{totalHoursEstimated}h</p>
-                                </div>
-                                <div className="text-center p-3 rounded-lg bg-blue-500/5 border border-blue-500/10">
-                                    <p className="text-[9px] font-bold text-slate-500 uppercase">Usadas</p>
+                                    <p className="text-[9px] font-bold text-slate-500 uppercase">Total Usadas</p>
                                     <p className="text-lg font-bold text-blue-400 mt-0.5">{totalHoursUsed}h</p>
                                 </div>
-                            </div>
                         </div>
                     </div>
-                    <div className="mt-4 pt-3 border-t border-slate-700/30 text-center">
-                        <p className="text-[10px] text-slate-500">
-                            Saldo: <span className={`font-bold ${totalHoursEstimated - totalHoursUsed >= 0 ? "text-blue-400" : "text-red-400"}`}>
-                                {totalHoursEstimated - totalHoursUsed >= 0 ? "+" : ""}{totalHoursEstimated - totalHoursUsed}h
-                            </span>
-                        </p>
-                    </div>
+
                 </motion.div>
             </div>
 
@@ -467,7 +446,6 @@ export default function DashboardPage() {
                                         </td>
                                         <td className="px-5 py-3 text-xs">
                                             <span className="text-slate-400">{p.hoursUsed || 0}h</span>
-                                            <span className="text-slate-600"> / {p.hoursEstimated || 0}h</span>
                                         </td>
                                         <td className="px-5 py-3">
                                             <span className={`px-2 py-0.5 text-[10px] font-bold rounded-md border ${getHealthBg(p.health)} ${getHealthColor(p.health)}`}>

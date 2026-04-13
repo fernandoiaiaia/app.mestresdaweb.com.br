@@ -363,8 +363,8 @@ export default function LoginPage() {
                             className="w-full max-w-[440px] bg-transparent rounded-xl border border-slate-700/30 p-8 shadow-[0_15px_40px_rgb(0,0,0,0.2)] relative"
                         >
                             {/* Brand Name */}
-                            <div className="flex justify-center mb-8">
-                                <span className="text-5xl font-bold tracking-tight text-white font-varela-round lowercase">cezani</span>
+                            <div className="flex justify-center mb-10">
+                                <img src="/branding/logo-mdw.png" alt="Mestres da Web" className="w-full max-w-[340px] h-auto object-contain drop-shadow-[0_0_20px_rgba(34,255,181,0.2)]" />
                             </div>
 
                             {/* Error / Lockout Alert */}
@@ -410,7 +410,7 @@ export default function LoginPage() {
                                                             type="email"
                                                             value={email}
                                                             onChange={(e) => setEmail(e.target.value)}
-                                                            placeholder="email@cezani.dev"
+                                                            placeholder="email@mestresdaweb.com.br"
                                                             disabled={isLocked}
                                                             className="w-full bg-slate-900/50 border border-slate-600/50 rounded-lg pl-11 pr-4 py-3.5 text-white text-sm placeholder:text-slate-500 focus:outline-none focus:border-blue-600/50 focus:ring-1 focus:ring-blue-600/50 transition-all hover:bg-slate-900/80 disabled:opacity-40 disabled:cursor-not-allowed"
                                                         />

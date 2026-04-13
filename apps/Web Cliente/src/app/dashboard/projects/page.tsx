@@ -49,12 +49,12 @@ export default function ProjectsPage() {
 
     return (
         <div className="p-6 md:p-8 space-y-6">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+            <motion.div id="tour-page-projects-header" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
                 <h1 className="text-3xl font-bold tracking-tight">Todos os Projetos</h1>
                 <p className="text-slate-400 mt-1">Acompanhe o andamento de todos os seus projetos.</p>
             </motion.div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div id="tour-page-projects-list" className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {projects.map((project, i) => {
                     const statusLabel = phaseToStatusLabel(project.phase);
                     const sc = statusColors[statusLabel] || statusColors["Em Andamento"];

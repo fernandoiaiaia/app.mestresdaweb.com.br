@@ -21,8 +21,9 @@ import { cadencesRoutes } from "./modules/cadences/cadences.routes.js";
 import { dealsRoutes } from "./modules/deals/deals.routes.js";
 import { tasksRoutes } from "./modules/tasks/tasks.routes.js";
 import { companiesRoutes } from "./modules/companies/companies.routes.js";
-import { sdrRoutes } from "./modules/sdr/sdr.routes.js";
 import { webhooksRoutes } from "./modules/sdr/webhooks.routes.js";
+import { inboundWebhooksRoutes } from "./modules/integrations/inbound-webhooks.routes.js";
+import { sdrRoutes } from "./modules/sdr/sdr.routes.js";
 import { integrationsRoutes } from "./modules/integrations/integrations.routes.js";
 import { salesCadenceRoutes } from "./modules/sales-cadence/sales-cadence.routes.js";
 import { professionalsRoutes } from "./modules/professionals/professionals.routes.js";
@@ -46,10 +47,12 @@ import devSprintsRoutes from "./modules/dev-sprints/dev-sprints.routes.js";
 import devReportsRoutes from "./modules/dev-reports/dev-reports.routes.js";
 import { devSettingsRoutes } from "./modules/dev-settings/dev-settings.routes.js";
 import { leadsRoutes } from "./modules/leads/leads.routes.js";
-import { proposalsRoutes } from "./modules/proposals/proposals.routes.js";
-
-
-
+import { knowledgeBaseRoutes } from "./modules/knowledge-base/knowledge-base.routes.js";
+import { assemblerRoutes } from "./modules/assembler/assembler.routes.js";
+import { proposalsRoutes } from "./modules/assembler/proposals.routes.js";
+import { whatsappWebhookRoutes } from "./modules/whatsapp/whatsapp.webhook.controller.js";
+import { whatsappRoutes } from "./modules/whatsapp/whatsapp.controller.js";
+import { whatsappLabelsRoutes } from "./modules/whatsapp/whatsapp-labels.controller.js";
 
 const app: ReturnType<typeof express> = express();
 
@@ -57,7 +60,18 @@ const app: ReturnType<typeof express> = express();
 app.set("trust proxy", 1);
 
 // ═══ Global Middlewares ═══
-app.use(helmet());
+app.use(
+    helmet({
+        crossOriginResourcePolicy: { policy: "cross-origin" },
+        contentSecurityPolicy: {
+            directives: {
+                ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+                "frame-ancestors": ["'self'", ...env.CORS_ORIGIN.split(",")],
+            },
+        },
+        frameguard: false,
+    })
+);
 app.use(
     cors({
         origin: env.CORS_ORIGIN.split(","),
@@ -124,9 +138,14 @@ app.use("/api/dev-sprints", devSprintsRoutes);
 app.use("/api/dev-reports", devReportsRoutes);
 app.use("/api/dev-settings", devSettingsRoutes);
 app.use("/api/leads", leadsRoutes);
-proposalsRoutes(app as any);
+app.use("/api/knowledge-base", knowledgeBaseRoutes);
+app.use("/api/assembler", assemblerRoutes);
+app.use("/api/proposals", proposalsRoutes);
 
-
+// WhatsApp Integrations
+whatsappWebhookRoutes(app);
+whatsappRoutes(app);
+whatsappLabelsRoutes(app);
 
 // ═══ 404 ═══
 app.use((_req, res) => {

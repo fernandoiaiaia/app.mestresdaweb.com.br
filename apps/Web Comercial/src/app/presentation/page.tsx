@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -497,7 +497,7 @@ function PrintLayout({ scope, team, payments, client, totalHours, totalValue, ti
     );
 }
 
-export default function PresentationPage() {
+function PresentationPageInner() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const id = searchParams.get("id");
@@ -1137,7 +1137,7 @@ export default function PresentationPage() {
                 </AnimatePresence>
             </main>
             
-            <style jsx global>{`
+            <style dangerouslySetInnerHTML={{ __html: `
                 /* Hide global vertical scroll bar strictly */
                 html, body { 
                     overflow: hidden !important; 
@@ -1185,7 +1185,7 @@ export default function PresentationPage() {
                     .print-only  { display: block !important; }
                     * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
                 }
-            `}</style>
+            ` }} />
         </div>
 
         {/* Print-only A4 layout — also used as source for html2pdf download */}
@@ -1201,5 +1201,13 @@ export default function PresentationPage() {
             />
         </div>
       </>
+    );
+}
+
+export default function PresentationPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-[#050505] flex items-center justify-center text-white"><Loader2 size={32} className="animate-spin text-blue-500" /></div>}>
+            <PresentationPageInner />
+        </Suspense>
     );
 }

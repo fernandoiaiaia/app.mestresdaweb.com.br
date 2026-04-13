@@ -164,8 +164,7 @@ export default function ProductTour() {
                 },
                 {
                     element: "#tour-page-projects-header",
-                    popover: { title: "Página de Projetos", description: buildDesc("Lista completa de todos os sistemas e escopos contratados que estão em execução pela nossa equipe.") },
-                    onPrevClick: () => { router.push('/dashboard'); waitAndMove(() => driverObj.movePrevious()); }
+                    popover: { title: "Página de Projetos", description: buildDesc("Lista completa de todos os sistemas e escopos contratados que estão em execução pela nossa equipe."), onPrevClick: () => { router.push('/dashboard'); waitAndMove(() => driverObj.movePrevious()); } }
                 },
                 {
                     element: "#tour-page-projects-list",
@@ -186,8 +185,7 @@ export default function ProductTour() {
                 },
                 {
                     element: "#tour-page-docs-header",
-                    popover: { title: "Gestão de Documentos", description: buildDesc("Centralizamos seus arquivos, contratos e plantas aqui. Nunca mais se perca.") },
-                    onPrevClick: () => { router.push('/dashboard/projects'); waitAndMove(() => driverObj.movePrevious()); }
+                    popover: { title: "Gestão de Documentos", description: buildDesc("Centralizamos seus arquivos, contratos e plantas aqui. Nunca mais se perca."), onPrevClick: () => { router.push('/dashboard/projects'); waitAndMove(() => driverObj.movePrevious()); } }
                 },
                 {
                     element: "#tour-page-docs-categories",
@@ -208,8 +206,7 @@ export default function ProductTour() {
                 },
                 {
                     element: "#tour-page-deliveries-header",
-                    popover: { title: "Controle de Entregas", description: buildDesc("A visão microscópica de Sprints e prazos curtos.") },
-                    onPrevClick: () => { router.push('/dashboard/projects/documents'); waitAndMove(() => driverObj.movePrevious()); }
+                    popover: { title: "Controle de Entregas", description: buildDesc("A visão microscópica de Sprints e prazos curtos."), onPrevClick: () => { router.push('/dashboard/projects/documents'); waitAndMove(() => driverObj.movePrevious()); } }
                 },
                 {
                     element: "#tour-page-deliveries-filters",
@@ -234,8 +231,7 @@ export default function ProductTour() {
                 },
                 {
                     element: "#tour-page-proposals-header",
-                    popover: { title: "Propostas Comerciais", description: buildDesc("Possui um novo escopo de projeto que discutimos? Aqui acompanhamos a tramitação burocrática.") },
-                    onPrevClick: () => { router.push('/dashboard/projects/deliveries'); waitAndMove(() => driverObj.movePrevious()); }
+                    popover: { title: "Propostas Comerciais", description: buildDesc("Possui um novo escopo de projeto que discutimos? Aqui acompanhamos a tramitação burocrática."), onPrevClick: () => { router.push('/dashboard/projects/deliveries'); waitAndMove(() => driverObj.movePrevious()); } }
                 },
                 {
                     element: "#tour-page-proposals-list",
@@ -256,8 +252,7 @@ export default function ProductTour() {
                 },
                 {
                     element: "#tour-page-notifications-header",
-                    popover: { title: "Notificações do Sistema", description: buildDesc("Todos os rastros das automações invisíveis.") },
-                    onPrevClick: () => { router.push('/dashboard/proposals'); waitAndMove(() => driverObj.movePrevious()); }
+                    popover: { title: "Notificações do Sistema", description: buildDesc("Todos os rastros das automações invisíveis."), onPrevClick: () => { router.push('/dashboard/proposals'); waitAndMove(() => driverObj.movePrevious()); } }
                 },
                 {
                     element: "#tour-page-notifications-search",
@@ -269,13 +264,11 @@ export default function ProductTour() {
                 // ════════════════════════════════════════
                 {
                     element: "#tour-sidebar-settings",
-                    popover: { title: "Configurações Globais", description: buildDesc("Gerencie convites para os diretores da sua empresa, ou ajuste padrões e métodos organizacionais.") },
-                    onPrevClick: () => { router.push('/dashboard/notifications'); waitAndMove(() => driverObj.movePrevious()); }
+                    popover: { title: "Configurações Globais", description: buildDesc("Gerencie convites para os diretores da sua empresa, ou ajuste padrões e métodos organizacionais."), onPrevClick: () => { router.push('/dashboard/notifications'); waitAndMove(() => driverObj.movePrevious()); } }
                 },
                 {
                     element: "#tour-sidebar-profile",
-                    popover: { title: "Perfil & Sair", description: buildDesc("Ajuste sua foto de perfil ou faça o logout com segurança. Divirta-se na plataforma!") },
-                    onNextClick: () => { router.push('/dashboard'); waitAndMove(() => driverObj.moveNext()); }
+                    popover: { title: "Perfil & Sair", description: buildDesc("Ajuste sua foto de perfil ou faça o logout com segurança. Divirta-se na plataforma!"), onNextClick: () => { router.push('/dashboard'); waitAndMove(() => driverObj.moveNext()); } }
                 }
             ]
         });

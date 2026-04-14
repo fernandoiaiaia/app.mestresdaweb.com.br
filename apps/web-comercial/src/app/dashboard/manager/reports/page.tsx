@@ -62,14 +62,14 @@ const reports: ReportCard[] = [
 
     // ═══ MANAGER (Gestão de Equipe) ═══
     {
-        id: "team-performance", title: "Performance da Equipe", description: "Ranking de consultores, conversão individual, volume de propostas e tendências.",
+        id: "team-performance", title: "Performance da Equipe", description: "Ranking de advisors, conversão individual, volume de propostas e tendências.",
         icon: Users, color: "text-blue-400", bgColor: "bg-blue-500/10", borderColor: "border-blue-500/20",
         href: "/dashboard/manager/reports/team-performance", category: "manager", tags: ["Equipe", "Ranking"],
     },
     {
-        id: "consultant-comparison", title: "Comparativo de Consultores", description: "Comparação side-by-side entre consultores em todas as métricas-chave.",
+        id: "consultant-comparison", title: "Comparativo de Advisors", description: "Comparação side-by-side entre advisors em todas as métricas-chave.",
         icon: UserCheck, color: "text-indigo-400", bgColor: "bg-indigo-500/10", borderColor: "border-indigo-500/20",
-        href: "/dashboard/manager/reports/consultant-comparison", category: "manager", tags: ["Comparativo", "Consultores"],
+        href: "/dashboard/manager/reports/consultant-comparison", category: "manager", tags: ["Comparativo", "Advisors"],
     },
     {
         id: "goals-tracking", title: "Metas & Objetivos", description: "Acompanhamento de metas individuais e coletivas, atingimento e gap.",

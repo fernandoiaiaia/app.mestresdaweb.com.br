@@ -32,7 +32,7 @@ const settingsCards = [
     {
         id: "users",
         title: "Usuários",
-        description: "Gerencie consultores, gestores e permissões de acesso ao sistema.",
+        description: "Gerencie advisors, gestores e permissões de acesso ao sistema.",
         icon: Users,
         href: "/dashboard/settings/users",
         badge: "12 ativos",
@@ -95,7 +95,7 @@ const settingsCards = [
     {
         id: "objections",
         title: "Objeções",
-        description: "Banco de objeções comuns e scripts de contorno para consultores.",
+        description: "Banco de objeções comuns e scripts de contorno para advisors.",
         icon: MessageCircle,
         href: "/dashboard/settings/objections",
         badge: null,

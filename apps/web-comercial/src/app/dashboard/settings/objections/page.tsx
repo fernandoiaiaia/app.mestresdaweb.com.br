@@ -160,7 +160,7 @@ export default function ObjectionsPage() {
                         </div>
                         <div>
                             <h1 className="text-2xl font-bold text-white tracking-tight">Objeções</h1>
-                            <p className="text-sm text-slate-400">Banco de objeções comuns e scripts de contorno para consultores</p>
+                            <p className="text-sm text-slate-400">Banco de objeções comuns e scripts de contorno para advisors</p>
                         </div>
                     </div>
                     <button onClick={openCreate} className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-semibold text-sm transition-all shadow-lg shadow-blue-600/20">

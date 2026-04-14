@@ -207,7 +207,7 @@ export const dealsService = {
             stageId = stage.id;
         }
 
-        return prisma.deal.create({
+        const deal = await prisma.deal.create({
             data: {
                 ...data,
                 funnelId,
@@ -216,6 +216,15 @@ export const dealsService = {
             },
             include: { client: true, consultant: true }
         });
+
+        if (deal.clientId) {
+            await prisma.assembledProposal.updateMany({
+                where: { clientId: deal.clientId, dealId: null },
+                data: { dealId: deal.id }
+            });
+        }
+
+        return deal;
     },
 
     async update(id: string, data: UpdateDealDto, user: JwtUser) {

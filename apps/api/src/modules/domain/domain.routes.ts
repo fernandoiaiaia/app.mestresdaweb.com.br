@@ -4,6 +4,7 @@ import path from "path";
 import fs from "fs";
 import { domainController } from "./domain.controller.js";
 import { authMiddleware } from "../../middlewares/auth.middleware.js";
+import { createSafeFileFilter, ALLOWED_IMAGE_MIMES } from "../../lib/file-filter.js";
 
 const uploadDir = path.resolve(process.cwd(), "storage", "uploads", "domain");
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
@@ -15,7 +16,11 @@ const storage = multer.diskStorage({
         cb(null, `${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ext}`);
     },
 });
-const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } });
+const upload = multer({
+    storage,
+    limits: { fileSize: 5 * 1024 * 1024 },
+    fileFilter: createSafeFileFilter(ALLOWED_IMAGE_MIMES)
+});
 
 const router: Router = Router();
 router.use(authMiddleware);

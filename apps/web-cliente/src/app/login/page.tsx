@@ -92,12 +92,17 @@ export default function LoginPage() {
         if (!clientId || clientId === "your_google_client_id_here") return;
 
         const w = window as any;
-        if (w.google?.accounts?.id) {
+        if (w.google?.accounts?.id && document.getElementById("google_login_button_container")) {
             w.google.accounts.id.initialize({
                 client_id: clientId,
                 callback: handleGoogleCallback,
                 auto_select: false,
+                context: "use",
             });
+            w.google.accounts.id.renderButton(
+                document.getElementById("google_login_button_container"),
+                { theme: "outline", size: "large", text: "continue_with", width: 350 }
+            );
         }
     }, [googleLoaded, step]);
 
@@ -191,15 +196,8 @@ export default function LoginPage() {
         }
     }, [googleLogin, router]);
 
-    const handleGoogleClick = () => {
-        if (isLocked || isLoading) return;
-        const w = window as any;
-        if (w.google?.accounts?.id) {
-            w.google.accounts.id.prompt();
-        } else {
-            setError("Google Sign-In não está disponível. Tente novamente.");
-        }
-    };
+    // Manual click handler removed since we use native renderButton
+    const handleGoogleClick = () => {};
 
     const handle2faSubmit = async () => {
         const code = codeDigits.join("");
@@ -471,21 +469,31 @@ export default function LoginPage() {
                                                 <div className="flex-1 h-px bg-slate-700/50" />
                                             </div>
 
-                                            {/* Google OAuth — Custom styled button */}
-                                            <button
-                                                type="button"
-                                                onClick={handleGoogleClick}
-                                                disabled={isLocked || isLoading}
-                                                className="w-full flex items-center justify-center gap-3 px-4 py-3.5 bg-slate-900/50 border border-slate-600/50 rounded-lg text-sm font-medium text-slate-300 hover:bg-slate-900/80 hover:border-slate-500/50 hover:text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                                            >
-                                                <svg className="w-4 h-4" viewBox="0 0 24 24">
-                                                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
-                                                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                                                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
-                                                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-                                                </svg>
-                                                <span>Entrar com Google</span>
-                                            </button>
+                                            {/* Google OAuth — Original UI disguised with Iframe */}
+                                            {showGoogleButton && (
+                                                <div className="relative w-full h-[46px] rounded-[10px] overflow-hidden group mt-2">
+                                                    {/* Background Style Wrapper (pointer-events-none lets clicks pass to iframe) */}
+                                                    <div className="absolute inset-0 flex items-center justify-center gap-2 px-4 py-[11px] border border-white/5 bg-white/[0.02] group-hover:bg-white/[0.04] text-white/90 text-sm font-medium transition-colors shadow-sm pointer-events-none">
+                                                        <svg className="w-[18px] h-[18px] group-hover:scale-105 transition-transform" viewBox="0 0 24 24">
+                                                            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                                                            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                                                            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+                                                            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+                                                        </svg>
+                                                        <span>Entrar com Google</span>
+                                                    </div>
+
+                                                    {/* Hidden Google iframe overlay capturing clicks exactly over the button */}
+                                                    <div 
+                                                        id="google_login_button_container" 
+                                                        className="absolute top-0 right-0 left-0 bottom-0 z-10 cursor-pointer opacity-[0.01]" 
+                                                        style={{ transform: 'scale(1.2)' }}
+                                                    ></div>
+
+                                                    {/* Loader Shield */}
+                                                    {(isLoading || isLocked) && <div className="absolute inset-0 z-20 bg-[#060606]/50"></div>}
+                                                </div>
+                                            )}
 
                                             {/* Remember + Forgot */}
                                             <div className="flex items-center justify-between text-xs text-slate-400 font-medium pt-1">

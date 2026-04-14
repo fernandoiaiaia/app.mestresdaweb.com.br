@@ -196,7 +196,7 @@ export default function ChecklistConfigPage() {
                 {showPreview && (
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="mt-6 overflow-hidden">
                         <div className="bg-slate-900/80 border border-white/[0.08] rounded-2xl p-6">
-                            <h3 className="text-sm font-bold text-white mb-4">Preview do Checklist (como o consultor verá)</h3>
+                            <h3 className="text-sm font-bold text-white mb-4">Preview do Checklist (como o advisor verá)</h3>
                             <div className="space-y-3">
                                 {questions.map((q, i) => (
                                     <div key={q.id} className="p-3 bg-slate-800/50 border border-white/[0.04] rounded-xl">

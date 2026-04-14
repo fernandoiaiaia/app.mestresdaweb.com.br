@@ -2,6 +2,20 @@ import { Request, Response } from "express";
 import path from "path";
 import fs from "fs";
 import { dealsService } from "./deals.service.js";
+import { dealsDashboardService } from "./deals.dashboard.service.js";
+import { dealsAnalysisService } from "./deals.analysis.service.js";
+import { dealsRevenueService } from "./deals.revenue.service.js";
+import { dealsCycleService } from "./deals.cycle.service.js";
+import { dealsPortfolioService } from "./deals.portfolio.service.js";
+import { dealsLossService } from "./deals.loss.service.js";
+import { dealsActivitiesService } from "./deals.activities.service.js";
+import { dealsRankingService } from "./deals.ranking.service.js";
+import { dealsTeamService } from "./deals.team.service.js";
+import { dealsCompareService } from "./deals.compare.service.js";
+import { dealsGoalsService } from "./deals.goals.service.js";
+import { dealsSdrService } from "./deals.sdr.service.js";
+import { dealsFunnelService } from "./deals.funnel.service.js";
+import { dealsSummaryService } from "./deals.summary.service.js";
 import { prisma } from "../../config/database.js";
 
 // Ensure uploads dir exists
@@ -16,6 +30,148 @@ export const dealsController = {
         };
         const deals = await dealsService.list(req.user!, query);
         res.json({ success: true, data: deals });
+    },
+
+    async dashboardStats(req: Request, res: Response) {
+        const isManager = req.user!.role === "OWNER" || req.user!.role === "ADMIN" || req.user!.role === "MANAGER";
+        const filterConsultantId = typeof req.query.consultantId === 'string' && req.query.consultantId !== 'all' ? req.query.consultantId : undefined;
+        
+        try {
+            const stats = await dealsDashboardService.getDashboardStats({
+                userId: req.user!.userId,
+                consultantId: isManager ? filterConsultantId : req.user!.userId, // Força consultant se for vendedor
+                isManager
+            });
+            res.json({ success: true, data: stats });
+        } catch (error: any) {
+            res.status(500).json({ success: false, error: "Erro gerando dashboard" });
+        }
+    },
+
+    async pipelineAnalysis(req: Request, res: Response) {
+        try {
+            const data = await dealsAnalysisService.getPipelineAnalysis({ userId: req.user!.userId });
+            res.json({ success: true, data });
+        } catch (error: any) {
+            res.status(500).json({ success: false, error: "Erro gerando analise do pipeline" });
+        }
+    },
+
+    async revenueForecast(req: Request, res: Response) {
+        try {
+            const data = await dealsRevenueService.getRevenueForecast({ userId: req.user!.userId });
+            res.json({ success: true, data });
+        } catch (error: any) {
+            res.status(500).json({ success: false, error: "Erro gerando forecast de receita" });
+        }
+    },
+
+    async salesCycle(req: Request, res: Response) {
+        try {
+            const data = await dealsCycleService.getSalesCycle({ userId: req.user!.userId });
+            res.json({ success: true, data });
+        } catch (error: any) {
+            res.status(500).json({ success: false, error: "Erro gerando ciclo de vendas" });
+        }
+    },
+
+    async clientsPortfolio(req: Request, res: Response) {
+        try {
+            const data = await dealsPortfolioService.getPortfolio({ userId: req.user!.userId });
+            res.json({ success: true, data });
+        } catch (error: any) {
+            res.status(500).json({ success: false, error: "Erro gerando o cartao de portfólio" });
+        }
+    },
+
+    async lossAnalysis(req: Request, res: Response) {
+        try {
+            const data = await dealsLossService.getLossAnalysis({ userId: req.user!.userId });
+            res.json({ success: true, data });
+        } catch (error: any) {
+            res.status(500).json({ success: false, error: "Erro analisando as perdas do pipeline" });
+        }
+    },
+
+    async activitiesReport(req: Request, res: Response) {
+        try {
+            const data = await dealsActivitiesService.getActivitiesReport({ userId: req.user!.userId });
+            res.json({ success: true, data });
+        } catch (error: any) {
+            res.status(500).json({ success: false, error: "Erro analisando rastreio de produtividade" });
+        }
+    },
+
+    async productsRanking(req: Request, res: Response) {
+        try {
+            const data = await dealsRankingService.getProductsRanking({ userId: req.user!.userId });
+            res.json({ success: true, data });
+        } catch (error: any) {
+            res.status(500).json({ success: false, error: "Erro processando o ranking de funis" });
+        }
+    },
+
+    async teamPerformance(req: Request, res: Response) {
+        try {
+            const data = await dealsTeamService.getTeamPerformance({ userId: req.user!.userId });
+            res.json({ success: true, data });
+        } catch (error: any) {
+            res.status(500).json({ success: false, error: "Erro processando metricas da equipe" });
+        }
+    },
+
+    async consultantsComparison(req: Request, res: Response) {
+        try {
+            const data = await dealsCompareService.getConsultantComparison({ userId: req.user!.userId });
+            res.json({ success: true, data });
+        } catch (error: any) {
+            res.status(500).json({ success: false, error: "Erro gerando comparativo de consultores" });
+        }
+    },
+
+    async goalsTracking(req: Request, res: Response) {
+        try {
+            const data = await dealsGoalsService.getGoalsTracking({ userId: req.user!.userId });
+            res.json({ success: true, data });
+        } catch (error: any) {
+            res.status(500).json({ success: false, error: "Erro monitorando as metas da conta" });
+        }
+    },
+
+    async sdrPerformance(req: Request, res: Response) {
+        try {
+            const data = await dealsSdrService.getSdrPerformance({ userId: req.user!.userId });
+            res.json({ success: true, data });
+        } catch (error: any) {
+            res.status(500).json({ success: false, error: "Erro resgatando estatísticas de SDR" });
+        }
+    },
+
+    async conversionFunnel(req: Request, res: Response) {
+        try {
+            const data = await dealsFunnelService.getConversionFunnel({ userId: req.user!.userId });
+            res.json({ success: true, data });
+        } catch (error: any) {
+            res.status(500).json({ success: false, error: "Erro resgatando estatísticas de SDR" });
+        }
+    },
+
+    async conversionFunnel(req: Request, res: Response) {
+        try {
+            const data = await dealsFunnelService.getConversionFunnel({ userId: req.user!.userId });
+            res.json({ success: true, data });
+        } catch (error: any) {
+            res.status(500).json({ success: false, error: "Erro processando motor cumulativo do funil" });
+        }
+    },
+
+    async periodSummary(req: Request, res: Response) {
+        try {
+            const data = await dealsSummaryService.getPeriodSummary({ userId: req.user!.userId });
+            res.json({ success: true, data });
+        } catch (error: any) {
+            res.status(500).json({ success: false, error: "Erro extraindo sumário consolidado de período" });
+        }
     },
 
     async get(req: Request, res: Response) {

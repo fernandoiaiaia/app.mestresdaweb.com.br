@@ -50,7 +50,7 @@ const ROLE_SUGGESTIONS = [
     "Analista Financeiro",
     "Coordenador de Projetos",
     "Coordenador Comercial",
-    "Consultor",
+    "Advisor",
     "Sócio / Proprietário",
     "Assistente Administrativo",
     "Estagiário",

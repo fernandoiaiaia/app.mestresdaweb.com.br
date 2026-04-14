@@ -344,7 +344,10 @@ export default function PipelineDealDetail() {
             const compRes = await api<any[]>("/api/companies");
             if (compRes.success && compRes.data) setAllCompanies(compRes.data);
             const usersRes = await api<any[]>("/api/users");
-            if (usersRes.success && usersRes.data) setAllUsers(usersRes.data);
+            if (usersRes.success && usersRes.data) {
+                const advisors = usersRes.data.filter(u => u.allowedApps?.includes("growth"));
+                setAllUsers(advisors);
+            }
         })();
     }, []);
 

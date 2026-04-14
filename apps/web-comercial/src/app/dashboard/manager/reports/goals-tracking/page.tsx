@@ -1,24 +1,30 @@
 "use client";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { ChevronLeft, BarChart3, Gauge, Download, Target, ArrowUp } from "lucide-react";
-
-const goals = [
-    { name: "Receita Mensal", target: "R$ 600k", current: "R$ 520k", progress: 87, color: "#22c55e" },
-    { name: "Propostas Enviadas", target: "40", current: "35", progress: 88, color: "#3b82f6" },
-    { name: "Taxa de Conversão", target: "75%", current: "71%", progress: 95, color: "#8b5cf6" },
-    { name: "Novos Clientes", target: "15", current: "12", progress: 80, color: "#06b6d4" },
-    { name: "Ciclo de Vendas", target: "5 dias", current: "5 dias", progress: 100, color: "#f59e0b" },
-];
-const individualGoals = [
-    { name: "Maria Santos", target: "R$ 120k", current: "R$ 105k", progress: 88 },
-    { name: "João Silva", target: "R$ 150k", current: "R$ 140k", progress: 93 },
-    { name: "Carlos Oliveira", target: "R$ 100k", current: "R$ 72k", progress: 72 },
-    { name: "Roberta Alves", target: "R$ 80k", current: "R$ 68k", progress: 85 },
-    { name: "André Costa", target: "R$ 110k", current: "R$ 95k", progress: 86 },
-];
+import { ChevronLeft, BarChart3, Gauge, Download, Target, ArrowUp, AlertCircle } from "lucide-react";
+import { api } from "@/lib/api";
 
 export default function GoalsTrackingPage() {
+    const [isLoading, setIsLoading] = useState(true);
+    const [data, setData] = useState<{
+        goals: Array<{ name: string; target: string; current: string; progress: number; color: string }>;
+        individualGoals: Array<{ name: string; target: string; current: string; progress: number }>;
+    } | null>(null);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const result = await api<any>("/api/deals/reports/goals-tracking");
+                if (result.success && result.data) setData(result.data);
+            } catch (err) {
+                console.error("Falha ao carregar Metas", err);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchData();
+    }, []);
     return (
         <div className="p-6 md:p-10 max-w-7xl mx-auto">
             <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
@@ -33,9 +39,18 @@ export default function GoalsTrackingPage() {
             </motion.div>
 
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="bg-slate-800/40 border border-white/[0.06] rounded-2xl p-6 mb-6">
-                <h3 className="text-sm font-bold text-white mb-5 flex items-center gap-2"><Target size={16} className="text-blue-400" /> Metas Coletivas</h3>
-                <div className="space-y-5">
-                    {goals.map((g, i) => (
+                <div className="flex items-center justify-between mb-5">
+                    <h3 className="text-sm font-bold text-white flex items-center gap-2"><Target size={16} className="text-blue-400" /> Metas Coletivas (Predição Dinâmica)</h3>
+                    <div className="flex items-center gap-1.5 text-[10px] text-amber-500 bg-amber-500/10 px-2 py-1 rounded border border-amber-500/20"><AlertCircle size={12}/> Target estipulado em +20% sob o mês base.</div>
+                </div>
+                
+                {isLoading || !data ? (
+                    <div className="space-y-6">
+                        {Array.from({length: 5}).map((_, i) => <div key={i} className="w-full h-8 bg-slate-800/60 rounded animate-pulse"></div>)}
+                    </div>
+                ) : (
+                    <div className="space-y-5">
+                        {data.goals.map((g, i) => (
                         <motion.div key={g.name} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 + i * 0.05 }}>
                             <div className="flex items-center justify-between mb-1.5">
                                 <span className="text-sm text-slate-300 font-medium">{g.name}</span>
@@ -49,26 +64,35 @@ export default function GoalsTrackingPage() {
                             </div>
                         </motion.div>
                     ))}
-                </div>
+                    </div>
+                )}
             </motion.div>
 
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-slate-800/40 border border-white/[0.06] rounded-2xl overflow-hidden">
-                <div className="px-6 py-4 border-b border-white/[0.04]"><h3 className="text-sm font-bold text-white flex items-center gap-2"><ArrowUp size={16} className="text-blue-400" /> Metas Individuais de Receita</h3></div>
-                <table className="w-full text-left"><thead><tr className="border-b border-white/[0.04] bg-slate-900/50">
-                    <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-500">Consultor</th>
-                    <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-500">Meta</th>
-                    <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-500">Atual</th>
-                    <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-500">Atingimento</th>
-                    <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-500">Progresso</th>
-                </tr></thead><tbody className="divide-y divide-white/[0.03]">{individualGoals.map(g => (
-                    <tr key={g.name} className="hover:bg-white/[0.02]">
-                        <td className="px-6 py-4"><div className="flex items-center gap-2"><div className="w-7 h-7 rounded-full bg-gradient-to-tr from-blue-600 to-blue-400 flex items-center justify-center text-white text-[9px] font-bold">{g.name.split(" ").map(n => n[0]).join("")}</div><span className="text-sm font-medium text-white">{g.name}</span></div></td>
-                        <td className="px-6 py-4 text-sm text-slate-400">{g.target}</td>
-                        <td className="px-6 py-4 text-sm text-white font-medium">{g.current}</td>
-                        <td className="px-6 py-4"><span className={`text-sm font-bold ${g.progress >= 90 ? "text-blue-400" : g.progress >= 70 ? "text-amber-400" : "text-red-400"}`}>{g.progress}%</span></td>
-                        <td className="px-6 py-4 w-40"><div className="w-full bg-slate-800 rounded-full h-2"><div className="h-2 rounded-full transition-all" style={{ width: `${g.progress}%`, backgroundColor: g.progress >= 90 ? "#22c55e" : g.progress >= 70 ? "#f59e0b" : "#ef4444" }} /></div></td>
-                    </tr>
-                ))}</tbody></table>
+                <div className="px-6 py-4 border-b border-white/[0.04]"><h3 className="text-sm font-bold text-white flex items-center gap-2"><ArrowUp size={16} className="text-blue-400" /> Atingimento Individual do Squad</h3></div>
+                {isLoading || !data ? (
+                    <div className="p-8 flex items-center justify-center"><div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></div></div>
+                ) : data.individualGoals.length === 0 ? (
+                    <div className="p-8 text-center text-sm text-slate-400">Sem histórico coletado para consultores associados.</div>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left"><thead><tr className="border-b border-white/[0.04] bg-slate-900/50">
+                            <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-500">Advisor</th>
+                            <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-500">Meta (Predicted)</th>
+                            <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-500">Atual</th>
+                            <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-500">Atingimento</th>
+                            <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-500">Progresso Geral</th>
+                        </tr></thead><tbody className="divide-y divide-white/[0.03]">{data.individualGoals.map(g => (
+                            <tr key={g.name} className="hover:bg-white/[0.02]">
+                                <td className="px-6 py-4"><div className="flex items-center gap-2"><div className="w-7 h-7 rounded-full shrink-0 bg-gradient-to-tr from-blue-600 to-blue-400 flex items-center justify-center text-white text-[9px] font-bold">{g.name.split(" ").slice(0,2).map(n => n[0]).join("")}</div><span className="text-sm font-medium text-white truncate max-w-[140px]">{g.name}</span></div></td>
+                                <td className="px-6 py-4 text-sm text-slate-400">{g.target}</td>
+                                <td className="px-6 py-4 text-sm text-white font-medium">{g.current}</td>
+                                <td className="px-6 py-4"><span className={`text-sm font-bold ${g.progress >= 90 ? "text-blue-400" : g.progress >= 70 ? "text-amber-400" : "text-red-400"}`}>{g.progress}%</span></td>
+                                <td className="px-6 py-4 w-40"><div className="w-full bg-slate-800 rounded-full h-2"><div className="h-2 rounded-full transition-all" style={{ width: `${g.progress}%`, backgroundColor: g.progress >= 90 ? "#22c55e" : g.progress >= 70 ? "#f59e0b" : "#ef4444" }} /></div></td>
+                            </tr>
+                        ))}</tbody></table>
+                    </div>
+                )}
             </motion.div>
         </div>
     );

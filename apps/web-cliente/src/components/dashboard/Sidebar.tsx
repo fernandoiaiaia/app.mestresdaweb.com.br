@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 import {
     Home,
@@ -22,6 +22,7 @@ import { useAuthStore } from "@/stores/auth";
 export default function Sidebar() {
     const [collapsed, setCollapsed] = useState(false);
     const pathname = usePathname();
+    const router = useRouter();
     const { user, logout } = useAuthStore();
 
     const navItemBase = "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-sm font-medium";
@@ -116,7 +117,7 @@ export default function Sidebar() {
                         )}
                     </Link>
                     {!collapsed && (
-                        <button onClick={() => { logout(); window.location.href = "/"; }} className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors" title="Sair">
+                        <button onClick={async () => { await logout(); router.push("/login"); }} className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors" title="Sair">
                             <LogOut size={16} />
                         </button>
                     )}

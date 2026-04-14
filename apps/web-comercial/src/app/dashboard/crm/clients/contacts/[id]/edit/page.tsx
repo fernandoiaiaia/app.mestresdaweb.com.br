@@ -31,7 +31,7 @@ const ROLE_SUGGESTIONS = [
     "Diretor de Operações", "Diretor Executivo (CEO)", "Gerente Comercial", "Gerente de Projetos",
     "Gerente Financeiro", "Gerente de Marketing", "Gerente de TI", "Gerente de Compras",
     "Gerente de RH", "Comprador", "Analista Comercial", "Analista de Marketing",
-    "Analista Financeiro", "Coordenador de Projetos", "Coordenador Comercial", "Consultor",
+    "Analista Financeiro", "Coordenador de Projetos", "Coordenador Comercial", "Advisor",
     "Sócio / Proprietário", "Assistente Administrativo", "Estagiário",
 ];
 

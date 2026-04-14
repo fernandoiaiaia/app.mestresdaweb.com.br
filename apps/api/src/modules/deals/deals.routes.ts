@@ -5,6 +5,7 @@ import crypto from "crypto";
 import { dealsController } from "./deals.controller.js";
 import { authMiddleware } from "../../middlewares/auth.middleware.js";
 import { validate } from "../../middlewares/validate.middleware.js";
+import { createSafeFileFilter } from "../../lib/file-filter.js";
 import {
     createDealSchema,
     updateDealSchema,
@@ -23,13 +24,33 @@ const storage = multer.diskStorage({
         cb(null, `${unique}${ext}`);
     },
 });
-const upload = multer({ storage, limits: { fileSize: 50 * 1024 * 1024 } }); // 50MB
+const upload = multer({
+    storage,
+    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
+    fileFilter: createSafeFileFilter()
+});
 
 const router: Router = Router();
 
 router.use(authMiddleware);
 
 router.get("/", dealsController.list);
+
+router.get("/dashboard", dealsController.dashboardStats);
+
+router.get("/reports/pipeline-analysis", dealsController.pipelineAnalysis);
+router.get("/reports/revenue-forecast", dealsController.revenueForecast);
+router.get("/reports/sales-cycle", dealsController.salesCycle);
+router.get("/reports/clients-portfolio", dealsController.clientsPortfolio);
+router.get("/reports/loss-analysis", dealsController.lossAnalysis);
+router.get("/reports/activities-report", dealsController.activitiesReport);
+router.get("/reports/products-ranking", dealsController.productsRanking);
+router.get("/reports/team-performance", dealsController.teamPerformance);
+router.get("/reports/consultant-comparison", dealsController.consultantsComparison);
+router.get("/reports/goals-tracking", dealsController.goalsTracking);
+router.get("/reports/sdr-performance", dealsController.sdrPerformance);
+router.get("/reports/conversion-funnel", dealsController.conversionFunnel);
+router.get("/reports/period-summary", dealsController.periodSummary);
 
 router.get(
     "/:id",

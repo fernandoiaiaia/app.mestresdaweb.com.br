@@ -5,6 +5,7 @@ import fs from "fs";
 import crypto from "crypto";
 import { devProjectsController } from "./dev-projects.controller.js";
 import { authMiddleware } from "../../middlewares/auth.middleware.js";
+import { createSafeFileFilter } from "../../lib/file-filter.js";
 
 // ═══════════════════════════════════════
 // ProposalAI — Dev Projects Routes
@@ -21,7 +22,11 @@ const storage = multer.diskStorage({
         cb(null, `${unique}${ext}`);
     },
 });
-const upload = multer({ storage, limits: { fileSize: 50 * 1024 * 1024 } }); // 50MB
+const upload = multer({
+    storage,
+    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
+    fileFilter: createSafeFileFilter()
+});
 
 // ── Multer for project documents ──
 const docsDir = path.resolve(process.cwd(), "uploads", "project-documents");
@@ -34,7 +39,11 @@ const docStorage = multer.diskStorage({
         cb(null, `${unique}${ext}`);
     },
 });
-const uploadDoc = multer({ storage: docStorage, limits: { fileSize: 100 * 1024 * 1024 } }); // 100MB
+const uploadDoc = multer({
+    storage: docStorage,
+    limits: { fileSize: 100 * 1024 * 1024 }, // 100MB
+    fileFilter: createSafeFileFilter()
+});
 
 const router: Router = Router();
 

@@ -117,27 +117,32 @@ export const useAuthStore = create<AuthState>((set) => ({
     },
 
     hydrate: () => {
-        // Try to restore from localStorage (real login)
-        const stored = localStorage.getItem("user");
-        const token = localStorage.getItem("accessToken");
-        if (stored && token) {
-            try {
-                const user = JSON.parse(stored) as AuthUser;
-                set({ user, isAuthenticated: true, isLoading: false });
-                return;
-            } catch {
-                // Invalid JSON — fall through to mock
-            }
+        if (typeof window === "undefined") {
+            set({ isLoading: false });
+            return;
         }
-        // Fallback: mock user for dev
-        const mockUser: AuthUser = {
-            id: "mock-client-001",
-            name: "Cliente Exemplo",
-            email: "cliente@empresa.com",
-            role: "CLIENT",
-            avatar: null,
-            allowedApps: ["client"],
-        };
-        set({ user: mockUser, isAuthenticated: true, isLoading: false });
+
+        const token = localStorage.getItem("accessToken");
+        const userStr = localStorage.getItem("user");
+
+        if (token && userStr) {
+            try {
+                const user = JSON.parse(userStr) as AuthUser;
+                set({ user, isAuthenticated: true, isLoading: false });
+
+                // Refresh user data from API in background to keep allowedApps etc. in sync
+                api<AuthUser>("/api/users/me").then((res) => {
+                    if (res.success && res.data) {
+                        localStorage.setItem("user", JSON.stringify(res.data));
+                        set({ user: res.data });
+                    }
+                }).catch(() => { /* silently ignore — user stays with cached data */ });
+            } catch {
+                clearTokens();
+                set({ user: null, isAuthenticated: false, isLoading: false });
+            }
+        } else {
+            set({ isLoading: false });
+        }
     },
 }));

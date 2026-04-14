@@ -26,7 +26,7 @@ export default function ProfileScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { user, logout, updateSession } = useAuth();
-    const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || "http://10.0.0.133:7777";
+    const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || "http://192.168.68.100:7777";
 
     async function handleLogout() {
         await logout();

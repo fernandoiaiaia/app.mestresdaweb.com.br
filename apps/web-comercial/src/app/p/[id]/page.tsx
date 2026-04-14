@@ -653,7 +653,7 @@ export default function PublicProposalPresentationPage({ params }: { params: Pro
                                         <Download size={20} /><span className="text-xs font-medium">Salvar em PDF</span>
                                     </button>
                                     <button className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl bg-slate-800/40 border border-white/[0.06] text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors flex-1">
-                                        <MessageCircle size={20} /><span className="text-xs font-medium">Falar com Consultor</span>
+                                        <MessageCircle size={20} /><span className="text-xs font-medium">Falar com Advisor</span>
                                     </button>
                                 </div>
                                 <div className="mt-auto pt-8 flex items-center gap-4 text-xs text-slate-500">

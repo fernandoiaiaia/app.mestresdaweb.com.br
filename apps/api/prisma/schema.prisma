@@ -1823,11 +1823,13 @@ model AssembledProposal {
   publicId        String?  @unique @map("public_id")
   viewerId        String?  @map("viewer_id")
   
-  // JSON structure holding the entire CompleteScope (Users -> Platforms -> Modules -> Screens -> Functionalities + Integrations)
-  scopeData       Json     @map("scope_data") @db.JsonB
-  
   totalHours      Int      @default(0) @map("total_hours")
   
+  // ═══ FILA E AUDITORIA (Queue) ═══
+  status          String   @default("draft") // draft, in_review, needs_adjustment, approved, rejected
+  urgency         String   @default("media")
+  reviewHistory   Json     @default("[]") @map("review_history")
+
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 

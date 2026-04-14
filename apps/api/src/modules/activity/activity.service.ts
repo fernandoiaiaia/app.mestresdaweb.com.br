@@ -6,13 +6,14 @@ export const activityService = {
 
     // ═══ LIST LOGS ═══
     async listLogs(query: {
+        userId: string;
         search?: string;
         category?: string;
         userName?: string;
         limit?: number;
         offset?: number;
     }) {
-        const where: any = {};
+        const where: any = { userId: query.userId };
 
         if (query.category && query.category !== "all") {
             where.category = query.category;
@@ -41,21 +42,22 @@ export const activityService = {
     },
 
     // ═══ GET STATS ═══
-    async getStats() {
+    async getStats(userId: string) {
         const [proposal, auth, settings, client, system, total] = await Promise.all([
-            prisma.activityLog.count({ where: { category: "proposal" } }),
-            prisma.activityLog.count({ where: { category: "auth" } }),
-            prisma.activityLog.count({ where: { category: "settings" } }),
-            prisma.activityLog.count({ where: { category: "client" } }),
-            prisma.activityLog.count({ where: { category: "system" } }),
-            prisma.activityLog.count(),
+            prisma.activityLog.count({ where: { userId, category: "proposal" } }),
+            prisma.activityLog.count({ where: { userId, category: "auth" } }),
+            prisma.activityLog.count({ where: { userId, category: "settings" } }),
+            prisma.activityLog.count({ where: { userId, category: "client" } }),
+            prisma.activityLog.count({ where: { userId, category: "system" } }),
+            prisma.activityLog.count({ where: { userId } }),
         ]);
         return { proposal, auth, settings, client, system, total };
     },
 
     // ═══ GET UNIQUE USERS ═══
-    async getUsers() {
+    async getUsers(userId: string) {
         const raw = await prisma.activityLog.findMany({
+            where: { userId },
             select: { userName: true },
             distinct: ["userName"],
             orderBy: { userName: "asc" },
@@ -89,8 +91,8 @@ export const activityService = {
     },
 
     // ═══ EXPORT LOGS (CSV) ═══
-    async exportLogs(query: { category?: string; userName?: string }) {
-        const where: any = {};
+    async exportLogs(query: { userId: string; category?: string; userName?: string }) {
+        const where: any = { userId: query.userId };
         if (query.category && query.category !== "all") where.category = query.category;
         if (query.userName && query.userName !== "all") where.userName = query.userName;
 

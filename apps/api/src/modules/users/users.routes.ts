@@ -5,6 +5,7 @@ import fs from "fs";
 import { usersController } from "./users.controller.js";
 import { authMiddleware, requireRole } from "../../middlewares/auth.middleware.js";
 import { validate } from "../../middlewares/validate.middleware.js";
+import { createSafeFileFilter, ALLOWED_IMAGE_MIMES } from "../../lib/file-filter.js";
 import {
     updateUserSchema,
     userParamsSchema,
@@ -29,11 +30,7 @@ const avatarStorage = multer.diskStorage({
 const avatarUpload = multer({
     storage: avatarStorage,
     limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
-    fileFilter: (_req, file, cb) => {
-        const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-        if (allowed.includes(file.mimetype)) cb(null, true);
-        else cb(new Error("Formato de imagem não suportado. Use JPG, PNG, WebP ou GIF."));
-    },
+    fileFilter: createSafeFileFilter(ALLOWED_IMAGE_MIMES),
 });
 
 const router: Router = Router();

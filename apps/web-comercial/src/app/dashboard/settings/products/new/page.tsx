@@ -502,7 +502,7 @@ export default function NewProductPage() {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             {[
                                 { label: "Item Ativo", description: "Disponível para seleção em novas propostas", value: active, onChange: () => setActive(!active) },
-                                { label: "Exibir em Propostas", description: "Aparece no catálogo para seleção dos consultores", value: showInProposals, onChange: () => setShowInProposals(!showInProposals) },
+                                { label: "Exibir em Propostas", description: "Aparece no catálogo para seleção dos advisors", value: showInProposals, onChange: () => setShowInProposals(!showInProposals) },
                                 { label: "Item Destaque", description: "Prioritário na listagem e com selo de destaque", value: featured, onChange: () => setFeatured(!featured) },
                             ].map(toggle => (
                                 <button key={toggle.label} type="button" onClick={toggle.onChange} className={`p-4 rounded-xl border text-left transition-all ${toggle.value ? 'bg-blue-500/5 border-blue-500/20' : 'border-white/[0.06]'}`}>

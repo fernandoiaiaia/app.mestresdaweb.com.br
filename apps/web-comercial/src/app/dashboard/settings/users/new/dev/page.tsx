@@ -257,6 +257,9 @@ export default function NewDevUserPage() {
                     return { module, action, dataScope: v.dataScope };
                 });
 
+            const selectedOption = roleOptions.find(o => o.id === role);
+            const mappedRole = selectedOption?.mappedRole || "USER";
+
             const result = await api("/api/users", {
                 method: "POST",
                 body: {
@@ -265,7 +268,7 @@ export default function NewDevUserPage() {
                     password,
                     phone: phone.trim() || null,
                     position: position.trim() || null,
-                    role,
+                    role: mappedRole,
                     permissions,
                     allowedApps: ["dev"],
                 },
@@ -289,11 +292,11 @@ export default function NewDevUserPage() {
     );
 
     const roleOptions = [
-        { value: "ADMIN", label: "Administrador / Owner", desc: "Controle técnico e administrativo", icon: <Shield size={16} />, color: "red" },
-        { value: "GESTOR", label: "Gestor", desc: "Gerencia sprints e aprova entregas", icon: <BarChart3 size={16} />, color: "purple" },
-        { value: "TECH_LEAD", label: "Tech Lead", desc: "Líder técnico do desenvolvimento", icon: <Code2 size={16} />, color: "orange" },
-        { value: "DEV", label: "Desenvolvedor", desc: "Acesso padrão para atuação nos projetos", icon: <Code2 size={16} />, color: "blue" },
-        { value: "VIEWER", label: "Visualizador", desc: "Apenas acompanha atividades", icon: <Eye size={16} />, color: "amber" },
+        { id: "ADMIN", mappedRole: "ADMIN", label: "Administrador / Owner", desc: "Controle técnico e administrativo", icon: <Shield size={16} />, color: "red" },
+        { id: "GESTOR", mappedRole: "MANAGER", label: "Gestor", desc: "Gerencia sprints e aprova entregas", icon: <BarChart3 size={16} />, color: "purple" },
+        { id: "TECH_LEAD", mappedRole: "USER", label: "Tech Lead", desc: "Líder técnico do desenvolvimento", icon: <Code2 size={16} />, color: "orange" },
+        { id: "DEV", mappedRole: "USER", label: "Desenvolvedor", desc: "Acesso padrão para atuação nos projetos", icon: <Code2 size={16} />, color: "blue" },
+        { id: "VIEWER", mappedRole: "VIEWER", label: "Visualizador", desc: "Apenas acompanha atividades", icon: <Eye size={16} />, color: "amber" },
     ];
 
     const roleColorMap: Record<string, { active: string; inactive: string; icon: string; text: string }> = {
@@ -471,12 +474,12 @@ export default function NewDevUserPage() {
                             <div className="grid grid-cols-2 gap-3">
                                 {roleOptions.map((opt) => {
                                     const colors = roleColorMap[opt.color];
-                                    const isActive = role === opt.value;
+                                    const isActive = role === opt.id;
                                     return (
                                         <button
-                                            key={opt.value}
+                                            key={opt.id}
                                             type="button"
-                                            onClick={() => setRole(opt.value)}
+                                            onClick={() => setRole(opt.id)}
                                             className={`p-3.5 rounded-xl border text-left transition-all ${isActive ? colors.active : colors.inactive}`}
                                         >
                                             <div className="flex items-center gap-2 mb-1">

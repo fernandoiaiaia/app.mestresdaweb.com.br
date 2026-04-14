@@ -196,7 +196,7 @@ export default function ManagerQueuePage() {
                     { label: "Pendentes", value: proposals.length, color: "text-amber-400", icon: Clock },
                     { label: "Urgentes", value: proposals.filter((p) => p.urgency === "alta").length, color: "text-red-400", icon: Flame },
                     { label: "Valor Total na Fila", value: fmt(proposals.reduce((s, p) => s + (p.totalValue || 0), 0)), color: "text-blue-400", icon: DollarSign },
-                    { label: "Consultores Ativos", value: consultants.length, color: "text-blue-400", icon: User },
+                    { label: "Advisors Ativos", value: consultants.length, color: "text-blue-400", icon: User },
                 ].map((stat) => (
                     <div key={stat.label} className="bg-slate-800/40 backdrop-blur-sm border border-white/[0.06] rounded-xl p-4">
                         <div className="flex items-center gap-2 mb-2">
@@ -235,7 +235,7 @@ export default function ManagerQueuePage() {
                         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
                             <div className="flex flex-wrap gap-4 mt-3 p-4 bg-slate-800/30 border border-white/[0.04] rounded-xl">
                                 <div>
-                                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 block mb-1.5">Consultor</label>
+                                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 block mb-1.5">Advisor</label>
                                     <select value={consultantFilter} onChange={(e) => setConsultantFilter(e.target.value)} className="bg-slate-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500/40 min-w-[160px]">
                                         <option value="all">Todos</option>
                                         {consultants.map((c) => (<option key={c} value={c}>{c}</option>))}
@@ -461,8 +461,8 @@ export default function ManagerQueuePage() {
                                     {actionModal.type === "approve"
                                         ? "A proposta será liberada para envio ao cliente. Deseja adicionar algum comentário interno?"
                                         : actionModal.type === "adjust"
-                                            ? "A proposta voltará para o consultor com seus comentários. Descreva os ajustes necessários."
-                                            : "A proposta será rejeitada. Explique o motivo para o consultor."}
+                                            ? "A proposta voltará para o advisor com seus comentários. Descreva os ajustes necessários."
+                                            : "A proposta será rejeitada. Explique o motivo para o advisor."}
                                 </p>
                                 <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 block mb-1.5">
                                     Comentário {actionModal.type !== "approve" ? "*" : "(opcional)"}
@@ -482,7 +482,7 @@ export default function ManagerQueuePage() {
                                     <div className="flex items-start gap-2 mt-3 p-3 bg-blue-500/5 border border-blue-500/10 rounded-xl">
                                         <Send size={14} className="text-blue-400 shrink-0 mt-0.5" />
                                         <p className="text-[10px] text-blue-300/70 leading-relaxed">
-                                            O consultor será notificado sobre esta ação.
+                                            O advisor será notificado sobre esta ação.
                                         </p>
                                     </div>
                                 )}
@@ -559,7 +559,7 @@ export default function ManagerQueuePage() {
                                 {/* Info Grid */}
                                 <div className="grid grid-cols-2 gap-4">
                                     {[
-                                        { label: "Consultor", value: previewProposal.user?.name || "—" },
+                                        { label: "Advisor", value: previewProposal.user?.name || "—" },
                                         { label: "Valor", value: previewProposal.totalValue ? fmt(previewProposal.totalValue) : "—" },
                                         { label: "Deadline", value: previewProposal.deadline || "—" },
                                         { label: "Submetida em", value: fmtDate(previewProposal.createdAt) },

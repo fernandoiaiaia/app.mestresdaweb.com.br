@@ -50,11 +50,16 @@ const categoryConfig: Record<string, { icon: any; color: string; bg: string; lab
 export default function ActivityLogPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [logs, setLogs] = useState<ActivityLogEntry[]>([]);
+    const [totalLogs, setTotalLogs] = useState(0);
+    const [page, setPage] = useState(1);
+    const pageSize = 25;
+
     const [stats, setStats] = useState<Stats | null>(null);
     const [users, setUsers] = useState<string[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
     const [filterCategory, setFilterCategory] = useState("all");
     const [filterUser, setFilterUser] = useState("all");
+    const [userSearchOpen, setUserSearchOpen] = useState(false);
     const [exporting, setExporting] = useState(false);
 
     const formatDate = (d: string) => {
@@ -70,13 +75,16 @@ export default function ActivityLogPage() {
 
     // ═══ Load data ═══
     const loadData = useCallback(async () => {
-        // Seed demo data if empty (first time)
+        // Seed demo data se vazio (primeira vez)
         await api("/api/activity/seed", { method: "POST" });
 
         const params = new URLSearchParams();
         if (searchQuery) params.set("search", searchQuery);
         if (filterCategory !== "all") params.set("category", filterCategory);
         if (filterUser !== "all") params.set("userName", filterUser);
+        
+        params.set("limit", pageSize.toString());
+        params.set("offset", ((page - 1) * pageSize).toString());
 
         const [logsRes, statsRes, usersRes] = await Promise.all([
             api<any>(`/api/activity/logs?${params.toString()}`),
@@ -84,10 +92,13 @@ export default function ActivityLogPage() {
             api<any>("/api/activity/users"),
         ]);
 
-        if (logsRes.success) setLogs(logsRes.data.logs || []);
+        if (logsRes.success) {
+            setLogs(logsRes.data.logs || []);
+            setTotalLogs(logsRes.data.total || 0);
+        }
         if (statsRes.success) setStats(statsRes.data);
         if (usersRes.success) setUsers(usersRes.data || []);
-    }, [searchQuery, filterCategory, filterUser]);
+    }, [searchQuery, filterCategory, filterUser, page]);
 
     useEffect(() => {
         setIsLoading(true);
@@ -117,15 +128,12 @@ export default function ActivityLogPage() {
         setExporting(false);
     };
 
-    // Group logs by date
-    const grouped = logs.reduce((acc, log) => {
-        const date = formatDate(log.createdAt);
-        if (!acc[date]) acc[date] = [];
-        acc[date].push(log);
-        return acc;
-    }, {} as Record<string, ActivityLogEntry[]>);
+    // Effect Hook Reset Pagination on filter change
+    useEffect(() => {
+        setPage(1);
+    }, [searchQuery, filterCategory, filterUser]);
 
-    if (isLoading) {
+    if (isLoading && logs.length === 0) {
         return (
             <div className="flex items-center justify-center min-h-[60vh]">
                 <Loader2 size={32} className="animate-spin text-slate-500" />
@@ -172,51 +180,112 @@ export default function ActivityLogPage() {
             <div className="flex flex-wrap gap-3 mb-6">
                 <div className="relative flex-1 min-w-[200px]">
                     <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
-                    <input type="text" placeholder="Buscar atividade..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full pl-10 pr-4 py-2.5 bg-slate-800/50 border border-white/[0.08] rounded-xl text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500/40" />
+                    <input type="text" placeholder="Buscar atividade..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full pl-10 pr-4 py-2.5 bg-slate-800/50 border border-white/[0.08] rounded-xl text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500/40 transition-colors" />
                 </div>
-                <select value={filterUser} onChange={(e) => setFilterUser(e.target.value)} className="px-3 py-2.5 bg-slate-800/50 border border-white/[0.08] rounded-xl text-sm text-slate-300 focus:outline-none">
-                    <option value="all">Todos usuários</option>
-                    {users.map((u) => <option key={u} value={u}>{u}</option>)}
-                </select>
+                
+                {/* Custom Searchable User Combobox */}
+                <div className="relative min-w-[200px]" onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setUserSearchOpen(false); }}>
+                    <div className="relative">
+                        <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                        <input
+                            type="text"
+                            placeholder="Todos os usuários..."
+                            value={filterUser === "all" ? "" : filterUser}
+                            onChange={(e) => setFilterUser(e.target.value || "all")}
+                            onFocus={() => setUserSearchOpen(true)}
+                            className="w-full pl-10 pr-4 py-2.5 bg-slate-800/50 border border-white/[0.08] rounded-xl text-sm text-slate-300 placeholder:text-slate-500 focus:outline-none focus:border-blue-500/40 transition-colors"
+                        />
+                    </div>
+                    
+                    {userSearchOpen && (
+                        <div className="absolute top-full left-0 mt-1.5 w-full max-h-48 overflow-y-auto bg-slate-800 border border-white/[0.08] rounded-xl shadow-xl z-50 custom-scrollbar py-1">
+                            <button
+                                type="button"
+                                onMouseDown={() => { setFilterUser("all"); setUserSearchOpen(false); }}
+                                className={`w-full text-left px-4 py-2 text-sm transition-colors ${filterUser === "all" ? "bg-blue-500/10 text-blue-400 font-medium" : "text-slate-300 hover:bg-white/[0.04]"}`}
+                            >
+                                Limpar / Todos
+                            </button>
+                            {users.filter(u => filterUser === "all" || u.toLowerCase().includes(filterUser.toLowerCase())).map((u) => (
+                                <button
+                                    key={u}
+                                    type="button"
+                                    onMouseDown={() => { setFilterUser(u); setUserSearchOpen(false); }}
+                                    className={`w-full text-left px-4 py-2 text-sm transition-colors ${filterUser === u ? "bg-blue-500/10 text-blue-400 font-medium" : "text-slate-300 hover:bg-white/[0.04]"}`}
+                                >
+                                    {u}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
             </div>
 
-            {/* Timeline */}
-            <div className="space-y-6">
-                {Object.entries(grouped).map(([date, dateLogs]) => (
-                    <motion.div key={date} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-                        <div className="flex items-center gap-3 mb-3">
-                            <Calendar size={14} className="text-slate-600" />
-                            <h2 className="text-xs font-bold uppercase tracking-widest text-slate-500">{date}</h2>
-                            <div className="flex-1 h-px bg-white/[0.04]" />
-                            <span className="text-[10px] text-slate-600">{dateLogs.length} eventos</span>
-                        </div>
-                        <div className="space-y-1.5">
-                            {dateLogs.map((log) => {
+            {/* Flat Table List Log */}
+            <div className="bg-slate-800/40 border border-white/[0.06] rounded-2xl overflow-hidden mb-6">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                        <thead>
+                            <tr className="border-b border-white/[0.04] bg-slate-900/50">
+                                <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-500 whitespace-nowrap">Data / Hora</th>
+                                <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-500">Usuário</th>
+                                <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-500">Ação</th>
+                                <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-500">Categoria</th>
+                                <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-500 text-right">Target</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-white/[0.03]">
+                            {logs.map((log) => {
                                 const conf = categoryConfig[log.category] || categoryConfig.system;
-                                const Icon = conf.icon;
                                 return (
-                                    <div key={log.id} className="flex items-start gap-3 p-3.5 bg-slate-800/40 border border-white/[0.06] rounded-xl hover:bg-white/[0.02] transition-all group">
-                                        <div className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 ${conf.bg}`}>
-                                            <Icon size={14} className={conf.color} />
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2 mb-0.5">
-                                                <span className="text-sm font-semibold text-white">{log.action}</span>
-                                            </div>
-                                            <p className="text-[11px] text-slate-500">{log.description}</p>
-                                            <div className="flex items-center gap-3 mt-1 text-[10px] text-slate-600">
-                                                <span className="flex items-center gap-1"><User size={10} /> {log.userName} <span className="text-slate-700">({log.userRole})</span></span>
-                                                <span className="flex items-center gap-1"><Clock size={10} /> {formatTime(log.createdAt)}</span>
-                                                {log.ip && <span>IP: {log.ip}</span>}
-                                            </div>
-                                        </div>
-                                        <span className="text-[9px] px-2 py-0.5 rounded-full border text-slate-500 bg-slate-800/50 border-white/[0.06] shrink-0">{log.target}</span>
-                                    </div>
+                                    <tr key={log.id} className="hover:bg-white/[0.02] transition-colors">
+                                        <td className="px-5 py-3 whitespace-nowrap">
+                                            <span className="block text-[11px] font-medium text-slate-300">{formatDate(log.createdAt)}</span>
+                                            <span className="block text-[10px] text-slate-500">{formatTime(log.createdAt)}</span>
+                                        </td>
+                                        <td className="px-5 py-3">
+                                            <span className="flex items-center gap-1.5 text-xs text-white">
+                                                <User size={12} className="text-slate-500" /> {log.userName}
+                                            </span>
+                                            <span className="block text-[10px] text-slate-500 mt-0.5">{log.userRole}</span>
+                                        </td>
+                                        <td className="px-5 py-3">
+                                            <span className="block text-sm font-semibold text-white mb-0.5">{log.action}</span>
+                                            <span className="block text-xs text-slate-400 max-w-[320px] truncate" title={log.description}>{log.description}</span>
+                                        </td>
+                                        <td className="px-5 py-3">
+                                            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] uppercase font-bold tracking-wider ${conf.bg} ${conf.color}`}>
+                                                <conf.icon size={10} /> {conf.label}
+                                            </span>
+                                        </td>
+                                        <td className="px-5 py-3 text-right">
+                                            <span className="inline-block text-[10px] px-2 py-1 bg-slate-800 border border-white/[0.04] text-slate-400 rounded-md">
+                                                {log.target || "N/A"}
+                                            </span>
+                                        </td>
+                                    </tr>
                                 );
                             })}
+                        </tbody>
+                    </table>
+                </div>
+
+                {/* Pagination Controls */}
+                {totalLogs > 0 && (
+                    <div className="px-6 py-4 border-t border-white/[0.04] flex items-center justify-between bg-slate-900/30">
+                        <span className="text-xs text-slate-500">
+                            Mostrando <strong className="text-white">{(page - 1) * pageSize + 1}</strong> até <strong className="text-white">{Math.min(page * pageSize, totalLogs)}</strong> de <strong className="text-white">{totalLogs}</strong> registros
+                        </span>
+                        <div className="flex gap-2">
+                            <button disabled={page === 1} onClick={() => setPage(p => Math.max(1, p - 1))} className="px-3 py-1.5 border border-white/[0.08] text-xs font-bold text-slate-300 rounded-lg hover:bg-white/5 disabled:opacity-30 transition-all">
+                                Anterior
+                            </button>
+                            <button disabled={page * pageSize >= totalLogs} onClick={() => setPage(p => p + 1)} className="px-3 py-1.5 border border-white/[0.08] text-xs font-bold text-slate-300 rounded-lg hover:bg-white/5 disabled:opacity-30 transition-all">
+                                Próxima
+                            </button>
                         </div>
-                    </motion.div>
-                ))}
+                    </div>
+                )}
             </div>
 
             {logs.length === 0 && (

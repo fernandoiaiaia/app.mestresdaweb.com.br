@@ -11,6 +11,10 @@ router.use(authMiddleware);
 router.get("/client/mine", assemblerController.listClientProposals);
 router.get("/client/a/:id", assemblerController.getClientProposal);
 
+// ── Fila de Aprovação (Gestão) ──
+router.get("/queue", assemblerController.getQueue);
+router.post("/:id/review", assemblerController.reviewProposal);
+
 // Rotas para buscar dados do DONO da proposta (equipe + condições de pagamento)
 // O cliente logado não tem acesso direto a /api/professionals ou /api/payment-conditions
 router.get("/client/a/:id/team", assemblerController.getProposalTeam);

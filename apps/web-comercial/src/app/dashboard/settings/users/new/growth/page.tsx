@@ -26,6 +26,7 @@ import {
     Bell,
     Package,
     TrendingUp,
+    MessageSquare,
 } from "lucide-react";
 import { api } from "@/lib/api";
 
@@ -139,16 +140,38 @@ const GROWTH_PERMISSIONS: ModuleGroup[] = [
         ],
     },
     {
+        section: "WhatsApp Web",
+        sectionIcon: <MessageSquare size={16} />,
+        sectionColor: "text-green-500",
+        modules: [
+            {
+                name: "WhatsApp Web",
+                icon: <MessageSquare size={16} />,
+                permissions: [
+                    { module: "crm.whatsapp", action: "view", label: "Visualizar", hasDataScope: true },
+                    { module: "crm.whatsapp", action: "manage", label: "Gerenciar" },
+                ],
+            },
+        ],
+    },
+    {
         section: "Gestão",
         sectionIcon: <BarChart3 size={16} />,
         sectionColor: "text-amber-400",
         modules: [
             {
+                name: "Fila de Aprovação",
+                icon: <CheckSquare size={16} />,
+                permissions: [
+                    { module: "manager.queue", action: "view", label: "Visualizar" },
+                    { module: "manager.queue", action: "manage", label: "Aprovar/Rejeitar" },
+                ],
+            },
+            {
                 name: "Relatórios Gerenciais",
                 icon: <BarChart3 size={16} />,
                 permissions: [
                     { module: "reports.management", action: "view", label: "Visualizar" },
-                    { module: "reports.management", action: "create", label: "Criar" },
                 ],
             },
             {
@@ -156,6 +179,13 @@ const GROWTH_PERMISSIONS: ModuleGroup[] = [
                 icon: <TrendingUp size={16} />,
                 permissions: [
                     { module: "reports.ranking", action: "view", label: "Visualizar" },
+                ],
+            },
+            {
+                name: "Log de Atividades",
+                icon: <Clock size={16} />,
+                permissions: [
+                    { module: "reports.activity", action: "view", label: "Visualizar" },
                 ],
             },
         ],
@@ -521,7 +551,7 @@ export default function NewGrowthUserPage() {
                                     type="text"
                                     value={position}
                                     onChange={(e) => setPosition(e.target.value)}
-                                    placeholder="Ex: Consultor Sênior"
+                                    placeholder="Ex: Advisor Sênior"
                                     className="w-full px-4 py-2.5 bg-slate-800/50 border border-white/[0.08] rounded-xl text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-blue-500/40 focus:ring-1 focus:ring-blue-500/20 transition-all"
                                 />
                             </div>

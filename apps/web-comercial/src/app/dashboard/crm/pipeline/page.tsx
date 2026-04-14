@@ -318,7 +318,7 @@ export default function PipelinePage() {
                                         {[
                                             { icon: Building2, label: "Empresa", value: selectedDeal.client?.company || "N/A" },
                                             { icon: User, label: "Contato", value: selectedDeal.client?.name || "N/A" },
-                                            { icon: User, label: "Consultor", value: selectedDeal.consultant?.name || "N/A" },
+                                            { icon: User, label: "Advisor", value: selectedDeal.consultant?.name || "N/A" },
                                             { icon: Clock, label: "Dias no Estágio", value: `${selectedDeal.daysInStage || 0} dias` },
                                         ].map((item) => (
                                             <div key={item.label} className="flex items-center gap-3 p-3 bg-slate-800/30 rounded-xl">

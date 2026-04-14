@@ -197,7 +197,51 @@ export class AssemblerService {
 
         if (clientId) {
             const clientExists = await prisma.client.findUnique({ where: { id: clientId } });
-            if (!clientExists) clientId = null;
+            if (!clientExists) {
+                clientId = null;
+            }
+        }
+
+        if (clientId && !dealId) {
+            // Find existing open deal
+            const existingDeal = await prisma.deal.findFirst({
+                where: { clientId, status: "open", userId },
+                orderBy: { createdAt: "desc" }
+            });
+
+            if (existingDeal) {
+                dealId = existingDeal.id;
+            } else {
+                // Determine a safe stage to create
+                const dbUser = await prisma.user.findUnique({ where: { id: userId } });
+                const allowedFunnels = (dbUser as any)?.allowedFunnels || [];
+                
+                const defaultFunnel = await prisma.funnel.findFirst({ where: { userId, isDefault: true } }) 
+                    || await prisma.funnel.findFirst({ where: { OR: [{ userId }, { id: { in: allowedFunnels } }] } });
+                
+                if (defaultFunnel) {
+                    const firstStage = await prisma.funnelStage.findFirst({
+                        where: { funnelId: defaultFunnel.id },
+                        orderBy: { orderIndex: "asc" }
+                    });
+                    
+                    if (firstStage) {
+                        const newDeal = await prisma.deal.create({
+                            data: {
+                                clientId,
+                                funnelId: defaultFunnel.id,
+                                stageId: firstStage.id,
+                                userId: userId,
+                                consultantId: userId,
+                                title: `Oportunidade gerada pelo Montador`,
+                                value: 0,
+                                status: "open"
+                            }
+                        });
+                        dealId = newDeal.id;
+                    }
+                }
+            }
         }
 
         if (dealId) {
@@ -331,6 +375,89 @@ export class AssemblerService {
         const proposal = await prisma.assembledProposal.findUnique({ where: { id } });
         if (!proposal || proposal.userId !== userId) throw new Error("NOT_FOUND");
         return prisma.assembledProposal.delete({ where: { id } });
+    }
+
+    // ── FILA DE APROVAÇÃO (QUEUE) ─────────────────────────────────────────────
+
+    static async getQueue(userId: string) {
+        // Obter todas as propostas "in_review" daquele user (que é o dono da conta/agência)
+        const queue = await prisma.assembledProposal.findMany({
+            where: {
+                userId,
+                status: "in_review" // Pending approval
+            },
+            include: {
+                user: { select: { id: true, name: true, avatar: true } },
+                client: { select: { id: true, name: true, company: true } }
+            },
+            orderBy: { createdAt: "desc" }
+        });
+
+        // A UI do Queue espera esses mappings:
+        return queue.map(p => ({
+            id: p.id,
+            clientName: p.client?.name || "Cliente Desconhecido",
+            contactName: p.client?.company || undefined,
+            totalValue: this.simulateValue(p.totalHours), // Valor simulado baseado em horas caso não exista real salvo no deal
+            totalHours: p.totalHours,
+            createdAt: p.createdAt.toISOString(),
+            urgency: p.urgency || "media",
+            status: p.status,
+            projectType: ["Escopo Técnico"],
+            scope: p.scopeData,
+            reviewHistory: p.reviewHistory || [],
+            user: p.user
+        }));
+    }
+
+    private static simulateValue(hours: number) {
+        return hours * 150; // Valor horário genérico apenas para visualização da grade 
+    }
+
+    static async reviewProposal(
+        userId: string,
+        proposalId: string,
+        data: { action: "approve" | "adjust" | "reject"; comment: string; by: string }
+    ) {
+        const proposal = await prisma.assembledProposal.findUnique({ where: { id: proposalId } });
+        if (!proposal || proposal.userId !== userId) throw new Error("NOT_FOUND");
+
+        const history = (proposal.reviewHistory as unknown[]) || [];
+        const newEntry = {
+            id: `rev_${Date.now()}`,
+            action: data.action === "approve" ? "Aprovado" : data.action === "adjust" ? "Solicitados Ajustes" : "Rejeitado",
+            by: data.by,
+            date: new Date().toISOString(),
+            comment: data.comment
+        };
+
+        const newStatus = data.action === "approve" ? "approved" 
+                        : data.action === "adjust" ? "needs_adjustment" 
+                        : "rejected";
+
+        const updated = await prisma.assembledProposal.update({
+            where: { id: proposalId },
+            data: {
+                status: newStatus,
+                reviewHistory: [...history, newEntry] as unknown as Prisma.JsonObject
+            }
+        });
+
+        // Grava no Activity Log a intervenção do gerente
+        void prisma.activityLog.create({
+            data: {
+                userId,
+                category: "proposal",
+                action: `Proposta ${newEntry.action}`,
+                description: `A proposta de ${proposal.title} foi ${newEntry.action.toLowerCase()}.`,
+                userName: data.by,
+                userRole: "Gerência",
+                target: proposal.id.slice(0, 8),
+                ip: "127.0.0.1",
+            }
+        }).catch(() => {});
+
+        return updated;
     }
 
     // ── AI STREAM ─────────────────────────────────────────────────────────────

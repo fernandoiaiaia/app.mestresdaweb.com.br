@@ -27,7 +27,7 @@ import { useToast } from "@/components/ui/toast";
 /* ═══════════════════════════════════════ */
 /* MOCK DATA                               */
 /* ═══════════════════════════════════════ */
-type UserRole = "gestor" | "consultor" | "financeiro" | "admin";
+type UserRole = "gestor" | "advisor" | "financeiro" | "admin";
 type UserStatus = "ativo" | "inativo" | "pendente";
 
 interface ApiUser {
@@ -49,7 +49,7 @@ interface UserView {
     name: string;
     email: string;
     phone: string;
-    role: string; // "gestor" | "consultor" | "financeiro" | "admin" | etc
+    role: string; // "gestor" | "advisor" | "financeiro" | "admin" | etc
     position: string;
     status: UserStatus;
     avatar: string;
@@ -270,7 +270,7 @@ export default function UsersPage() {
                         </div>
                         <div>
                             <h1 className="text-2xl font-bold text-white tracking-tight">Gestão de Usuários</h1>
-                            <p className="text-sm text-slate-400">Cadastre e gerencie consultores, gestores e acessos</p>
+                            <p className="text-sm text-slate-400">Cadastre e gerencie advisors, gestores e acessos</p>
                         </div>
                     </div>
                     <Link
@@ -383,7 +383,7 @@ export default function UsersPage() {
                                         <option value="all">Todos</option>
                                         <option value="ADMIN">Administrador</option>
                                         <option value="MANAGER">Gestor</option>
-                                        <option value="USER">Consultor</option>
+                                        <option value="USER">Advisor</option>
                                         <option value="VIEWER">Visualizador</option>
                                     </select>
                                 </div>

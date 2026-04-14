@@ -192,14 +192,7 @@ export const authService = {
             if (user) {
                 await authRepository.linkGoogleAccount(user.id, googleUser.sub);
             } else {
-                // Create new user (random password since they use Google)
-                const hashedPassword = await hashPassword(uuidv4());
-                user = await authRepository.createUser({
-                    name: googleUser.name,
-                    email: googleUser.email,
-                    password: hashedPassword,
-                    googleId: googleUser.sub,
-                });
+                throw new UnauthorizedError("E-mail não cadastrado na plataforma.");
             }
         }
 
@@ -235,14 +228,7 @@ export const authService = {
             if (user) {
                 await authRepository.linkAppleAccount(user.id, appleId);
             } else {
-                // Create new user
-                const hashedPassword = await hashPassword(uuidv4());
-                user = await authRepository.createUser({
-                    name: input.fullName || "Usuário da Apple",
-                    email: email,
-                    password: hashedPassword,
-                    appleId: appleId,
-                });
+                throw new UnauthorizedError("E-mail não cadastrado na plataforma.");
             }
         }
 

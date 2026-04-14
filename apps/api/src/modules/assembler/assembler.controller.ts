@@ -16,6 +16,22 @@ export const assemblerController = {
         res.json({ success: true, data: proposals });
     },
 
+    // ── FILA DE APROVAÇÃO (Queue) ──
+    async getQueue(req: Request, res: Response) {
+        const data = await AssemblerService.getQueue(req.user!.userId);
+        res.json({ success: true, data });
+    },
+
+    async reviewProposal(req: Request, res: Response) {
+        const { action, comment } = req.body;
+        const data = await AssemblerService.reviewProposal(
+            req.user!.userId,
+            req.params.id as string,
+            { action, comment, by: req.user!.userName || "Manager" }
+        );
+        res.json({ success: true, data });
+    },
+
     async getProposal(req: Request, res: Response) {
         try {
             const proposal = await AssemblerService.getProposal(req.user!.userId, req.params.id as string);

@@ -171,7 +171,11 @@ export default function NewOpportunityPage() {
             const loadedFunnels = funnelsRes.data || [];
             setFunnels(loadedFunnels);
             setClients(clientsRes.data || []);
-            setConsultants(usersRes.data || []);
+            
+            const loadedUsers = (usersRes.data as any[]) || [];
+            // Filtra contas para exibir unicamente pessoas da equipe Growth
+            const advisors = loadedUsers.filter(u => u.allowedApps?.includes("growth"));
+            setConsultants(advisors);
 
             // Set defaults if available
             const defaultFunnel = loadedFunnels.find(f => (f as any).isDefault) || loadedFunnels[0];
@@ -195,7 +199,7 @@ export default function NewOpportunityPage() {
 
     const handleSave = async () => {
         if (!form.title || (!isCreatingClient && !form.clientId) || (isCreatingClient && !newClientForm.name) || !form.consultantId) {
-            toast.warning("Campos obrigatórios", "Preencha o Título, Cliente (ou dados do Novo Cliente) e Consultor Responsável.");
+            toast.warning("Campos obrigatórios", "Preencha o Título, Cliente (ou dados do Novo Cliente) e Advisor Responsável.");
             return;
         }
 
@@ -645,13 +649,13 @@ export default function NewOpportunityPage() {
                             <ChevronDown size={16} className="text-slate-400" />
                         </div>
                         <div className="flex flex-col gap-1.5">
-                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Consultor *</label>
+                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Advisor *</label>
                             <select
                                 value={form.consultantId}
                                 onChange={e => setForm(p => ({ ...p, consultantId: e.target.value }))}
                                 className="w-full px-3 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-lg outline-none focus:border-cyan-500 text-slate-900 dark:text-white"
                             >
-                                <option value="">Atribuir consultor...</option>
+                                <option value="">Atribuir advisor...</option>
                                 {consultants.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                             </select>
                         </div>

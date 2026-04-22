@@ -1,5 +1,6 @@
 import { prisma } from "../../config/database.js";
 import { logger } from "../../lib/logger.js";
+import { getOwnerUserId } from "../../lib/get-owner.js";
 
 interface WhatsappCredentials {
     accessToken: string;
@@ -12,8 +13,11 @@ export class WhatsappService {
      * Gets the active Integration Setting for a specific user to act on their behalf.
      */
     static async getCredentials(userId: string): Promise<WhatsappCredentials | null> {
+        // Use OWNER's global WhatsApp integration
+        const ownerId = await getOwnerUserId();
+        if (!ownerId) return null;
         const setting = await prisma.integrationSetting.findUnique({
-            where: { userId_provider: { userId, provider: "whatsapp" } }
+            where: { userId_provider: { userId: ownerId, provider: "whatsapp" } }
         });
 
         if (!setting || !setting.isActive || !setting.credentials) return null;

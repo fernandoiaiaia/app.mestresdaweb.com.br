@@ -2,6 +2,7 @@ import { Router, Request, Response } from "express";
 import { prisma } from "../../config/database.js";
 import { logger } from "../../lib/logger.js";
 import { authMiddleware } from "../../middlewares/auth.middleware.js";
+import { getOwnerUserId } from "../../lib/get-owner.js";
 
 // ═══════════════════════════════════════
 // Integration Settings Routes
@@ -35,9 +36,10 @@ async function subscribeAppToWaba(accessToken: string, wabaId: string): Promise<
  */
 router.get("/", async (req: Request, res: Response) => {
     try {
-        const userId = (req as any).user?.userId;
+        const ownerId = await getOwnerUserId();
+        if (!ownerId) return res.status(500).json({ success: false, error: { message: "Nenhum usuário OWNER encontrado" } });
         const settings = await prisma.integrationSetting.findMany({
-            where: { userId },
+            where: { userId: ownerId },
             orderBy: { provider: "asc" },
         });
         res.json({ success: true, data: settings });
@@ -53,10 +55,11 @@ router.get("/", async (req: Request, res: Response) => {
  */
 router.get("/:provider", async (req: Request, res: Response) => {
     try {
-        const userId = (req as any).user?.userId;
+        const ownerId = await getOwnerUserId();
+        if (!ownerId) return res.status(500).json({ success: false, error: { message: "Nenhum usuário OWNER encontrado" } });
         const provider = Array.isArray(req.params.provider) ? req.params.provider[0] : req.params.provider;
         const setting = await prisma.integrationSetting.findUnique({
-            where: { userId_provider: { userId, provider } },
+            where: { userId_provider: { userId: ownerId, provider } },
         });
         res.json({ success: true, data: setting });
     } catch (err) {
@@ -71,7 +74,8 @@ router.get("/:provider", async (req: Request, res: Response) => {
  */
 router.put("/:provider", async (req: Request, res: Response) => {
     try {
-        const userId = (req as any).user?.userId;
+        const ownerId = await getOwnerUserId();
+        if (!ownerId) return res.status(500).json({ success: false, error: { message: "Nenhum usuário OWNER encontrado" } });
         const provider = Array.isArray(req.params.provider) ? req.params.provider[0] : req.params.provider;
         const { credentials, metadata, isActive } = req.body;
 
@@ -82,10 +86,8 @@ router.put("/:provider", async (req: Request, res: Response) => {
         }
 
         // ── Fetch existing setting so we can MERGE credentials, not replace them ──
-        // This prevents the UI from wiping saved API keys when the user saves
-        // other fields (model, group_id, etc.) without re-entering masked secrets.
         const existing = await prisma.integrationSetting.findUnique({
-            where: { userId_provider: { userId, provider } },
+            where: { userId_provider: { userId: ownerId, provider } },
         });
 
         // Deep-merge: start from what's in DB, apply only non-empty incoming values
@@ -103,9 +105,9 @@ router.put("/:provider", async (req: Request, res: Response) => {
         }
 
         const setting = await prisma.integrationSetting.upsert({
-            where: { userId_provider: { userId, provider } },
+            where: { userId_provider: { userId: ownerId, provider } },
             create: {
-                userId,
+                userId: ownerId,
                 provider,
                 credentials: mergedCreds,
                 metadata: metadata || {},
@@ -128,7 +130,7 @@ router.put("/:provider", async (req: Request, res: Response) => {
             }
         }
 
-        logger.info({ userId, provider, isActive: setting.isActive }, "Integration setting updated");
+        logger.info({ ownerId, provider, isActive: setting.isActive }, "Integration setting updated (global)");
         res.json({ success: true, data: setting });
     } catch (err) {
         logger.error({ err }, "Error updating integration setting");
@@ -142,11 +144,12 @@ router.put("/:provider", async (req: Request, res: Response) => {
  */
 router.patch("/:provider/toggle", async (req: Request, res: Response) => {
     try {
-        const userId = (req as any).user?.userId;
+        const ownerId = await getOwnerUserId();
+        if (!ownerId) return res.status(500).json({ success: false, error: { message: "Nenhum usuário OWNER encontrado" } });
         const provider = Array.isArray(req.params.provider) ? req.params.provider[0] : req.params.provider;
 
         const existing = await prisma.integrationSetting.findUnique({
-            where: { userId_provider: { userId, provider } },
+            where: { userId_provider: { userId: ownerId, provider } },
         });
 
         if (!existing) {
@@ -154,7 +157,7 @@ router.patch("/:provider/toggle", async (req: Request, res: Response) => {
         }
 
         const setting = await prisma.integrationSetting.update({
-            where: { userId_provider: { userId, provider } },
+            where: { userId_provider: { userId: ownerId, provider } },
             data: {
                 isActive: !existing.isActive,
                 lastSyncAt: !existing.isActive ? new Date() : existing.lastSyncAt,
@@ -174,11 +177,12 @@ router.patch("/:provider/toggle", async (req: Request, res: Response) => {
  */
 router.delete("/:provider", async (req: Request, res: Response) => {
     try {
-        const userId = (req as any).user?.userId;
+        const ownerId = await getOwnerUserId();
+        if (!ownerId) return res.status(500).json({ success: false, error: { message: "Nenhum usuário OWNER encontrado" } });
         const provider = Array.isArray(req.params.provider) ? req.params.provider[0] : req.params.provider;
 
         await prisma.integrationSetting.deleteMany({
-            where: { userId, provider },
+            where: { userId: ownerId, provider },
         });
 
         res.json({ success: true, message: "Integração removida" });
@@ -194,11 +198,12 @@ router.delete("/:provider", async (req: Request, res: Response) => {
  */
 router.post("/:provider/test", async (req: Request, res: Response) => {
     try {
-        const userId = (req as any).user?.userId;
+        const ownerId = await getOwnerUserId();
+        if (!ownerId) return res.status(500).json({ success: false, error: { message: "Nenhum usuário OWNER encontrado" } });
         const provider = Array.isArray(req.params.provider) ? req.params.provider[0] : req.params.provider;
 
         const setting = await prisma.integrationSetting.findUnique({
-            where: { userId_provider: { userId, provider } },
+            where: { userId_provider: { userId: ownerId, provider } },
         });
 
         if (!setting) {
@@ -355,7 +360,7 @@ router.post("/:provider/test", async (req: Request, res: Response) => {
 
         if (valid) {
             await prisma.integrationSetting.update({
-                where: { userId_provider: { userId, provider } },
+                where: { userId_provider: { userId: ownerId, provider } },
                 data: { lastSyncAt: new Date() },
             });
         }

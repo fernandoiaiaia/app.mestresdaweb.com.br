@@ -1,6 +1,7 @@
 import { prisma } from "../../config/database.js";
 import type { Response } from "express";
 import type { Prisma } from "@prisma/client";
+import { getOwnerUserId } from "../../lib/get-owner.js";
 
 // ── Type helpers ──────────────────────────────────────────────────────────────
 
@@ -463,10 +464,11 @@ export class AssemblerService {
     // ── AI STREAM ─────────────────────────────────────────────────────────────
 
     static async streamGenerate(userId: string, data: ScopeData, res: Response) {
-        // 1. Credentials
-        const setting = await prisma.integrationSetting.findFirst({
-            where: { userId, provider: "proposal_minimax", isActive: true },
-        });
+        // 1. Credentials — use OWNER's global integration
+        const ownerId = await getOwnerUserId();
+        const setting = ownerId ? await prisma.integrationSetting.findFirst({
+            where: { userId: ownerId, provider: "proposal_minimax", isActive: true },
+        }) : null;
 
         if (!setting) {
             res.write(`event: error\ndata: ${JSON.stringify({ message: "Integracao Minimax nao configurada." })}\n\n`);

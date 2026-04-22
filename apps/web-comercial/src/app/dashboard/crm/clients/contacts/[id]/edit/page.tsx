@@ -103,12 +103,14 @@ export default function EditContactPage({ params }: { params: Promise<{ id: stri
     const [showCompanyDropdown, setShowCompanyDropdown] = useState(false);
     const companyRef = useRef<HTMLDivElement>(null);
     const [tagInput, setTagInput] = useState("");
+    const [segments, setSegments] = useState<{ id: string; name: string; active: boolean }[]>([]);
 
     useEffect(() => {
         Promise.all([
             api<any>(`/api/clients/${id}`),
             api<CompanyOption[]>("/api/companies"),
-        ]).then(([clientRes, compRes]) => {
+            api<{ id: string; name: string; active: boolean }[]>("/api/segments"),
+        ]).then(([clientRes, compRes, segRes]) => {
             if (clientRes?.success && clientRes.data) {
                 const c = clientRes.data;
                 // Parse tags/social from notes
@@ -141,11 +143,11 @@ export default function EditContactPage({ params }: { params: Promise<{ id: stri
                 if (c.companyId && c.companyRef) {
                     setSelectedCompany({ id: c.companyRef.id, name: c.companyRef.name, cnpj: null, segment: null });
                 } else if (c.companyId) {
-                    // fallback
                     setSelectedCompany({ id: c.companyId, name: c.company || "Empresa", cnpj: null, segment: null });
                 }
             }
             if (compRes?.success && compRes.data) setCompanies(compRes.data);
+            if (segRes?.success && segRes.data) setSegments(segRes.data.filter(s => s.active));
             setLoading(false);
         });
     }, [id]);
@@ -272,15 +274,9 @@ export default function EditContactPage({ params }: { params: Promise<{ id: stri
                                 <Tag size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
                                 <select value={form.segmento} onChange={e => update("segmento", e.target.value)} className="w-full pl-10 pr-4 py-2.5 bg-slate-800/50 border border-white/[0.08] rounded-xl text-sm text-white focus:outline-none focus:border-blue-500/40 appearance-none cursor-pointer">
                                     <option value="">Selecionar...</option>
-                                    <option value="tecnologia">Tecnologia</option>
-                                    <option value="saude">Saúde</option>
-                                    <option value="educacao">Educação</option>
-                                    <option value="financeiro">Financeiro</option>
-                                    <option value="varejo">Varejo</option>
-                                    <option value="industria">Indústria</option>
-                                    <option value="servicos">Serviços</option>
-                                    <option value="governo">Governo</option>
-                                    <option value="outro">Outro</option>
+                                    {segments.map(seg => (
+                                        <option key={seg.id} value={seg.name}>{seg.name}</option>
+                                    ))}
                                 </select>
                             </div>
                         </div>

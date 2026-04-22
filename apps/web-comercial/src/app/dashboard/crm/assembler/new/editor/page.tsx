@@ -784,9 +784,13 @@ export default function EditorPage() {
               className="px-5 py-2 rounded-full bg-slate-800 hover:bg-slate-700 text-white font-semibold text-sm transition-colors flex items-center gap-2">
               <Save size={14} /> Salvar
             </button>
+            <button onClick={() => window.open('/presentation-mestres', '_blank')}
+              className="px-5 py-2 rounded-full bg-slate-800 hover:bg-slate-700 text-white font-semibold text-sm transition-colors flex items-center gap-2">
+              <Sparkles size={14} /> Mestres
+            </button>
             <button onClick={handlePresent}
               className="px-6 py-2 rounded-full bg-[#0071e3] hover:bg-[#0077ED] text-white font-bold text-sm transition-all shadow-[0_0_20px_rgba(0,113,227,0.3)] flex items-center gap-2">
-              <Presentation size={16} /> Apresentar
+              <Presentation size={16} /> Proposta Online
             </button>
           </div>
         </div>

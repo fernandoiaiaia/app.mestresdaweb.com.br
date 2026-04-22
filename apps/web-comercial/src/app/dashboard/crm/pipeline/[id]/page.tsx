@@ -142,6 +142,7 @@ interface LossReason {
     description: string | null;
     funnelId: string | null;
     stageId: string | null;
+    active: boolean;
 }
 
 const TABS = [
@@ -377,7 +378,7 @@ export default function PipelineDealDetail() {
             }
 
             if (lossRes.success && lossRes.data) {
-                setLossReasons(lossRes.data);
+                setLossReasons(lossRes.data.filter(lr => lr.active !== false));
             }
         } catch (error) {
             console.error("Error in loadDeal:", error);
@@ -1814,43 +1815,51 @@ export default function PipelineDealDetail() {
                                 <div className="flex flex-col gap-1.5">
                                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Motivo da Perda *</label>
                                     <div className="grid grid-cols-1 gap-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-1 -mr-1">
-                                        {lossReasons.filter(lr => lr.funnelId === deal.funnel?.id && lr.stageId === deal.stageId).length === 0 ? (
-                                            <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-white/5 text-center">
-                                                <p className="text-sm text-slate-500">Nenhum motivo configurado para esta etapa específica.</p>
-                                                <p className="text-xs text-slate-400 mt-1">Configure em <strong>Configurações &gt; Motivos de Perda</strong></p>
-                                            </div>
-                                        ) : (
-                                            lossReasons
-                                                .filter(lr => lr.funnelId === deal.funnel?.id && lr.stageId === deal.stageId)
-                                                .map(reason => (
-                                                    <label 
-                                                        key={reason.id} 
-                                                        className={`flex flex-col p-3 rounded-xl border relative cursor-pointer transition-all ${
+                                        {(() => {
+                                            // Progressive fallback: stage-specific → funnel-wide → all active
+                                            const stageMatch = lossReasons.filter(lr => lr.funnelId === deal.funnel?.id && lr.stageId === deal.stageId);
+                                            const funnelMatch = lossReasons.filter(lr => lr.funnelId === deal.funnel?.id);
+                                            const displayReasons = stageMatch.length > 0 ? stageMatch : funnelMatch.length > 0 ? funnelMatch : lossReasons;
+
+                                            if (displayReasons.length === 0) {
+                                                return (
+                                                    <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-white/5 text-center">
+                                                        <p className="text-sm text-slate-500">Nenhum motivo de perda cadastrado.</p>
+                                                        <p className="text-xs text-slate-400 mt-1">Configure em <strong>Configurações &gt; Motivos de Perda</strong></p>
+                                                    </div>
+                                                );
+                                            }
+
+                                            return displayReasons.map(reason => (
+                                                <label 
+                                                    key={reason.id} 
+                                                    onClick={() => setSelectedLossReasonId(reason.id)}
+                                                    className={`flex flex-col p-3 rounded-xl border relative cursor-pointer transition-all ${
+                                                        selectedLossReasonId === reason.id 
+                                                        ? 'border-red-500 bg-red-50 dark:bg-red-500/10' 
+                                                        : 'border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/50 hover:border-slate-300 dark:hover:border-white/20'
+                                                    }`}
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${
                                                             selectedLossReasonId === reason.id 
-                                                            ? 'border-red-500 bg-red-50 dark:bg-red-500/10' 
-                                                            : 'border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/50 hover:border-slate-300 dark:hover:border-white/20'
-                                                        }`}
-                                                    >
-                                                        <div className="flex items-center gap-3">
-                                                            <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${
-                                                                selectedLossReasonId === reason.id 
-                                                                ? 'border-red-500' 
-                                                                : 'border-slate-300 dark:border-slate-600'
-                                                            }`}>
-                                                                {selectedLossReasonId === reason.id && (
-                                                                    <div className="w-2 h-2 rounded-full bg-red-500" />
-                                                                )}
-                                                            </div>
-                                                            <span className="flex items-center gap-2 font-medium text-sm text-slate-900 dark:text-white">
-                                                                {reason.name}
-                                                            </span>
+                                                            ? 'border-red-500' 
+                                                            : 'border-slate-300 dark:border-slate-600'
+                                                        }`}>
+                                                            {selectedLossReasonId === reason.id && (
+                                                                <div className="w-2 h-2 rounded-full bg-red-500" />
+                                                            )}
                                                         </div>
-                                                        {reason.description && (
-                                                            <p className="text-xs text-slate-500 ml-7 mt-1">{reason.description}</p>
-                                                        )}
-                                                    </label>
-                                                ))
-                                        )}
+                                                        <span className="flex items-center gap-2 font-medium text-sm text-slate-900 dark:text-white">
+                                                            {reason.name}
+                                                        </span>
+                                                    </div>
+                                                    {reason.description && (
+                                                        <p className="text-xs text-slate-500 ml-7 mt-1">{reason.description}</p>
+                                                    )}
+                                                </label>
+                                            ));
+                                        })()}
                                     </div>
                                 </div>
                             </div>

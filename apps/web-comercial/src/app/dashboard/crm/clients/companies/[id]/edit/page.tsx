@@ -80,13 +80,15 @@ export default function EditCompanyPage({ params }: { params: Promise<{ id: stri
     const [contactSearch, setContactSearch] = useState("");
     const [showContactDropdown, setShowContactDropdown] = useState(false);
     const contactRef = useRef<HTMLDivElement>(null);
+    const [segments, setSegments] = useState<{ id: string; name: string; active: boolean }[]>([]);
 
     // Load company data + contacts
     useEffect(() => {
         Promise.all([
             api<any>(`/api/companies/${id}`),
             api<AvailableContact[]>("/api/clients"),
-        ]).then(([compRes, clientsRes]) => {
+            api<{ id: string; name: string; active: boolean }[]>("/api/segments"),
+        ]).then(([compRes, clientsRes, segRes]) => {
             if (compRes?.success && compRes.data) {
                 const c = compRes.data;
                 // Parse address parts from single address string
@@ -122,6 +124,7 @@ export default function EditCompanyPage({ params }: { params: Promise<{ id: stri
                 // Available = unlinked contacts OR contacts linked to THIS company
                 setAvailableContacts(clientsRes.data.filter((c: any) => !c.companyId || c.companyId === id));
             }
+            if (segRes?.success && segRes.data) setSegments(segRes.data.filter(s => s.active));
             setLoading(false);
         });
     }, [id]);
@@ -284,15 +287,9 @@ export default function EditCompanyPage({ params }: { params: Promise<{ id: stri
                                 <Tag size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
                                 <select value={form.segment} onChange={e => update("segment", e.target.value)} className="w-full pl-10 pr-4 py-2.5 bg-slate-800/50 border border-white/[0.08] rounded-xl text-sm text-white focus:outline-none focus:border-blue-500/40 appearance-none cursor-pointer">
                                     <option value="">Selecionar...</option>
-                                    <option value="tecnologia">Tecnologia</option>
-                                    <option value="saude">Saúde</option>
-                                    <option value="educacao">Educação</option>
-                                    <option value="financeiro">Financeiro</option>
-                                    <option value="varejo">Varejo</option>
-                                    <option value="industria">Indústria</option>
-                                    <option value="servicos">Serviços</option>
-                                    <option value="governo">Governo</option>
-                                    <option value="outro">Outro</option>
+                                    {segments.map(seg => (
+                                        <option key={seg.id} value={seg.name}>{seg.name}</option>
+                                    ))}
                                 </select>
                             </div>
                         </div>

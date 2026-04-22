@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Package, Clock, Users, ArrowRight, Trash2, Search, Layers, Loader2, CheckCircle, X } from "lucide-react";
+import { Plus, Package, Clock, Users, ArrowRight, Trash2, Search, Layers, Loader2, CheckCircle, X, Sparkles } from "lucide-react";
 import { api } from "@/lib/api";
 import { CompleteScope, getSavedProposals, deleteProposalFromList } from "./_shared";
 import Link from "next/link";
@@ -105,18 +105,25 @@ export default function AssemblerListingPage() {
                     </h1>
                     <p className="text-slate-400 text-sm mt-1">Gerencie e visualize todas as estimativas e escopos gerados.</p>
                 </div>
-                <button onClick={() => {
-                        if (typeof window !== "undefined") {
-                            localStorage.removeItem("proposals_assembler_current_scope");
-                            localStorage.removeItem("proposals_assembler_current_users");
-                            localStorage.removeItem("proposals_assembler_summary");
-                        }
-                        router.push('/dashboard/crm/assembler/new');
-                    }}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-semibold transition-all shadow-lg shadow-blue-600/20 whitespace-nowrap"
-                >
-                    <Plus size={18} /> Nova Proposta (IA)
-                </button>
+                <div className="flex items-center gap-3">
+                    <button onClick={() => window.open('/presentation-mestres', '_blank')}
+                        className="flex items-center gap-2 px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-semibold transition-all border border-slate-700/50 shadow-lg whitespace-nowrap"
+                    >
+                        <Sparkles size={18} className="text-[#2997ff]" /> Mestres
+                    </button>
+                    <button onClick={() => {
+                            if (typeof window !== "undefined") {
+                                localStorage.removeItem("proposals_assembler_current_scope");
+                                localStorage.removeItem("proposals_assembler_current_users");
+                                localStorage.removeItem("proposals_assembler_summary");
+                            }
+                            router.push('/dashboard/crm/assembler/new');
+                        }}
+                        className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-semibold transition-all shadow-lg shadow-blue-600/20 whitespace-nowrap"
+                    >
+                        <Plus size={18} /> Nova Proposta (IA)
+                    </button>
+                </div>
             </motion.div>
 
             <div className="bg-slate-800/40 border border-white/[0.06] rounded-2xl p-4 sm:p-5 mb-8">

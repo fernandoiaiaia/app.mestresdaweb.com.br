@@ -2,7 +2,7 @@ import { prisma } from './src/config/database.js';
 
 async function main() {
     try {
-        const email = "julio@gmail.com";
+        const email = "fernando@mestresdaweb.com.br";
         const user = await prisma.user.findUnique({ where: { email } });
         if (!user) {
             console.error(`Usuário não encontrado: ${email}`);

@@ -809,11 +809,18 @@ function PresentationPageInner() {
                     ))}
                 </div>
 
-                <div className="hidden md:flex flex-col items-end">
-                    <p className="text-[10px] uppercase tracking-widest font-semibold text-[#86868b]">Proposta para</p>
-                    <p className="text-sm font-medium tracking-tight text-[#f5f5f7]">
-                        {client ? (client.companyRef?.name || client.company || client.name) : (scope.users[0]?.userName || "Cliente")}
-                    </p>
+                <div className="hidden md:flex items-center gap-6">
+                    <button onClick={() => window.open('/presentation-mestres', '_blank')}
+                        className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-800/80 hover:bg-slate-700 text-white font-semibold text-[13px] transition-colors border border-slate-700/50 shadow-sm"
+                    >
+                        <Sparkles size={14} className="text-[#2997ff]" /> Mestres
+                    </button>
+                    <div className="flex flex-col items-end border-l border-slate-700/50 pl-6">
+                        <p className="text-[10px] uppercase tracking-widest font-semibold text-[#86868b]">Proposta para</p>
+                        <p className="text-sm font-medium tracking-tight text-[#f5f5f7]">
+                            {client ? (client.companyRef?.name || client.company || client.name) : (scope.users[0]?.userName || "Cliente")}
+                        </p>
+                    </div>
                 </div>
             </header>
 

@@ -1100,7 +1100,7 @@ export default function EditorPage() {
               </p>
             )}
             {scope.integrations?.map((integ, iIdx) => (
-              <div key={iIdx} className="bg-black/40 border border-white/[0.05] rounded-xl p-5 hover:border-white/20 transition-colors relative group pr-24">
+              <div key={iIdx} className="bg-black/40 border border-white/[0.05] rounded-xl p-5 hover:border-white/20 transition-colors relative group pr-40">
                 <EditableText value={integ.title} onChange={val => setIntegrationTitle(iIdx, val)} className="text-sm font-semibold text-[#f5f5f7] mb-2" />
                 <EditableText value={integ.description} onChange={val => setIntegrationDesc(iIdx, val)} className="text-xs text-[#86868b] leading-relaxed" isTextArea />
                 <div className="absolute top-4 right-4 flex items-center gap-2">

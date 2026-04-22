@@ -106,19 +106,18 @@ function parseMarkdownRaw(md: string): { users: RawUser[]; integrations: RawFunc
                 let desc = "";
                 let hours = 0;
 
-                if (inIntegrations) {
-                    // "Integração: Title | Descrição: desc | Horas: N"
-                    // Covers "Integração" (with accent), "Integracao" and "Integration"
-                    const t = r.match(/integra[cç][aã]o\s*:\s*([^|]+)/i);
-                    if (t) title = t[1].trim();
-                } else {
-                    // "Funcionalidade: Title | Descrição: desc | Horas: N"
-                    const t = r.match(/funcionalidade\s*:\s*([^|]+)/i);
-                    if (t) title = t[1].trim();
-                }
+                // Robust Title parsing: get everything before the first pipe
+                const parts = r.split('|');
+                let rawTitlePart = parts[0];
+                
+                // Clean up markdown list dashes, bold markers, and common prefixes
+                rawTitlePart = rawTitlePart.replace(/^-?\s*/, ""); 
+                rawTitlePart = rawTitlePart.replace(/\*\*/g, ""); 
+                rawTitlePart = rawTitlePart.replace(/^(?:funcionalidade|integra[cç][aã]o)\s*:\s*/i, ""); 
 
-                // Fallback: use full text as title if no label found
-                if (!title) title = r.replace(/^-?\s*/, "").trim();
+                title = rawTitlePart.trim();
+                // Remove trailing colon if AI added one (e.g. "Widget Saldo Total:")
+                title = title.replace(/:$/, "").trim();
 
                 // Description
                 const d = r.match(/descri[cç][aã]o\s*:\s*([^|]+)/i);

@@ -224,12 +224,7 @@ export const dealsService = {
             });
         }
 
-        // Trigger Whatsbot AI outbound flow for the new deal (non-blocking)
-        import("../chatbot/chatbot.service.js").then(({ chatbotService }) => {
-            chatbotService.triggerOutbound(deal.id).catch(err => {
-                logger.error({ err, dealId: deal.id, stageId }, "[Whatsbot] Error triggering outbound flow on deal creation");
-            });
-        });
+
 
         return deal;
     },
@@ -329,12 +324,7 @@ export const dealsService = {
             logger.error({ err, dealId: id, stageId }, "Error triggering sales cadence");
         });
 
-        // Trigger Whatsbot AI outbound flow for the new stage (non-blocking)
-        import("../chatbot/chatbot.service.js").then(({ chatbotService }) => {
-            chatbotService.triggerOutbound(id).catch(err => {
-                logger.error({ err, dealId: id, stageId }, "[Whatsbot] Error triggering outbound flow on stage update");
-            });
-        });
+
 
         return deal;
     },
@@ -360,12 +350,7 @@ export const dealsService = {
             include: { client: true, consultant: true }
         });
 
-        // Trigger Whatsbot AI outbound flow for the new stage (non-blocking)
-        import("../chatbot/chatbot.service.js").then(({ chatbotService }) => {
-            chatbotService.triggerOutbound(id).catch(err => {
-                logger.error({ err, dealId: id, stageId: firstStage.id }, "[Whatsbot] Error triggering outbound flow on funnel change");
-            });
-        });
+
 
         return deal;
     },

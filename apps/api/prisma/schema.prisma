@@ -119,11 +119,7 @@ model User {
   whatsappLabels WhatsappLabel[]
   knowledgeBaseFiles KnowledgeBaseFile[]
 
-  // Whatsbot relations
-  chatbotSettings   ChatbotSettings?   @relation("ChatbotSettingsOwner")
-  chatbotFlows      ChatbotFlow[]      @relation("ChatbotFlowOwner")
-  chatbotKnowledge  ChatbotKnowledge[] @relation("ChatbotKnowledgeOwner")
-  chatbotTemplates  ChatbotTemplate[]  @relation("ChatbotTemplateOwner")
+
 
   @@index([email])
   @@map("users")
@@ -316,7 +312,7 @@ model Funnel {
   deals         Deal[]
   salesCadences SalesCadence[]
   lossReasons   LossReason[]
-  chatbotFlows  ChatbotFlow[]
+
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -337,7 +333,7 @@ model FunnelStage {
   deals         Deal[]
   salesCadences SalesCadence[]
   lossReasons   LossReason[]
-  chatbotFlows  ChatbotFlow[]
+
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -1923,7 +1919,7 @@ model WhatsappConversation {
   assignee   User?           @relation("WhatsappAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
 
   messages   WhatsappMessage[]
-  chatbotSessions ChatbotSession[]
+
 
   @@index([contactId])
   @@index([assigneeId])
@@ -1988,139 +1984,3 @@ model WhatsappContactLabel {
   @@map("whatsapp_contact_labels")
 }
 
-// ═══════════════════════════════════════
-// WHATSBOT — AI CHATBOT ENGINE
-// ═══════════════════════════════════════
-
-model ChatbotSettings {
-  id     String @id @default(uuid())
-  userId String @unique @map("user_id") // OWNER — one per company
-
-  // Persona & Behaviour
-  persona          String @default("Você é um assistente comercial profissional e amigável.") @db.Text
-  welcomeMessage   String? @map("welcome_message") @db.Text
-  transferMessage  String @default("Vou transferir você para um de nossos especialistas. Aguarde um momento!") @map("transfer_message") @db.Text
-
-  // Business Hours
-  businessHoursEnabled Boolean @default(false) @map("business_hours_enabled")
-  businessHours        Json?   @map("business_hours") // { mon: { start: "08:00", end: "18:00" }, ... }
-  offHoursMessage      String  @default("Obrigado pelo contato! Nosso horário de atendimento é de segunda a sexta, das 8h às 18h. Retornaremos em breve!") @map("off_hours_message") @db.Text
-
-  // Limits
-  maxMessagesPerSession Int @default(30) @map("max_messages_per_session")
-
-  // Embed Widget
-  embedEnabled Boolean @default(false) @map("embed_enabled")
-  embedConfig  Json?   @map("embed_config") // { color, position, text, preForm, preFormFields }
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  user User @relation("ChatbotSettingsOwner", fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("chatbot_settings")
-}
-
-model ChatbotFlow {
-  id      String @id @default(uuid())
-  userId  String @map("user_id")
-
-  // Funnel binding
-  funnelId String @map("funnel_id")
-  stageId  String @map("stage_id")
-
-  name         String
-  mode         String @default("inbound") // inbound, outbound, both
-  systemPrompt String @default("") @map("system_prompt") @db.Text
-
-  // Qualification
-  qualificationFields Json @default("[]") @map("qualification_fields") // [{ key, label, required }]
-  autoCreateDeal      Boolean @default(true) @map("auto_create_deal")
-  moveToStageId       String? @map("move_to_stage_id")
-
-  // Outbound
-  outboundTrigger    String  @default("manual") @map("outbound_trigger") // automatic, manual
-  outboundTemplateId String? @map("outbound_template_id")
-
-  isActive Boolean @default(true) @map("is_active")
-  priority Int     @default(0)
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  user    User        @relation("ChatbotFlowOwner", fields: [userId], references: [id], onDelete: Cascade)
-  funnel  Funnel      @relation(fields: [funnelId], references: [id], onDelete: Cascade)
-  stage   FunnelStage @relation(fields: [stageId], references: [id], onDelete: Cascade)
-
-  sessions ChatbotSession[]
-
-  @@index([userId])
-  @@index([funnelId])
-  @@index([stageId])
-  @@map("chatbot_flows")
-}
-
-model ChatbotSession {
-  id             String @id @default(uuid())
-  flowId         String @map("flow_id")
-  conversationId String @map("conversation_id")
-
-  status        String @default("active") // active, completed, transferred, expired
-  collectedData Json   @default("{}") @map("collected_data")
-  messageCount  Int    @default(0) @map("message_count")
-  dealId        String? @map("deal_id")
-  transferredAt DateTime? @map("transferred_at")
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  flow         ChatbotFlow          @relation(fields: [flowId], references: [id], onDelete: Cascade)
-  conversation WhatsappConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-
-  @@index([flowId])
-  @@index([conversationId])
-  @@index([status])
-  @@map("chatbot_sessions")
-}
-
-model ChatbotKnowledge {
-  id     String @id @default(uuid())
-  userId String @map("user_id")
-
-  title    String
-  content  String @db.Text
-  category String?
-  isActive Boolean @default(true) @map("is_active")
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  user User @relation("ChatbotKnowledgeOwner", fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@map("chatbot_knowledge")
-}
-
-model ChatbotTemplate {
-  id     String @id @default(uuid())
-  userId String @map("user_id")
-
-  metaTemplateId  String? @map("meta_template_id")
-  name            String  // snake_case, required by Meta
-  category        String  @default("UTILITY") // MARKETING, UTILITY
-  language        String  @default("pt_BR")
-  bodyText        String  @map("body_text") @db.Text
-  headerText      String? @map("header_text")
-  footerText      String? @map("footer_text")
-  status          String  @default("PENDING") // PENDING, APPROVED, REJECTED, PAUSED
-  rejectionReason String? @map("rejection_reason")
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  user User @relation("ChatbotTemplateOwner", fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([status])
-  @@map("chatbot_templates")
-}

@@ -53,8 +53,6 @@ import { proposalsRoutes } from "./modules/assembler/proposals.routes.js";
 import { whatsappWebhookRoutes } from "./modules/whatsapp/whatsapp.webhook.controller.js";
 import { whatsappRoutes } from "./modules/whatsapp/whatsapp.controller.js";
 import { whatsappLabelsRoutes } from "./modules/whatsapp/whatsapp-labels.controller.js";
-import chatbotRoutes from "./modules/chatbot/chatbot.controller.js";
-import chatbotEmbedRoutes from "./modules/chatbot/chatbot-embed.controller.js";
 
 const app: ReturnType<typeof express> = express();
 
@@ -149,9 +147,6 @@ whatsappWebhookRoutes(app);
 whatsappRoutes(app);
 whatsappLabelsRoutes(app);
 
-// Whatsbot AI Chatbot
-app.use("/api/chatbot", chatbotRoutes);
-app.use("/api/chatbot", chatbotEmbedRoutes);
 
 // ═══ 404 ═══
 app.use((_req, res) => {

@@ -43,8 +43,8 @@ function EditableText({
     );
   }
   return (
-    <div className={`group flex items-start gap-2 relative ${className}`}>
-      <span className={isTextArea ? "whitespace-pre-wrap" : "truncate"}>{value}</span>
+    <div className={`group flex items-start gap-2 relative min-w-0 w-full ${className}`}>
+      <span className={`min-w-0 flex-1 ${isTextArea ? "whitespace-pre-wrap" : "truncate"}`}>{value}</span>
       <button onClick={() => setIsEditing(true)} title="Editar"
         className="opacity-0 group-hover:opacity-100 transition-opacity text-[#86868b] hover:text-white p-1 rounded hover:bg-white/10 shrink-0">
         <Edit2 size={12} />
@@ -839,7 +839,7 @@ export default function EditorPage() {
                   {isDone ? <CheckCircle2 size={20} /> : <Users size={20} />}
                 </div>
 
-                <div className="flex-1" onClick={e => e.stopPropagation()}>
+                <div className="flex-1 min-w-0" onClick={e => e.stopPropagation()}>
                   <div className="text-[10px] font-bold tracking-[0.2em] text-purple-400 uppercase mb-1">Usuário / Perfil</div>
                   <EditableText value={user.userName} onChange={val => setUserName(uIdx, val)} className="text-2xl font-semibold text-white" />
                 </div>
@@ -911,7 +911,7 @@ export default function EditorPage() {
                       <div key={pId} className="bg-slate-900/60 border border-slate-700/40 rounded-xl overflow-hidden">
                         <div className={`p-4 flex items-center gap-4 cursor-pointer hover:bg-white/[0.03] transition-colors ${isPExp ? "border-b border-white/[0.05]" : ""}`} onClick={() => toggleNode(pId)}>
                           <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400"><Smartphone size={16} /></div>
-                          <div className="flex-1" onClick={e => e.stopPropagation()}>
+                          <div className="flex-1 min-w-0" onClick={e => e.stopPropagation()}>
                             <div className="text-[10px] font-bold tracking-[0.2em] text-blue-400 uppercase">Plataforma</div>
                             <EditableText value={plat.platformName} onChange={val => setPlatformName(uIdx, pIdx, val)} className="text-lg font-medium text-[#f5f5f7]" />
                           </div>
@@ -932,7 +932,7 @@ export default function EditorPage() {
                                 <div key={mId} className="bg-slate-800/30 rounded-xl overflow-hidden border border-slate-700/30">
                                   <div className="p-4 flex items-center gap-3 cursor-pointer hover:bg-white/[0.04] group" onClick={() => toggleNode(mId)}>
                                     <Layers size={16} className="text-[#86868b]" />
-                                    <div className="flex-1" onClick={e => e.stopPropagation()}>
+                                    <div className="flex-1 min-w-0" onClick={e => e.stopPropagation()}>
                                       <EditableText value={mod.title} onChange={val => setModuleTitle(uIdx, pIdx, mIdx, val)} className="text-base font-semibold" />
                                     </div>
                                     {hasEstimates && isMExp && <div onClick={e => e.stopPropagation()}><EditableHoursBadge hours={getModuleHours(mod)} onRedistribute={(v) => redistributeModuleHours(uIdx, pIdx, mIdx, v)} color="slate" size="xs" /></div>}
@@ -956,7 +956,7 @@ export default function EditorPage() {
                                           <div key={sId} id={`screen-${screen.id}`} className={`bg-slate-900/70 rounded-lg border transition-all duration-500 ${highlightScreenId === screen.id ? 'shadow-[0_0_0_2px_rgba(239,68,68,0.6),0_0_20px_rgba(239,68,68,0.3)] border-red-500 scale-[1.01]' : (screenFeedbacks.length > 0 ? 'border-red-500/30 ring-1 ring-red-500/10' : 'border-slate-700/30')}`}>
                                             <div className="p-3 flex items-start gap-3 cursor-pointer hover:bg-white/[0.04] group" onClick={() => toggleNode(sId)}>
                                               <Layout size={14} className="text-[#a1a1a6] mt-1 shrink-0" />
-                                              <div className="flex-1" onClick={e => e.stopPropagation()}>
+                                              <div className="flex-1 min-w-0" onClick={e => e.stopPropagation()}>
                                                 <EditableText value={screen.title} onChange={val => setScreenTitle(uIdx, pIdx, mIdx, sIdx, val)} className="text-sm font-semibold text-[#f5f5f7]" />
                                                 <EditableText value={screen.description} onChange={val => setScreenDesc(uIdx, pIdx, mIdx, sIdx, val)} className="text-xs text-[#86868b] mt-1" isTextArea />
                                               </div>
@@ -990,7 +990,7 @@ export default function EditorPage() {
                                                 {screen.functionalities.map((func, fIdx) => (
                                                   <div key={fIdx} className="group relative flex gap-3 p-2 rounded-md hover:bg-white/5 transition-colors">
                                                     <Activity size={12} className="text-blue-500/50 mt-1.5 shrink-0" />
-                                                    <div className="flex-1">
+                                                    <div className="flex-1 min-w-0">
                                                       <EditableText value={func.title} onChange={val => setFuncTitle(uIdx, pIdx, mIdx, sIdx, fIdx, val)} className="text-xs font-semibold text-[#e5e5e5]" />
                                                       <EditableText value={func.description} onChange={val => setFuncDesc(uIdx, pIdx, mIdx, sIdx, fIdx, val)} className="text-[11px] text-[#86868b] leading-tight mt-1" isTextArea />
                                                     </div>

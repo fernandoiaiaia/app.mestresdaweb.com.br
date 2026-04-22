@@ -618,6 +618,8 @@ export class AssemblerService {
             "2. Minimo de 3 funcionalidades por tela.",
             "3. Cada definicao em uma unica linha (sem quebra de linha no meio).",
             "4. Sem sub-bullets.",
+            "5. GERE TODO O CONTEUDO ESTRITAMENTE EM PORTUGUES DO BRASIL (pt-BR).",
+            "6. MANTENHA TODOS OS ACENTOS CORRETAMENTE (á, é, í, ó, ú, ã, õ, ç, etc). NUNCA remova a acentuacao das palavras.",
             integStructureRule,
             "",
             "========================================",
@@ -700,6 +702,8 @@ export class AssemblerService {
             "1. Liste apenas APIs de prateleira (gateways de pagamento, despachantes de e-mail, redes sociais para login, emissao de NFe, servicos de nuvem/storage, rastreamento).",
             "2. Minimo de 1 integracao e Maximo de 6.",
             "3. Mantenha descricoes sumarias em 1 linha.",
+            "4. GERE EM PORTUGUES DO BRASIL (pt-BR).",
+            "5. MANTENHA TODOS OS ACENTOS CORRETAMENTE (á, é, í, ó, ú, ã, õ, ç).",
         ].join("\n");
 
         const userPrompt = data.projectSummary || "O usuario nao enviou sumario do projeto.";
@@ -729,7 +733,8 @@ export class AssemblerService {
             "1. Copie titulos EXATAMENTE como fornecidos.",
             "2. Sem descricao, sem explicacoes, sem texto extra.",
             "3. Cubra TODOS os perfis e TODAS as plataformas - nao omita nenhum.",
-            "4. Use ESTES valores como referencia:",
+            "4. GERE TODO O CONTEUDO ESTRITAMENTE EM PORTUGUES DO BRASIL (pt-BR) e COM ACENTOS CORRETOS.",
+            "5. Use ESTES valores como referencia:",
             "",
             "- Exibir dado/label/icone/status: 0.5h",
             "- Campo de formulario simples: 0.5h",

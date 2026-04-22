@@ -1832,6 +1832,7 @@ model AssembledProposal {
   viewerId        String?  @map("viewer_id")
   
   totalHours      Int      @default(0) @map("total_hours")
+  scopeData       Json     @default("{}") @map("scope_data")
   
   // ═══ FILA E AUDITORIA (Queue) ═══
   status          String   @default("draft") // draft, in_review, needs_adjustment, approved, rejected

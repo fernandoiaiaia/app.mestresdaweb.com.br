@@ -470,7 +470,7 @@ export default function LoginPage() {
                                             </div>
 
                                             {/* Google OAuth — Original UI disguised with Iframe */}
-                                            {showGoogleButton && (
+                                            {hasRealGoogle && (
                                                 <div className="relative w-full h-[46px] rounded-[10px] overflow-hidden group mt-2">
                                                     {/* Background Style Wrapper (pointer-events-none lets clicks pass to iframe) */}
                                                     <div className="absolute inset-0 flex items-center justify-center gap-2 px-4 py-[11px] border border-white/5 bg-white/[0.02] group-hover:bg-white/[0.04] text-white/90 text-sm font-medium transition-colors shadow-sm pointer-events-none">

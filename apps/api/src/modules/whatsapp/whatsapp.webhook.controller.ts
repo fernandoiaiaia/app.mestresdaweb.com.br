@@ -4,6 +4,7 @@ import { logger } from "../../lib/logger.js";
 import { WhatsappService } from "./whatsapp.service.js";
 import { whatsappEvents } from "./whatsapp.events.js";
 import { leadAssignmentService } from "../../lib/lead-assignment.service.js";
+import { chatbotService } from "../chatbot/chatbot.service.js";
 
 const router = Router();
 
@@ -188,6 +189,11 @@ export async function processWhatsappWebhookForInbox(body: any): Promise<void> {
                                 message: savedMessage,
                                 conversation: updatedConversation
                             }
+                        });
+
+                        // Whatsbot AI — process message asynchronously (don't block webhook response)
+                        chatbotService.processIncomingMessage(conversation.id, savedMessage).catch(err => {
+                            logger.error({ err: err?.message }, "[Whatsbot] Error in async message processing");
                         });
                     }
                 }

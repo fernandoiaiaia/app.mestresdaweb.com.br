@@ -74,6 +74,7 @@ const initialFunnels: Funnel[] = [
     {
         id: uid(), name: "Funil Comercial Principal", description: "Funil padrão para propostas de projetos de tecnologia.",
         isDefault: true, active: true, createdAt: "10 Jan 2026",
+        assigneeIds: [],
         stages: [
             { id: uid(), name: "Novo Lead", color: "blue", deals: 24, value: 0 },
             { id: uid(), name: "Contato Realizado", color: "cyan", deals: 18, value: 0 },
@@ -87,6 +88,7 @@ const initialFunnels: Funnel[] = [
     {
         id: uid(), name: "Funil Inbound (Marketing)", description: "Leads vindos de campanhas de marketing digital.",
         isDefault: false, active: true, createdAt: "15 Fev 2026",
+        assigneeIds: [],
         stages: [
             { id: uid(), name: "Lead Capturado", color: "blue", deals: 56, value: 0 },
             { id: uid(), name: "MQL (Qualificado Mkt)", color: "cyan", deals: 28, value: 0 },
@@ -98,6 +100,7 @@ const initialFunnels: Funnel[] = [
     {
         id: uid(), name: "Funil Parcerias", description: "Oportunidades via parceiros e indicações.",
         isDefault: false, active: false, createdAt: "01 Mar 2026",
+        assigneeIds: [],
         stages: [
             { id: uid(), name: "Indicação Recebida", color: "blue", deals: 10, value: 0 },
             { id: uid(), name: "Primeiro Contato", color: "purple", deals: 6, value: 180000 },

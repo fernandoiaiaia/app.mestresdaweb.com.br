@@ -3,6 +3,7 @@ import { z } from "zod";
 export const createFunnelSchema = z.object({
     name: z.string().min(1, "O nome do funil é obrigatório"),
     description: z.string().optional(),
+    assigneeIds: z.array(z.string()).optional(),
 });
 
 export const updateFunnelSchema = z.object({
@@ -10,6 +11,7 @@ export const updateFunnelSchema = z.object({
     description: z.string().optional(),
     active: z.boolean().optional(),
     isDefault: z.boolean().optional(),
+    assigneeIds: z.array(z.string()).optional(),
 });
 
 export const addStageSchema = z.object({

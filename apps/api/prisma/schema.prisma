@@ -302,6 +302,10 @@ model Funnel {
   active      Boolean @default(true)
   orderIndex  Int     @default(0) @map("order_index")
 
+  // ═══ Round-Robin Distribution ═══
+  assigneeIds       String[] @default([]) @map("assignee_ids")
+  lastAssignedIndex Int      @default(-1) @map("last_assigned_index")
+
   stages        FunnelStage[]
   deals         Deal[]
   salesCadences SalesCadence[]

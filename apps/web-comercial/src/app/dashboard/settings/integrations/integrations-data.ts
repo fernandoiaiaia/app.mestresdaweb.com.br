@@ -39,7 +39,7 @@ export const initialIntegrations: Integration[] = [
     // ═══ SDR AUTOMÁTICO ═══
     { id: "sdr_anthropic", name: "Anthropic (Claude IA)", description: "Motor de IA para personalização de mensagens, qualificação de leads e análise de respostas.", icon: Zap, category: "SDR Automático", status: "disconnected", lastSync: null, details: "Model: claude-sonnet-4-20250514 · IA para SDR", configFields: [{ label: "API Key", key: "apiKey", placeholder: "sk-ant-api03-...", value: "" }, { label: "Modelo", key: "model", placeholder: "claude-sonnet-4-20250514", value: "claude-sonnet-4-20250514" }, { label: "Max Tokens", key: "maxTokens", placeholder: "4096", value: "4096" }] },
     { id: "sdr_brevo", name: "Brevo (E-mail)", description: "Envio de e-mails automatizados para prospecção, follow-up e rastreamento de aberturas/cliques via Brevo.", icon: Mail, category: "SDR Automático", status: "disconnected", lastSync: null, details: "API de e-mail transacional Brevo", configFields: [{ label: "API Key", key: "apiKey", placeholder: "xkeysib-...", value: "" }, { label: "E-mail Remetente", key: "fromEmail", placeholder: "sdr@suaempresa.com", value: "" }, { label: "Nome Remetente", key: "fromName", placeholder: "Equipe Comercial", value: "" }] },
-    { id: "sdr_whatsapp", name: "WhatsApp Business (Meta)", description: "Envio de mensagens de prospecção e follow-up via WhatsApp com templates aprovados pela Meta.", icon: MessageSquare, category: "SDR Automático", status: "disconnected", lastSync: null, details: "API Cloud da Meta", configFields: [{ label: "Access Token", key: "accessToken", placeholder: "EAAx...", value: "" }, { label: "Phone Number ID", key: "phoneNumberId", placeholder: "1234567890", value: "" }, { label: "Business Account ID", key: "businessAccountId", placeholder: "987654321", value: "" }, { label: "Verify Token (Webhook)", key: "verifyToken", placeholder: "seu_token_secreto", value: "" }, { label: "Distribuir Para", key: "assignees", placeholder: "", value: "" }] },
+    { id: "sdr_whatsapp", name: "WhatsApp Business (Meta)", description: "Envio de mensagens de prospecção e follow-up via WhatsApp com templates aprovados pela Meta.", icon: MessageSquare, category: "SDR Automático", status: "disconnected", lastSync: null, details: "API Cloud da Meta", configFields: [{ label: "Access Token", key: "accessToken", placeholder: "EAAx...", value: "" }, { label: "Phone Number ID", key: "phoneNumberId", placeholder: "1234567890", value: "" }, { label: "Business Account ID", key: "businessAccountId", placeholder: "987654321", value: "" }, { label: "Verify Token (Webhook)", key: "verifyToken", placeholder: "seu_token_secreto", value: "" }] },
     { id: "sdr_synthflow", name: "Synthflow AI (Voz)", description: "Ligações telefônicas automatizadas com agentes de IA para qualificação e agendamento de reuniões.", icon: Phone, category: "SDR Automático", status: "disconnected", lastSync: null, details: "IA conversacional por voz", configFields: [{ label: "API Key", key: "apiKey", placeholder: "sf_...", value: "" }, { label: "Model ID (Agente)", key: "modelId", placeholder: "agent_xxx", value: "" }] },
     { id: "sdr_google_calendar", name: "Google Calendar (Agenda)", description: "Verificação de disponibilidade e agendamento automático de reuniões com leads qualificados.", icon: Calendar, category: "SDR Automático", status: "disconnected", lastSync: null, details: "OAuth2 para acesso ao calendário", configFields: [{ label: "Client ID", key: "clientId", placeholder: "xxx.apps.googleusercontent.com", value: "" }, { label: "Client Secret", key: "clientSecret", placeholder: "GOCSPX-...", value: "" }, { label: "Redirect URI", key: "redirectUri", placeholder: "https://seuapp.com/callback", value: "" }] },
     // ═══ Outras ═══
@@ -115,14 +115,14 @@ export const providerMap: Record<string, string> = {
 export const credentialKeyMap: Record<string, string[]> = {
     anthropic: ["apiKey", "model", "maxTokens"],
     brevo: ["apiKey", "fromEmail", "fromName"],
-    whatsapp: ["accessToken", "phoneNumberId", "businessAccountId", "verifyToken", "assignees"],
+    whatsapp: ["accessToken", "phoneNumberId", "businessAccountId", "verifyToken"],
     synthflow: ["apiKey", "modelId"],
     google_calendar: ["clientId", "clientSecret", "redirectUri"],
     proposal_openai: ["apiKey", "model", "maxTokens", "temperature"],
     proposal_brevo: ["apiKey", "fromEmail", "fromName"],
     proposal_whisper: ["apiKey", "model"],
     proposal_minimax: ["apiKey", "model", "maxTokens"],
-    inbound_webhook: ["secretToken", "assignees"],
+    inbound_webhook: ["secretToken"],
 };
 
 /* ═══ Helper: find integration by ID ═══ */

@@ -58,7 +58,16 @@ interface Funnel {
     isDefault: boolean;
     active: boolean;
     stages: Stage[];
+    assigneeIds: string[];
     createdAt: string;
+}
+
+interface AppUser {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+    avatar?: string;
 }
 
 const initialFunnels: Funnel[] = [
@@ -102,6 +111,7 @@ export default function FunnelsPage() {
     const [funnels, setFunnels] = useState<Funnel[]>([]);
     const [expandedId, setExpandedId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [users, setUsers] = useState<AppUser[]>([]);
 
     const loadFunnels = async () => {
         try {
@@ -118,14 +128,23 @@ export default function FunnelsPage() {
         }
     };
 
+    const loadUsers = async () => {
+        try {
+            const { data } = await api<AppUser[]>('/api/users');
+            setUsers((data || []).filter((u: AppUser) => u.role !== "CLIENT"));
+        } catch (e) { console.error(e); }
+    };
+
     useEffect(() => {
         loadFunnels();
+        loadUsers();
     }, []);
 
     // New funnel modal
     const [showNewModal, setShowNewModal] = useState(false);
     const [newName, setNewName] = useState("");
     const [newDesc, setNewDesc] = useState("");
+    const [newAssignees, setNewAssignees] = useState<string[]>([]);
 
     // Add stage modal
     const [addStageFor, setAddStageFor] = useState<string | null>(null);
@@ -141,6 +160,7 @@ export default function FunnelsPage() {
     const [editingFunnel, setEditingFunnel] = useState<Funnel | null>(null);
     const [editFunnelName, setEditFunnelName] = useState("");
     const [editFunnelDesc, setEditFunnelDesc] = useState("");
+    const [editAssignees, setEditAssignees] = useState<string[]>([]);
 
     // Delete confirmation
     const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
@@ -151,12 +171,12 @@ export default function FunnelsPage() {
         try {
             const response = await api<Funnel>('/api/funnels', {
                 method: "POST",
-                body: { name: newName.trim(), description: newDesc.trim() }
+                body: { name: newName.trim(), description: newDesc.trim(), assigneeIds: newAssignees }
             });
             await loadFunnels();
             if (response.data) setExpandedId(response.data.id);
             setShowNewModal(false);
-            setNewName(""); setNewDesc("");
+            setNewName(""); setNewDesc(""); setNewAssignees([]);
         } catch (e) { console.error(e); }
     };
 
@@ -201,6 +221,7 @@ export default function FunnelsPage() {
         setEditingFunnel(f);
         setEditFunnelName(f.name);
         setEditFunnelDesc(f.description);
+        setEditAssignees(f.assigneeIds || []);
     };
 
     const saveEditFunnel = async () => {
@@ -208,9 +229,9 @@ export default function FunnelsPage() {
         try {
             await api(`/api/funnels/${editingFunnel.id}`, {
                 method: "PUT",
-                body: { name: editFunnelName.trim(), description: editFunnelDesc.trim() }
+                body: { name: editFunnelName.trim(), description: editFunnelDesc.trim(), assigneeIds: editAssignees }
             });
-            setFunnels(prev => prev.map(f => f.id === editingFunnel.id ? { ...f, name: editFunnelName.trim(), description: editFunnelDesc.trim() } : f));
+            setFunnels(prev => prev.map(f => f.id === editingFunnel.id ? { ...f, name: editFunnelName.trim(), description: editFunnelDesc.trim(), assigneeIds: editAssignees } : f));
             setEditingFunnel(null);
         } catch (e) { console.error(e); }
     };
@@ -524,6 +545,21 @@ export default function FunnelsPage() {
                                     <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 block mb-1.5">Descrição</label>
                                     <textarea rows={2} value={newDesc} onChange={(e) => setNewDesc(e.target.value)} placeholder="Para que tipo de venda este funil será usado..." className="w-full px-4 py-2.5 bg-slate-800/50 border border-white/[0.08] rounded-xl text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40 resize-none" />
                                 </div>
+                                <div>
+                                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 block mb-2">Distribuir Leads para (Round-Robin)</label>
+                                    <p className="text-[10px] text-slate-600 mb-2">Os leads serão distribuídos igualitariamente entre os vendedores selecionados, independentemente do canal de entrada (WhatsApp, formulário, webhook).</p>
+                                    <div className="space-y-1 max-h-40 overflow-y-auto">
+                                        {users.map(u => (
+                                            <button key={u.id} type="button" onClick={() => setNewAssignees(prev => prev.includes(u.id) ? prev.filter(id => id !== u.id) : [...prev, u.id])} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${newAssignees.includes(u.id) ? 'bg-blue-500/15 border border-blue-500/30 text-blue-300' : 'bg-slate-800/30 border border-white/[0.04] text-slate-400 hover:border-white/[0.08]'}`}>
+                                                <div className={`w-5 h-5 rounded-md border flex items-center justify-center text-[10px] font-bold transition-all ${newAssignees.includes(u.id) ? 'bg-blue-500 border-blue-400 text-white' : 'border-slate-600'}`}>{newAssignees.includes(u.id) ? '✓' : ''}</div>
+                                                <span className="truncate">{u.name}</span>
+                                                <span className="text-[10px] text-slate-600 ml-auto">{u.role}</span>
+                                            </button>
+                                        ))}
+                                        {users.length === 0 && <p className="text-xs text-slate-600 py-2">Nenhum usuário encontrado</p>}
+                                    </div>
+                                    {newAssignees.length > 0 && <p className="text-[10px] text-blue-400 mt-1.5">{newAssignees.length} vendedor(es) selecionado(s)</p>}
+                                </div>
                                 <p className="text-[10px] text-slate-600">O funil será criado com 3 etapas iniciais: <span className="text-slate-400">Novo Lead → Ganho → Perdido</span></p>
                             </div>
                             <div className="p-6 border-t border-white/[0.06] flex justify-end gap-3">
@@ -554,6 +590,21 @@ export default function FunnelsPage() {
                                 <div>
                                     <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 block mb-1.5">Descrição</label>
                                     <textarea rows={2} value={editFunnelDesc} onChange={(e) => setEditFunnelDesc(e.target.value)} className="w-full px-4 py-2.5 bg-slate-800/50 border border-white/[0.08] rounded-xl text-sm text-white focus:outline-none focus:border-cyan-500/40 resize-none" />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 block mb-2">Distribuir Leads para (Round-Robin)</label>
+                                    <p className="text-[10px] text-slate-600 mb-2">Os leads serão distribuídos igualitariamente entre os vendedores selecionados.</p>
+                                    <div className="space-y-1 max-h-40 overflow-y-auto">
+                                        {users.map(u => (
+                                            <button key={u.id} type="button" onClick={() => setEditAssignees(prev => prev.includes(u.id) ? prev.filter(id => id !== u.id) : [...prev, u.id])} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${editAssignees.includes(u.id) ? 'bg-blue-500/15 border border-blue-500/30 text-blue-300' : 'bg-slate-800/30 border border-white/[0.04] text-slate-400 hover:border-white/[0.08]'}`}>
+                                                <div className={`w-5 h-5 rounded-md border flex items-center justify-center text-[10px] font-bold transition-all ${editAssignees.includes(u.id) ? 'bg-blue-500 border-blue-400 text-white' : 'border-slate-600'}`}>{editAssignees.includes(u.id) ? '✓' : ''}</div>
+                                                <span className="truncate">{u.name}</span>
+                                                <span className="text-[10px] text-slate-600 ml-auto">{u.role}</span>
+                                            </button>
+                                        ))}
+                                        {users.length === 0 && <p className="text-xs text-slate-600 py-2">Nenhum usuário encontrado</p>}
+                                    </div>
+                                    {editAssignees.length > 0 && <p className="text-[10px] text-blue-400 mt-1.5">{editAssignees.length} vendedor(es) selecionado(s)</p>}
                                 </div>
                             </div>
                             <div className="p-6 border-t border-white/[0.06] flex justify-end gap-3">

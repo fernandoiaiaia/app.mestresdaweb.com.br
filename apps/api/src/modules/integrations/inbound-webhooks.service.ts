@@ -1,5 +1,6 @@
 import { prisma } from "../../config/database.js";
 import { logger } from "../../lib/logger.js";
+import { leadAssignmentService } from "../../lib/lead-assignment.service.js";
 
 export const inboundWebhooksService = {
     async processIncoming(secretToken: string, payload: any) {
@@ -22,27 +23,11 @@ export const inboundWebhooksService = {
             throw new Error("Token de webhook inválido, desativado ou não encontrado.");
         }
 
-        // 2. Round-Robin Lead Assignment logic
-        const credentials = setting.credentials as any;
-        let assignees: string[] = [];
-        try {
-            assignees = JSON.parse(credentials.assignees || "[]");
-        } catch { }
-
-        let assignedUserId = setting.userId; // Default creator of the integration
-        
-        if (assignees.length > 0) {
-            const metadata = (setting.metadata as any) || {};
-            let lastIndex = metadata.lastAssignedIndex ?? -1;
-            lastIndex = (lastIndex + 1) % assignees.length;
-            assignedUserId = assignees[lastIndex];
-
-            // Persist the pointer
-            await prisma.integrationSetting.update({
-                where: { id: setting.id },
-                data: { metadata: { ...metadata, lastAssignedIndex: lastIndex } }
-            });
-        }
+        // 2. Resolve assignee via centralized Lead Assignment (Affinity + Round-Robin)
+        const assignedUserId = await leadAssignmentService.resolveAssignee(
+            payload.phone?.trim() || null,
+            payload.email?.trim()?.toLowerCase() || null
+        );
 
         // Validate payload minimally
         if (!payload.name?.trim()) {

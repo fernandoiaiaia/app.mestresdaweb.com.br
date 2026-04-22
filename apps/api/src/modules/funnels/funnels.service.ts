@@ -8,6 +8,7 @@ interface JwtUser {
 interface CreateFunnelDto {
     name: string;
     description?: string;
+    assigneeIds?: string[];
 }
 
 interface UpdateFunnelDto {
@@ -15,6 +16,7 @@ interface UpdateFunnelDto {
     description?: string;
     active?: boolean;
     isDefault?: boolean;
+    assigneeIds?: string[];
 }
 
 interface AddStageDto {
@@ -90,6 +92,7 @@ export const funnelsService = {
                 userId: user.userId,
                 isDefault: existingFunnelsCount === 0,
                 orderIndex: existingFunnelsCount,
+                assigneeIds: data.assigneeIds || [],
                 stages: {
                     create: [
                         { name: "Novo Lead", color: "blue", orderIndex: 0 },
@@ -109,9 +112,14 @@ export const funnelsService = {
                 data: { isDefault: false }
             });
         }
+        const updateData: any = { ...data };
+        // Reset Round-Robin pointer when assignees change
+        if (data.assigneeIds) {
+            updateData.lastAssignedIndex = -1;
+        }
         return prisma.funnel.update({
             where: { id, userId: user.userId },
-            data
+            data: updateData
         });
     },
 

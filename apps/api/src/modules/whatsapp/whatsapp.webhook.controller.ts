@@ -3,6 +3,7 @@ import { prisma } from "../../config/database.js";
 import { logger } from "../../lib/logger.js";
 import { WhatsappService } from "./whatsapp.service.js";
 import { whatsappEvents } from "./whatsapp.events.js";
+import { leadAssignmentService } from "../../lib/lead-assignment.service.js";
 
 const router = Router();
 
@@ -123,21 +124,28 @@ export async function processWhatsappWebhookForInbox(body: any): Promise<void> {
                             }
                         });
 
-                        // get or create Conversation for this user and contact
+                        // get or create Conversation for this contact
+                        // First check if ANY conversation exists for this contact (regardless of assignee)
                         let conversation = await prisma.whatsappConversation.findFirst({
-                            where: { contactId: contact.id, assigneeId: userId }
+                            where: { contactId: contact.id }
                         });
 
                         if (!conversation) {
+                            // NEW contact — use Lead Assignment (Affinity + Round-Robin)
+                            const resolvedAssignee = await leadAssignmentService.resolveAssignee(fromPhone, null);
                             conversation = await prisma.whatsappConversation.create({
                                 data: {
                                     contactId: contact.id,
-                                    assigneeId: userId,
+                                    assigneeId: resolvedAssignee,
                                     status: "open",
                                     unreadCount: 0
                                 }
                             });
+                            logger.info({ resolvedAssignee, contactPhone: fromPhone }, "[WA Webhook] New conversation assigned via LeadAssignment");
                         }
+
+                        // Use the conversation's assignee as the userId for events
+                        const conversationUserId = conversation.assigneeId || userId;
 
                         // Store Message
                         const savedMessage = await prisma.whatsappMessage.create({
@@ -173,8 +181,8 @@ export async function processWhatsappWebhookForInbox(body: any): Promise<void> {
                             }
                         });
 
-                        // Emit SSE Real-Time Event for this specific User ID
-                        whatsappEvents.emit(`user_${userId}`, {
+                        // Emit SSE Real-Time Event for the assigned salesperson
+                        whatsappEvents.emit(`user_${conversationUserId}`, {
                             type: "NEW_MESSAGE",
                             data: {
                                 message: savedMessage,

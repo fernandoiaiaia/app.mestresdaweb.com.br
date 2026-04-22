@@ -131,12 +131,21 @@ export const useAuthStore = create<AuthState>((set) => ({
                 set({ user, isAuthenticated: true, isLoading: false });
 
                 // Refresh user data from API in background to keep allowedApps etc. in sync
-                api<AuthUser>("/api/users/me").then((res) => {
+                api<AuthUser>("/api/auth/me").then((res) => {
                     if (res.success && res.data) {
                         localStorage.setItem("user", JSON.stringify(res.data));
                         set({ user: res.data });
+                    } else {
+                        // If token is invalid/expired
+                        clearTokens();
+                        set({ user: null, isAuthenticated: false });
+                        window.location.href = "/login";
                     }
-                }).catch(() => { /* silently ignore — user stays with cached data */ });
+                }).catch(() => {
+                    clearTokens();
+                    set({ user: null, isAuthenticated: false });
+                    window.location.href = "/login";
+                });
             } catch {
                 clearTokens();
                 set({ user: null, isAuthenticated: false, isLoading: false });

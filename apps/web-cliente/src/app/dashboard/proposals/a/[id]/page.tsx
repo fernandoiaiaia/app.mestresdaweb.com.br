@@ -7,8 +7,10 @@ import {
     CheckCircle2, ChevronRight, ChevronLeft, Layers,
     ShieldCheck, Sparkles, Download, ArrowLeft,
     Monitor, Smartphone, Globe, Cpu, Terminal, Loader2, Users,
-    MessageCircle, Send, X
+    MessageCircle, Send, X,
+    MessageSquare, FileText, Package, Smartphone as SmartphoneAlt, Headphones
 } from "lucide-react";
+import Image from "next/image";
 import { fetchAssembledProposal, fetchScreenFeedback, postScreenFeedback, type ClientProposal, type ScreenFeedback } from "@/lib/proposals-api";
 import MatrixRain from "@/components/shared/MatrixRain";
 
@@ -20,6 +22,21 @@ interface ScopePlatform { id: string; platformName: string; objective?: string; 
 interface ScopeUserNode { id: string; userName: string; platforms: ScopePlatform[]; }
 interface ScopeIntegration { id: string; title: string; description: string; estimatedHours?: number; }
 interface CompleteScope { id: string; title?: string; clientId?: string; validityDays?: number; projectSummary?: string; users: ScopeUserNode[]; integrations: ScopeIntegration[]; createdAt: string; }
+
+function getRoleDescription(role: string): string {
+    const r = role.toLowerCase();
+    if (r.includes('ui/ux') || r.includes('designer')) return 'Desenha telas, fluxos de navegação e garante a melhor usabilidade (UX).';
+    if (r.includes('front end') || r.includes('frontend')) return 'Engenheiro da camada visual, transformando o design em código de alta performance.';
+    if (r.includes('back end') || r.includes('backend')) return 'Engenheiro focado no banco de dados, regras de negócio complexas, segurança e rotas de API.';
+    if (r.includes('full stack') || r.includes('fullstack')) return 'Engenheiro versátil capaz de atuar de ponta a ponta na aplicação, do frontend ao banco.';
+    if (r.includes('mobile') || r.includes('ios') || r.includes('android')) return 'Especialista em aplicativos nativos ou cross-platform arquitetados para iOS e Android.';
+    if (r.includes('qa') || r.includes('quality') || r.includes('tester')) return 'Analista responsável por mapear, validar e blindar o software contra bugs em produção.';
+    if (r.includes('devops') || r.includes('infra')) return 'Arquiteta servidores cloud e integrações contínuas (CI/CD) para sustentar tráfego.';
+    if (r.includes('scrum') || r.includes('agile') || r.includes('product owner') || r.includes('po ') || r.includes('manager')) return 'Gestor estratégico do produto, priorizando tarefas da equipe focando em valor para o negócio.';
+    if (r.includes('tech lead') || r.includes('arquiteto') || r.includes('architect')) return 'Líder visionário que desenha arquiteturas hiper escaláveis para previnir código legado.';
+    if (r.includes('data') || r.includes('dados') || r.includes('intelligence')) return 'Especialista analítico em cruzar banco de dados para extrair inteligência e relatórios.';
+    return 'Profissional especializado escalado ativamente para focar na entrega de excelência do projeto.';
+}
 
 interface PresentationScreen { id: string; title: string; screenDescription: string; features: { title: string; description: string }[]; complexity: string; estimatedHours: number; moduleTitle: string; platformId: string; }
 interface PresentationModule { id: string; title: string; screens: PresentationScreen[]; }
@@ -234,7 +251,7 @@ function PrintLayout({ scope, client, totalHours, totalValue, timeline, team = [
                         {team.map((member, idx) => (
                             <div key={idx} style={{ padding: '12px 14px', border: `1px solid ${ADS.border}`, borderRadius: '9px', breakInside: 'avoid' }}>
                                 <h4 style={{ fontSize: '9pt', fontWeight: 600, color: ADS.text, margin: '0 0 4px' }}>{member.role}</h4>
-                                <p style={{ fontSize: '7.5pt', color: ADS.muted, margin: 0, lineHeight: 1.5 }}>Arquiteto responsável por garantir a robustez técnica e escalabilidade da solução.</p>
+                                <p style={{ fontSize: '7.5pt', color: ADS.muted, margin: 0, lineHeight: 1.5 }}>{getRoleDescription(member.role)}</p>
                             </div>
                         ))}
                     </div>
@@ -486,14 +503,30 @@ export default function AssembledProposalPage({ params }: { params: Promise<{ id
                     <div><div className="flex items-center gap-2 mb-1"><Sparkles size={12} className="text-[#2997ff]" /><span className="text-[10px] font-bold text-[#86868b] uppercase tracking-[0.2em]">Padrão Ouro de Engenharia</span></div><h1 className="text-xl font-semibold tracking-tight">{proposal?.title || "Proposta Técnica"}</h1></div>
                 </div>
                 <div className="hidden lg:flex items-center bg-slate-800/60 rounded-full p-1 border border-slate-700/50">
-                    {['overview', 'scope', 'team', 'investment'].map((t) => (
-                        <button key={t} onClick={() => setActiveTab(t as typeof activeTab)} className={`px-5 py-1.5 rounded-full font-medium text-[13px] transition-all relative ${activeTab === t ? 'text-black' : 'text-[#86868b] hover:text-white'}`}>
-                            {activeTab === t && <motion.div layoutId="client-tab" className="absolute inset-0 bg-white rounded-full -z-10 shadow-sm" transition={{ type: "spring", stiffness: 450, damping: 30 }} />}
-                            {t === 'overview' ? 'Visão Geral' : t === 'scope' ? 'Escopo' : t === 'team' ? 'Equipe Global' : 'Investimento'}
+                    {[
+                        { id: 'overview', label: 'Visão Geral' },
+                        ...(platforms.length > 0 ? [{ id: 'scope', label: 'Escopo' }] : []),
+                        ...(team.length > 0 ? [{ id: 'team', label: 'Equipe Global' }] : []),
+                        { id: 'tracking', label: 'Acompanhamento' },
+                        { id: 'investment', label: 'Investimento' },
+                    ].map((tab) => (
+                        <button key={tab.id} onClick={() => setActiveTab(tab.id as typeof activeTab)} className={`px-5 py-1.5 rounded-full font-medium text-[13px] transition-all relative ${activeTab === tab.id ? 'text-black' : 'text-[#86868b] hover:text-white'}`}>
+                            {activeTab === tab.id && <motion.div layoutId="client-tab" className="absolute inset-0 bg-white rounded-full -z-10 shadow-sm" transition={{ type: "spring", stiffness: 450, damping: 30 }} />}
+                            {tab.label}
                         </button>
                     ))}
                 </div>
-                <div className="flex flex-col items-end"><p className="text-[10px] uppercase tracking-widest font-semibold text-[#86868b]">Para: {proposal?.clientName || "Cliente"}</p><p className="text-xs text-[#f5f5f7] mt-1">{new Date(scope.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}</p></div>
+                <div className="hidden lg:flex items-center gap-6">
+                    <button onClick={() => window.open('http://localhost:1100/presentation-mestres', '_blank')}
+                        className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-800/80 hover:bg-slate-700 text-white font-semibold text-[13px] transition-colors border border-slate-700/50 shadow-sm"
+                    >
+                        <Sparkles size={14} className="text-[#2997ff]" /> Conheça a Mestres
+                    </button>
+                    <div className="flex flex-col items-end border-l border-slate-700/50 pl-6">
+                        <p className="text-[10px] uppercase tracking-widest font-semibold text-[#86868b]">Para: {proposal?.clientName || "Cliente"}</p>
+                        <p className="text-xs text-[#f5f5f7] mt-1">{new Date(scope.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
+                    </div>
+                </div>
             </header>
 
             <main className="flex-1 w-full relative overflow-hidden flex z-10 p-4 md:p-8">
@@ -691,8 +724,8 @@ export default function AssembledProposalPage({ params }: { params: Promise<{ id
                             className="w-full h-full flex items-center px-4 md:px-12 overflow-x-auto overflow-y-hidden snap-x snap-mandatory hide-native-scrollbar gap-6 md:gap-8">
                             
                             <div className="w-[300px] md:w-[400px] shrink-0 snap-center md:pl-10">
-                                <h3 className="text-4xl md:text-[60px] leading-[1.05] font-semibold tracking-tighter text-white mb-4 md:mb-6">Engenharia de <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-[#2997ff] to-[#a020f0]">Alta Performance.</span></h3>
-                                <p className="text-lg md:text-xl text-[#86868b] font-light max-w-[300px]">Especialistas escalados rigorosamente para garantir a execução primorosa do seu projeto.</p>
+                                <h3 className="text-4xl md:text-[60px] leading-[1.05] font-semibold tracking-tighter text-white mb-4 md:mb-6">Times de <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-[#2997ff] to-[#a020f0]">Alta Perfomance.</span></h3>
+                                <p className="text-lg md:text-xl text-[#86868b] font-light max-w-[300px]">Engenheiros especialistas escalados para garantir a execução primorosa do seu projeto.</p>
                             </div>
                             
                             {team.map((member, idx) => (
@@ -700,14 +733,163 @@ export default function AssembledProposalPage({ params }: { params: Promise<{ id
                                     <div className="absolute top-0 right-0 w-[200px] h-[200px] bg-gradient-to-br from-[#2997ff]/20 to-[#a020f0]/10 opacity-0 group-hover:opacity-100 transition-opacity blur-3xl pointer-events-none rounded-full" />
                                     
                                     <div className="flex items-start justify-between mb-auto z-10 w-full">
-                                        <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-slate-900/80 border border-slate-700/50 flex items-center justify-center text-slate-200 shadow-xl group-hover:scale-110 transition-transform"><Terminal size={24} className="md:w-7 md:h-7" /></div>
+                                        <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-slate-900/80 border border-slate-700/50 flex items-center justify-center text-slate-200 shadow-xl group-hover:scale-110 transition-transform"><Users size={24} className="md:w-7 md:h-7" /></div>
                                     </div>
                                     <div className="z-10 w-full pb-2 pt-6">
                                         <h4 className="text-xl md:text-2xl font-semibold text-white mb-2 md:mb-4 tracking-tight">{member.role}</h4>
-                                        <p className="text-[14px] md:text-[15px] font-light text-[#86868b] leading-relaxed">Arquiteto responsável por garantir a robustez técnica e escalabilidade da solução.</p>
+                                        <p className="text-[14px] md:text-[15px] font-light text-[#86868b] leading-relaxed">{getRoleDescription(member.role)}</p>
                                     </div>
                                 </div>
                             ))}
+                            <div className="w-20 shrink-0" />
+                        </motion.div>
+                    )}
+
+                    {/* TRACKING — Módulos do Software de Acompanhamento */}
+                    {activeTab === 'tracking' && (
+                        <motion.div key="tr" initial="hidden" animate="visible" exit={{ opacity: 0, scale: 0.98, transition: { duration: 0.2 } }} variants={staggerContainer}
+                            ref={mainScrollRef}
+                            className="w-full h-full flex items-center px-4 md:px-12 overflow-x-auto overflow-y-hidden snap-x snap-mandatory hide-native-scrollbar gap-6 md:gap-8">
+
+                            {/* Intro card */}
+                            <motion.div variants={fadeLeft} className="w-[340px] md:w-[420px] shrink-0 snap-center pl-4 md:pl-10">
+                                <h3 className="text-4xl md:text-[56px] leading-[1.05] font-semibold tracking-tighter text-white mb-4 md:mb-6">
+                                    Como acompanhar<br />
+                                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#2997ff] to-[#30d158]">meu projeto?</span>
+                                </h3>
+                                <p className="text-lg md:text-xl text-[#86868b] font-light max-w-[380px] leading-relaxed mb-6">
+                                    Através do nosso Software e App interativo, você acompanha todo o desenvolvimento em tempo real. Todos os módulos ficam disponíveis simultaneamente para sua consulta.
+                                </p>
+                                <div className="flex items-center gap-3 text-[#86868b]">
+                                    <div className="flex items-center gap-1.5">
+                                        <div className="w-3 h-3 rounded-full bg-gradient-to-r from-[#2997ff] to-[#30d158]" />
+                                        <span className="text-xs font-medium">Software + App</span>
+                                    </div>
+                                    <span className="text-white/20">•</span>
+                                    <span className="text-xs">Deslize para explorar →</span>
+                                </div>
+                            </motion.div>
+
+                            {/* Module cards */}
+                            {[
+                                {
+                                    title: "Proposta Comercial",
+                                    subtitle: "Visualização & Impressão",
+                                    description: "Consulte sua proposta técnica completa com escopo detalhado, investimento e condições a qualquer momento. Visualize, imprima ou baixe em PDF — tudo organizado e sempre acessível.",
+                                    image: "/images/Proposta.png",
+                                    gradient: "from-[#2997ff] to-[#5ac8fa]",
+                                    glowColor: "rgba(41,151,255,0.12)",
+                                    icon: FileText,
+                                },
+                                {
+                                    title: "Dashboard do Projeto",
+                                    subtitle: "Visão Geral & Métricas",
+                                    description: "Acompanhe o progresso geral do seu projeto com gráficos intuitivos, indicadores de performance e status em tempo real. Saiba exatamente em que ponto cada entrega se encontra.",
+                                    image: "/images/Dashboard.png",
+                                    gradient: "from-[#30d158] to-[#34c759]",
+                                    glowColor: "rgba(48,209,88,0.12)",
+                                    icon: Layers,
+                                },
+                                {
+                                    title: "Telas & Funcionalidades",
+                                    subtitle: "Acompanhamento Granular",
+                                    description: "Visualize cada tela e funcionalidade individualmente. Envie feedbacks contextualizados, solicite ajustes e aprove entregas — tudo organizado por módulo e tela.",
+                                    image: "/images/Telas e Funcionalidades.png",
+                                    gradient: "from-[#a020f0] to-[#bf5af2]",
+                                    glowColor: "rgba(160,32,240,0.12)",
+                                    icon: Monitor,
+                                },
+                                {
+                                    title: "Documentos",
+                                    subtitle: "Central de Documentação",
+                                    description: "Acesse todos os documentos do projeto: contratos, briefings, wireframes, atas de reunião e materiais de referência — centralizados e sempre atualizados.",
+                                    image: "/images/Documentos.png",
+                                    gradient: "from-[#ff9f0a] to-[#ff6723]",
+                                    glowColor: "rgba(255,159,10,0.12)",
+                                    icon: FileText,
+                                },
+                                {
+                                    title: "Entregas",
+                                    subtitle: "Registro & Validação",
+                                    description: "Cada entrega é documentada com detalhes, prints e registros. Além das reuniões online de apresentação, tudo fica registrado no software e app para consulta futura.",
+                                    image: "/images/Entrega.png",
+                                    gradient: "from-[#ff375f] to-[#ff6482]",
+                                    glowColor: "rgba(255,55,95,0.12)",
+                                    icon: Package,
+                                },
+                            ].map((mod, idx) => (
+                                <motion.div variants={fadeLeft} key={idx} className="w-[380px] md:w-[520px] shrink-0 snap-center group relative">
+                                    {/* Glow */}
+                                    <div className="absolute -inset-2 rounded-[36px] opacity-0 group-hover:opacity-100 transition-opacity duration-700 blur-2xl pointer-events-none" style={{ background: `radial-gradient(ellipse at center, ${mod.glowColor}, transparent 70%)` }} />
+                                    
+                                    <div className="relative bg-slate-800/50 border border-slate-700/40 rounded-[28px] md:rounded-[32px] overflow-hidden backdrop-blur-md hover:border-slate-600/50 transition-all duration-500">
+                                        {/* Top accent */}
+                                        <div className="h-[2px] bg-gradient-to-r from-transparent via-current to-transparent opacity-40" style={{ color: mod.glowColor.replace('0.12', '1') }} />
+                                        
+                                        {/* Screenshot */}
+                                        <div className="relative overflow-hidden">
+                                            <Image
+                                                src={mod.image}
+                                                alt={mod.title}
+                                                width={1200}
+                                                height={700}
+                                                className="w-full h-[200px] md:h-[260px] object-cover object-top group-hover:scale-[1.02] transition-transform duration-700"
+                                            />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-transparent to-transparent" />
+                                            {/* Module icon overlay */}
+                                            <div className="absolute top-4 left-4">
+                                                <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r ${mod.gradient} shadow-lg`}>
+                                                    <mod.icon size={12} className="text-white" />
+                                                    <span className="text-[10px] font-bold tracking-[0.1em] uppercase text-white">{mod.title}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Text content */}
+                                        <div className="p-5 md:p-7">
+                                            <p className="text-[10px] font-semibold tracking-[0.15em] uppercase text-[#86868b] mb-1.5">{mod.subtitle}</p>
+                                            <h4 className="text-xl md:text-2xl font-semibold text-white tracking-tight mb-3">{mod.title}</h4>
+                                            <p className="text-[13px] md:text-[14px] font-light text-[#86868b] leading-relaxed">{mod.description}</p>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            ))}
+
+                            {/* WhatsApp card */}
+                            <motion.div variants={fadeLeft} className="w-[380px] md:w-[520px] shrink-0 snap-center group relative">
+                                <div className="absolute -inset-2 rounded-[36px] opacity-0 group-hover:opacity-100 transition-opacity duration-700 blur-2xl pointer-events-none" style={{ background: 'radial-gradient(ellipse at center, rgba(37,211,102,0.12), transparent 70%)' }} />
+                                
+                                <div className="relative bg-slate-800/50 border border-slate-700/40 rounded-[28px] md:rounded-[32px] overflow-hidden backdrop-blur-md hover:border-[#25D366]/30 transition-all duration-500">
+                                    {/* Top accent */}
+                                    <div className="h-[2px] bg-gradient-to-r from-transparent via-[#25D366] to-transparent opacity-40" />
+                                    
+                                    {/* Hero area — same height as screenshots */}
+                                    <div className="relative h-[200px] md:h-[260px] bg-gradient-to-br from-[#25D366]/10 via-[#128C7E]/5 to-slate-900/50 flex items-center justify-center overflow-hidden">
+                                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(37,211,102,0.15),transparent_60%)]" />
+                                        <div className="w-24 h-24 md:w-28 md:h-28 rounded-3xl bg-gradient-to-br from-[#25D366] to-[#128C7E] flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform duration-500" style={{ boxShadow: '0 20px 60px rgba(37,211,102,0.25)' }}>
+                                            <Headphones size={40} className="text-white md:w-12 md:h-12" />
+                                        </div>
+                                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-transparent to-transparent" />
+                                        {/* Module badge */}
+                                        <div className="absolute top-4 left-4">
+                                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-[#25D366] to-[#128C7E] shadow-lg">
+                                                <Headphones size={12} className="text-white" />
+                                                <span className="text-[10px] font-bold tracking-[0.1em] uppercase text-white">WhatsApp</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Text content */}
+                                    <div className="p-5 md:p-7">
+                                        <p className="text-[10px] font-semibold tracking-[0.15em] uppercase text-[#86868b] mb-1.5">Comunicação Direta</p>
+                                        <h4 className="text-xl md:text-2xl font-semibold text-white tracking-tight mb-3">Grupo no WhatsApp</h4>
+                                        <p className="text-[13px] md:text-[14px] font-light text-[#86868b] leading-relaxed">
+                                            Além do software, você terá um grupo exclusivo no WhatsApp com seu gestor de projeto para comunicação ágil, alinhamentos rápidos e atualizações em tempo real.
+                                        </p>
+                                    </div>
+                                </div>
+                            </motion.div>
+
                             <div className="w-20 shrink-0" />
                         </motion.div>
                     )}

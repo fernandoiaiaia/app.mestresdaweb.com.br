@@ -131,21 +131,14 @@ export const useAuthStore = create<AuthState>((set) => ({
                 set({ user, isAuthenticated: true, isLoading: false });
 
                 // Refresh user data from API in background to keep allowedApps etc. in sync
-                api<AuthUser>("/api/auth/me").then((res) => {
-                    if (res.success && res.data) {
-                        localStorage.setItem("user", JSON.stringify(res.data));
-                        set({ user: res.data });
-                    } else {
-                        // If token is invalid/expired
-                        clearTokens();
-                        set({ user: null, isAuthenticated: false });
-                        window.location.href = "/login";
+                api<{ user: AuthUser }>("/api/auth/me").then((res) => {
+                    if (res.success && res.data && res.data.user) {
+                        localStorage.setItem("user", JSON.stringify(res.data.user));
+                        set({ user: res.data.user });
                     }
-                }).catch(() => {
-                    clearTokens();
-                    set({ user: null, isAuthenticated: false });
-                    window.location.href = "/login";
-                });
+                    // If the call fails (401, network error), keep cached user — don't force logout
+                    // The token refresh logic in api() will handle truly expired tokens
+                }).catch(() => { /* silently ignore — user stays with cached data */ });
             } catch {
                 clearTokens();
                 set({ user: null, isAuthenticated: false, isLoading: false });

@@ -18,13 +18,14 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         }
     }, [isLoading, isAuthenticated, router]);
 
-    // App-level access check: Cliente app expects CLIENT role, ADMIN/OWNER, or 'hub' allowed list
+    // App-level access check: Cliente app expects CLIENT/VIEWER role, ADMIN/OWNER, or 'hub'/'client' in allowedApps
     const hasAppAccess =
         !user ||
         user.role === "OWNER" ||
         user.role === "ADMIN" ||
         user.role === "CLIENT" ||
-        (user.allowedApps && user.allowedApps.includes("hub"));
+        user.role === "VIEWER" ||
+        (user.allowedApps && (user.allowedApps.includes("hub") || user.allowedApps.includes("client")));
 
     if (isLoading) {
         return (

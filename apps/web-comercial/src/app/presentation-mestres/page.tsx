@@ -386,6 +386,73 @@ export default function CinematicMestresPresentation() {
                 {/* ─── DIVIDER ─── */}
                 <div className="mx-8 md:mx-16 h-px bg-gradient-to-r from-white/10 via-white/5 to-transparent" />
 
+                {/* ─── ACOMPANHAMENTO DO PROJETO ─── */}
+                <section className="relative px-8 md:px-16 py-32 overflow-hidden">
+                    {/* Decorative background orbs */}
+                    <div className="absolute top-1/4 -left-20 w-[400px] h-[400px] bg-cyan-500/5 rounded-full blur-[120px] pointer-events-none" />
+                    <div className="absolute bottom-0 right-0 w-[300px] h-[300px] bg-blue-600/5 rounded-full blur-[100px] pointer-events-none" />
+
+                    <Reveal>
+                        <p className="text-cyan-400 text-sm font-medium tracking-widest uppercase mb-4">Acompanhamento</p>
+                        <h2 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tight mb-6 leading-tight">
+                            Como acompanhar
+                            <br />
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-500">meu projeto?</span>
+                        </h2>
+                    </Reveal>
+
+                    <Reveal delay={0.15}>
+                        <p className="text-white/50 text-lg md:text-xl font-light leading-relaxed max-w-xl mb-16">
+                            Através do nosso <span className="text-white font-medium">Software e App interativo</span> que você irá acompanhar todo o desenvolvimento, enviar mensagens organizadas por telas, ver documentos, organizar entregas e muito mais. Também terá um <span className="text-white font-medium">grupo no WhatsApp</span> com seu gestor de projeto.
+                        </p>
+                    </Reveal>
+
+                    <Reveal delay={0.25}>
+                        <div className="relative group pointer-events-auto">
+                            {/* Glow backdrop */}
+                            <div className="absolute -inset-1 bg-gradient-to-br from-cyan-500/20 via-blue-600/10 to-indigo-500/20 rounded-[28px] blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                            
+                            {/* Card */}
+                            <div className="relative bg-white/[0.03] border border-white/[0.08] rounded-3xl overflow-hidden backdrop-blur-sm">
+                                {/* Top accent line */}
+                                <div className="h-[2px] bg-gradient-to-r from-transparent via-cyan-500/60 to-transparent" />
+                                
+                                {/* Image */}
+                                <div className="relative">
+                                    <Image 
+                                        src="/images/IMAGEM PROPOSTA.png" 
+                                        alt="Software e App de acompanhamento de projetos da Mestres da Web"
+                                        width={1200} 
+                                        height={700} 
+                                        className="w-full h-auto object-cover"
+                                        priority
+                                    />
+                                    {/* Subtle bottom fade */}
+                                    <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#0a0a0f]/60 to-transparent" />
+                                </div>
+
+                                {/* Bottom info strip */}
+                                <div className="flex flex-wrap items-center justify-center gap-6 md:gap-10 p-6 md:p-8 border-t border-white/[0.05]">
+                                    {[
+                                        { emoji: "💬", label: "Mensagens por tela" },
+                                        { emoji: "📄", label: "Documentos" },
+                                        { emoji: "📦", label: "Entregas organizadas" },
+                                        { emoji: "📱", label: "App Mobile" },
+                                    ].map((item, i) => (
+                                        <div key={i} className="flex items-center gap-2.5 text-white/50 hover:text-white/80 transition-colors">
+                                            <span className="text-lg">{item.emoji}</span>
+                                            <span className="text-xs md:text-sm font-medium tracking-wide">{item.label}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </Reveal>
+                </section>
+
+                {/* ─── DIVIDER ─── */}
+                <div className="mx-8 md:mx-16 h-px bg-gradient-to-r from-white/10 via-white/5 to-transparent" />
+
                 {/* ─── TEAM ─── */}
                 <section className="relative px-8 md:px-16 py-32">
                     <div className="relative rounded-3xl overflow-hidden pointer-events-auto">

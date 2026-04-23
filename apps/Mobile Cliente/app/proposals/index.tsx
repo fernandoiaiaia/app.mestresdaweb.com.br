@@ -8,14 +8,15 @@ import { useEffect, useState, useRef } from "react";
 import {
     View, Text, ScrollView, ActivityIndicator,
     StyleSheet, TouchableOpacity, Modal, Dimensions, Animated,
-    TextInput, KeyboardAvoidingView, Platform, Alert
+    TextInput, KeyboardAvoidingView, Platform, Alert, Image, Linking
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
     FileText, Calendar, DollarSign, ArrowLeft, ArrowRight,
     Clock, ScrollText, ChevronRight, ChevronLeft, Layers,
     ShieldCheck, Sparkles, Monitor, Smartphone, Terminal,
-    CheckCircle, X, Users, Globe, MessageCircle, Send, Download
+    CheckCircle, X, Users, Globe, MessageCircle, Send, Download,
+    MessageSquare, Package, Headphones
 } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { api } from "../../src/lib/api";
@@ -593,6 +594,17 @@ export default function ProposalsScreen() {
                                     <Text style={styles.headerEyebrowText}>PADRÃO OURO DE ENGENHARIA</Text>
                                 </View>
                                 <Text style={styles.headerTitle} numberOfLines={1}>{selected.title}</Text>
+                                <TouchableOpacity onPress={() => Linking.openURL('http://localhost:1100/presentation-mestres')} 
+                                    style={{ 
+                                        flexDirection: 'row', alignItems: 'center', gap: 6, 
+                                        backgroundColor: '#1E293B', paddingVertical: 8, paddingHorizontal: 16, 
+                                        borderRadius: 100, alignSelf: 'flex-start', marginTop: 8, 
+                                        borderWidth: 1, borderColor: '#334155',
+                                        shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4, elevation: 3
+                                    }}>
+                                    <Sparkles size={14} color="#2997ff" />
+                                    <Text style={{ fontSize: 13, fontWeight: '600', color: '#f8fafc' }}>Conheça a Mestres</Text>
+                                </TouchableOpacity>
                             </View>
                             <View style={{ alignItems: "flex-end" }}>
                                 <Text style={styles.headerClientLabel}>Para: {selected.clientName}</Text>
@@ -600,14 +612,13 @@ export default function ProposalsScreen() {
                             </View>
                         </View>
 
-                        {/* Tab bar */}
                         <View style={styles.tabBar}>
                             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabBarInner}>
-                                {(["overview", "scope", "team", "investment"] as const).map(t => (
+                                {(["overview", "scope", "team", "tracking", "investment"] as const).map(t => (
                                     <TouchableOpacity key={t} onPress={() => { setActiveTab(t); setScreenIdx(0); }}
                                         style={[styles.tabItem, activeTab === t && styles.tabItemActive]}>
                                         <Text style={[styles.tabLabel, activeTab === t && styles.tabLabelActive]}>
-                                            {t === "overview" ? "Visão Geral" : t === "scope" ? "Escopo" : t === "team" ? "Equipe" : "Investimento"}
+                                            {t === "overview" ? "Visão Geral" : t === "scope" ? "Escopo" : t === "team" ? "Equipe" : t === "tracking" ? "Acompanhamento" : "Investimento"}
                                         </Text>
                                     </TouchableOpacity>
                                 ))}
@@ -758,6 +769,95 @@ export default function ProposalsScreen() {
                                             <Text style={styles.teamDesc}>{m.description}</Text>
                                         </View>
                                     ))}
+                                </View>
+                            )}
+
+                            {/* TRACKING */}
+                            {activeTab === "tracking" && (
+                                <View style={styles.tabContent}>
+                                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 0, gap: 16, paddingBottom: 24 }} snapToInterval={SCREEN_W * 0.85 + 16} decelerationRate="fast">
+                                        
+                                        {/* Intro card */}
+                                        <View style={{ width: SCREEN_W * 0.85 }}>
+                                            <Text style={{ fontSize: 36, fontWeight: "800", color: WHT, marginBottom: 16, lineHeight: 40, letterSpacing: -1 }}>
+                                                Como acompanhar{"\n"}
+                                                <Text style={{ color: "#30d158" }}>meu projeto?</Text>
+                                            </Text>
+                                            <Text style={{ fontSize: 15, color: MUT2, lineHeight: 22, marginBottom: 24, fontWeight: "400" }}>
+                                                Através do nosso Software e App interativo, você acompanha todo o desenvolvimento em tempo real. Todos os módulos ficam disponíveis simultaneamente para sua consulta.
+                                            </Text>
+                                            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                                                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: "#30d158" }} />
+                                                <Text style={{ fontSize: 12, fontWeight: "700", color: MUT2, textTransform: "uppercase", letterSpacing: 0.5 }}>Software + App</Text>
+                                                <Text style={{ fontSize: 12, color: MUT }}>• Deslize para explorar →</Text>
+                                            </View>
+                                        </View>
+
+                                        {/* Modules */}
+                                        {[
+                                            {
+                                                title: "Proposta Comercial", subtitle: "Visualização & Impressão",
+                                                desc: "Consulte sua proposta técnica completa com escopo detalhado, investimento e condições a qualquer momento. Visualize, imprima ou baixe em PDF — tudo organizado e sempre acessível.",
+                                                img: require("../../assets/Proposta.png"), icon: FileText, color: "#2997ff"
+                                            },
+                                            {
+                                                title: "Dashboard do Projeto", subtitle: "Visão Geral & Métricas",
+                                                desc: "Acompanhe o progresso geral do seu projeto com gráficos intuitivos, indicadores de performance e status em tempo real. Saiba exatamente em que ponto cada entrega se encontra.",
+                                                img: require("../../assets/Dashboard.png"), icon: Layers, color: "#30d158"
+                                            },
+                                            {
+                                                title: "Telas & Funcionalidades", subtitle: "Acompanhamento Granular",
+                                                desc: "Visualize cada tela e funcionalidade individualmente. Envie feedbacks contextualizados, solicite ajustes e aprove entregas — tudo organizado por módulo e tela.",
+                                                img: require("../../assets/Telas e Funcionalidades.png"), icon: Monitor, color: "#a020f0"
+                                            },
+                                            {
+                                                title: "Documentos", subtitle: "Central de Documentação",
+                                                desc: "Acesse todos os documentos do projeto: contratos, briefings, wireframes, atas de reunião e materiais de referência — centralizados e sempre atualizados.",
+                                                img: require("../../assets/Documentos.png"), icon: FileText, color: "#ff9f0a"
+                                            },
+                                            {
+                                                title: "Entregas", subtitle: "Registro & Validação",
+                                                desc: "Cada entrega é documentada com detalhes, prints e registros. Além das reuniões online de apresentação, tudo fica registrado no software e app para consulta futura.",
+                                                img: require("../../assets/Entrega.png"), icon: Package, color: "#ff375f"
+                                            },
+                                        ].map((m, i) => (
+                                            <View key={i} style={{ width: SCREEN_W * 0.85, backgroundColor: "rgba(30,41,59,0.3)", borderRadius: 28, overflow: "hidden", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" }}>
+                                                <View style={{ height: 2, backgroundColor: m.color, opacity: 0.8 }} />
+                                                <View style={{ height: 200, backgroundColor: "#000" }}>
+                                                    <Image source={m.img} style={{ width: "100%", height: "100%", opacity: 0.9 }} resizeMode="cover" />
+                                                    <View style={{ position: "absolute", top: 16, left: 16, flexDirection: "row", alignItems: "center", backgroundColor: m.color, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 100 }}>
+                                                        <m.icon size={12} color="#fff" />
+                                                        <Text style={{ color: "#fff", fontSize: 10, fontWeight: "800", marginLeft: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>{m.title}</Text>
+                                                    </View>
+                                                </View>
+                                                <View style={{ padding: 24 }}>
+                                                    <Text style={{ fontSize: 10, fontWeight: "700", color: MUT2, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>{m.subtitle}</Text>
+                                                    <Text style={{ fontSize: 22, fontWeight: "700", color: WHT, marginBottom: 12, letterSpacing: -0.5 }}>{m.title}</Text>
+                                                    <Text style={{ fontSize: 14, color: MUT2, lineHeight: 22 }}>{m.desc}</Text>
+                                                </View>
+                                            </View>
+                                        ))}
+
+                                        {/* WhatsApp */}
+                                        <View style={{ width: SCREEN_W * 0.85, backgroundColor: "rgba(30,41,59,0.3)", borderRadius: 28, overflow: "hidden", borderWidth: 1, borderColor: "rgba(37,211,102,0.2)" }}>
+                                            <View style={{ height: 2, backgroundColor: "#25D366", opacity: 0.8 }} />
+                                            <View style={{ height: 200, backgroundColor: "rgba(37,211,102,0.05)", alignItems: "center", justifyContent: "center" }}>
+                                                <View style={{ width: 88, height: 88, borderRadius: 28, backgroundColor: "#25D366", alignItems: "center", justifyContent: "center", shadowColor: "#25D366", shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 20, elevation: 10 }}>
+                                                    <Headphones size={40} color="#fff" />
+                                                </View>
+                                                <View style={{ position: "absolute", top: 16, left: 16, flexDirection: "row", alignItems: "center", backgroundColor: "#25D366", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 100 }}>
+                                                    <Headphones size={12} color="#fff" />
+                                                    <Text style={{ color: "#fff", fontSize: 10, fontWeight: "800", marginLeft: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>WhatsApp</Text>
+                                                </View>
+                                            </View>
+                                            <View style={{ padding: 24 }}>
+                                                <Text style={{ fontSize: 10, fontWeight: "700", color: MUT2, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>Comunicação Direta</Text>
+                                                <Text style={{ fontSize: 22, fontWeight: "700", color: WHT, marginBottom: 12, letterSpacing: -0.5 }}>Grupo no WhatsApp</Text>
+                                                <Text style={{ fontSize: 14, color: MUT2, lineHeight: 22 }}>Além do software, você terá um grupo exclusivo no WhatsApp com seu gestor de projeto para comunicação ágil e alinhamentos rápidos.</Text>
+                                            </View>
+                                        </View>
+
+                                    </ScrollView>
                                 </View>
                             )}
 

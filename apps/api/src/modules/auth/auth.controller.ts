@@ -196,7 +196,7 @@ async function resetPassword(req: Request, res: Response): Promise<void> {
 }
 
 async function me(req: Request, res: Response): Promise<void> {
-    const userId = (req as any).user?.id || (req as any).userId;
+    const userId = (req as any).user?.id || (req as any).user?.userId || (req as any).userId;
     if (!userId) {
         res.status(401).json({ success: false, message: "Não autenticado" });
         return;
@@ -244,6 +244,7 @@ async function me(req: Request, res: Response): Promise<void> {
                 role: user.role,
                 phone: phoneNum,
                 company: companyName,
+                allowedApps: (user as any).allowedApps ?? [],
                 permissions,
             },
         },

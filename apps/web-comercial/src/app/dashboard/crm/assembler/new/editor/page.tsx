@@ -572,7 +572,10 @@ export default function EditorPage() {
     saveScopeDraft(scope);
     try {
       const saved = await saveProposalToList(scope);
-      if (!scope.id || scope.id.startsWith("draft_")) updateScope({ ...scope, id: saved.id });
+      // Always update the local scope id with the DB id to prevent duplicates on next save
+      if (!scope.id || scope.id.startsWith("draft_") || scope.id.startsWith("scope_")) {
+        updateScope({ ...scope, id: saved.id });
+      }
       toast.success("Proposta salva com sucesso!");
     } catch (e: unknown) {
       const err = e as Error;
@@ -814,13 +817,17 @@ export default function EditorPage() {
 
       <main className="relative z-10 max-w-[1000px] mx-auto px-6 pt-12 space-y-6">
 
+        {/* Project Title */}
+        <div className="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-6 backdrop-blur-md">
+          <div className="text-[10px] font-bold tracking-[0.2em] text-slate-500 uppercase mb-3">Nome do Projeto</div>
+          <EditableText value={scope.title || "Nova Proposta"} onChange={val => { const s = { ...scope }; s.title = val; updateScope(s); }} className="text-xl font-semibold text-white tracking-tight" />
+        </div>
+
         {/* Project Summary */}
-        {scope.projectSummary !== undefined && (
-          <div className="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-6 backdrop-blur-md">
-            <div className="text-[10px] font-bold tracking-[0.2em] text-slate-500 uppercase mb-3">Resumo Global do Projeto</div>
-            <EditableText value={scope.projectSummary} onChange={val => { const s = { ...scope }; s.projectSummary = val; updateScope(s); }} className="text-slate-200 leading-relaxed text-sm" isTextArea />
-          </div>
-        )}
+        <div className="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-6 backdrop-blur-md">
+          <div className="text-[10px] font-bold tracking-[0.2em] text-slate-500 uppercase mb-3">Resumo Global do Projeto</div>
+          <EditableText value={scope.projectSummary || ""} onChange={val => { const s = { ...scope }; s.projectSummary = val; updateScope(s); }} className="text-slate-200 leading-relaxed text-sm" isTextArea />
+        </div>
 
         {/* Users */}
         {scope.users.map((user, uIdx) => {

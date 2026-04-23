@@ -119,7 +119,7 @@ export class AssemblerService {
                         },
                     },
                 },
-                client: { select: { name: true, company: true } },
+                client: { select: { name: true, company: true, companyRef: { select: { name: true } } } },
             },
         });
         if (!proposal) throw new Error("NOT_FOUND");

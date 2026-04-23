@@ -1,6 +1,10 @@
 const { getDefaultConfig } = require("expo/metro-config");
 const { withNativeWind } = require("nativewind/metro");
 const path = require("path");
+const dns = require("dns");
+
+// Force IPv4 first so Metro binds to 0.0.0.0 (reachable from LAN devices)
+dns.setDefaultResultOrder("ipv4first");
 
 const projectRoot = __dirname;
 

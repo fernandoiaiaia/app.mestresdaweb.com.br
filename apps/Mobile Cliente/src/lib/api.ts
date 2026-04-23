@@ -3,7 +3,7 @@ import { getAccessToken, getRefreshToken, setTokens, clearTokens } from "./secur
 // Use LAN IP for local testing, or environment variable
 // Example for Android Emulator: "http://10.0.2.2:7777"
 // Example for iOS Simulator or WiFi LAN: "http://<YOUR_IP>:7777"
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || "http://192.168.68.100:7777"; 
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || "http://10.0.0.176:7777"; 
 
 export interface ApiOptions {
     method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";

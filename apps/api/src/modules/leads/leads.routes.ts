@@ -16,14 +16,15 @@ router.post("/public/opportunity", leadsController.createPublicOpportunity);
 // Final: Update opportunity with budget value + message as note
 router.patch("/public/opportunity/:id", leadsController.updatePublicOpportunity);
 
-// Final submit: full lead record
+// Unified: Create Contact + Opportunity + Notes in one call (mestresdaweb.com.br website forms)
+router.post("/public/full", leadsController.createFullLead);
+
+// Final submit: full lead record (must come AFTER /public/full)
 router.post(
     "/public",
     validate({ body: createLeadPublicSchema }),
     leadsController.createPublic
 );
 
-// Unified: Create Contact + Opportunity + Notes in one call (mestresdaweb.com.br website forms)
-router.post("/public/full", leadsController.createFullLead);
-
 export const leadsRoutes = router;
+

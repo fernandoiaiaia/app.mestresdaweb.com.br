@@ -80,7 +80,7 @@ services:
       - PORT=8080
       - NODE_ENV=production
       - FRONTEND_URL=https://advisor.mestresdaweb.com.br
-      - CORS_ORIGIN=https://advisor.mestresdaweb.com.br,https://hub.mestresdaweb.com.br,https://dev.mestresdaweb.com.br
+      - CORS_ORIGIN=https://advisor.mestresdaweb.com.br,https://hub.mestresdaweb.com.br,https://dev.mestresdaweb.com.br,https://www.mestresdaweb.com.br,https://mestresdaweb.com.br
       - REDIS_URL=redis://redis:6379
       - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-proposalai}?schema=public
     volumes:

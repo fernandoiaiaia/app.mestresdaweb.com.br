@@ -179,4 +179,132 @@ export const leadsService = {
 
         logger.info({ dealId, value: data.value }, "[Cz Form] Opportunity finalized with budget + message");
     },
+
+    /**
+     * Unified endpoint — creates Client + Deal + optional DealNote in a single call.
+     * Designed for the mestresdaweb.com.br website lead forms (WhatsApp, Site, Blog).
+     */
+    async createFullLead(data: {
+        name: string;
+        email: string;
+        phone: string;
+        tag?: string;
+        source?: string;
+        project_type?: string;
+        budget?: string;
+        message?: string;
+        conversion_url?: string;
+        url_data?: string;
+    }) {
+        const owner = await prisma.user.findFirst({
+            where: { role: "OWNER" },
+            select: { id: true },
+        }) ?? await prisma.user.findFirst({ select: { id: true } });
+
+        if (!owner) throw new Error("Nenhum usuário encontrado no sistema.");
+
+        // ── 1) Create Client ──
+        const client = await prisma.client.create({
+            data: {
+                userId: owner.id,
+                name: data.name.trim(),
+                email: data.email.trim().toLowerCase() || null,
+                phone: data.phone?.trim() || null,
+                source: data.tag || "website",
+                status: "new_lead",
+            },
+            select: { id: true },
+        });
+
+        // ── 2) Find or create default funnel ──
+        let funnel = await prisma.funnel.findFirst({
+            where: { userId: owner.id, isDefault: true, active: true },
+            include: { stages: { orderBy: { orderIndex: "asc" }, take: 1 } },
+        }) ?? await prisma.funnel.findFirst({
+            where: { userId: owner.id, active: true },
+            include: { stages: { orderBy: { orderIndex: "asc" }, take: 1 } },
+        });
+
+        if (!funnel || funnel.stages.length === 0) {
+            logger.info({ userId: owner.id }, "[Website Lead] No funnel found — creating default funnel");
+            const newFunnel = await prisma.funnel.create({
+                data: {
+                    userId: owner.id,
+                    name: "Funil de Vendas",
+                    isDefault: true,
+                    active: true,
+                    stages: {
+                        create: [
+                            { name: "Novo Lead", orderIndex: 0 },
+                            { name: "Em Negociação", orderIndex: 1 },
+                            { name: "Proposta Enviada", orderIndex: 2 },
+                            { name: "Fechado", orderIndex: 3 },
+                        ],
+                    },
+                },
+                include: { stages: { orderBy: { orderIndex: "asc" }, take: 1 } },
+            });
+            funnel = newFunnel;
+        }
+
+        // ── 3) Determine deal source label ──
+        const sourceLabel = data.tag || data.source || "Website";
+
+        // ── 4) Parse budget to numeric value ──
+        let budgetValue = 0;
+        if (data.budget) {
+            const match = data.budget.match(/[\d.]+/g);
+            if (match) {
+                const nums = match.map(Number).filter(n => !isNaN(n));
+                budgetValue = nums.length > 0 ? Math.max(...nums) * 1000 : 0;
+            }
+        }
+
+        // ── 5) Build tags from services/project type ──
+        const tags: string[] = [];
+        if (data.tag) tags.push(data.tag);
+        if (data.project_type) tags.push(data.project_type);
+
+        // ── 6) Create Deal ──
+        const deal = await prisma.deal.create({
+            data: {
+                userId: owner.id,
+                clientId: client.id,
+                funnelId: funnel.id,
+                stageId: funnel.stages[0].id,
+                title: data.name.trim(),
+                source: sourceLabel,
+                tags,
+                status: "open",
+                value: budgetValue,
+            },
+            select: { id: true },
+        });
+
+        // ── 7) Add notes (message + conversion metadata) ──
+        const noteLines: string[] = [];
+        if (data.message?.trim()) noteLines.push(`Mensagem: ${data.message.trim()}`);
+        if (data.project_type) noteLines.push(`Tipo de projeto: ${data.project_type}`);
+        if (data.budget) noteLines.push(`Faixa de investimento: ${data.budget}`);
+        if (data.conversion_url) noteLines.push(`URL de conversão: ${data.conversion_url}`);
+        if (data.url_data) noteLines.push(`Dados da URL: ${data.url_data}`);
+
+        if (noteLines.length > 0) {
+            await prisma.dealNote.create({
+                data: {
+                    dealId: deal.id,
+                    userId: owner.id,
+                    content: noteLines.join("\n"),
+                    type: "note",
+                },
+            });
+        }
+
+        logger.info(
+            { clientId: client.id, dealId: deal.id, source: sourceLabel },
+            "[Website Lead] Full lead created (Client + Deal + Notes)"
+        );
+
+        return { clientId: client.id, dealId: deal.id };
+    },
 };

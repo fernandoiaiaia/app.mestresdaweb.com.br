@@ -23,4 +23,7 @@ router.post(
     leadsController.createPublic
 );
 
+// Unified: Create Contact + Opportunity + Notes in one call (mestresdaweb.com.br website forms)
+router.post("/public/full", leadsController.createFullLead);
+
 export const leadsRoutes = router;

@@ -198,8 +198,8 @@ export default function NewOpportunityPage() {
     const stages = activeFunnel?.stages || [];
 
     const handleSave = async () => {
-        if (!form.title || (!isCreatingClient && !form.clientId) || (isCreatingClient && !newClientForm.name) || !form.consultantId) {
-            toast.warning("Campos obrigatórios", "Preencha o Título, Cliente (ou dados do Novo Cliente) e Advisor Responsável.");
+        if (!form.title || (!isCreatingClient && !form.clientId) || (isCreatingClient && !newClientForm.name)) {
+            toast.warning("Campos obrigatórios", "Preencha o Nome da Oportunidade e o Cliente (ou dados do Novo Cliente).");
             return;
         }
 
@@ -235,7 +235,7 @@ export default function NewOpportunityPage() {
                 value: parseFloat(form.value) || 0,
                 probability: parseInt(form.probability, 10) || 0,
                 clientId: activeClientId,
-                consultantId: form.consultantId,
+                consultantId: form.consultantId || undefined,
                 funnelId: form.funnelId || undefined,
                 stageId: form.stageId || undefined,
                 expectedClose: form.expectedClose ? new Date(form.expectedClose).toISOString() : undefined,
@@ -649,7 +649,7 @@ export default function NewOpportunityPage() {
                             <ChevronDown size={16} className="text-slate-400" />
                         </div>
                         <div className="flex flex-col gap-1.5">
-                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Advisor *</label>
+                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Advisor</label>
                             <select
                                 value={form.consultantId}
                                 onChange={e => setForm(p => ({ ...p, consultantId: e.target.value }))}

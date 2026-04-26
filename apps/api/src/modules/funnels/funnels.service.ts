@@ -44,15 +44,15 @@ export const funnelsService = {
         });
 
         const allowedFunnels: string[] = (dbUser as any)?.allowedFunnels || [];
-        let whereClause: any = { userId: user.userId };
+        let whereClause: any = {
+            OR: [
+                { userId: user.userId }, // Creator
+                { assigneeIds: { has: user.userId } } // Users assigned to the funnel
+            ]
+        };
         
         if (allowedFunnels.length > 0) {
-            whereClause = {
-                OR: [
-                    { userId: user.userId },
-                    { id: { in: allowedFunnels } }
-                ]
-            };
+            whereClause.OR.push({ id: { in: allowedFunnels } }); // Legacy compatibility
         }
 
         const funnels = await prisma.funnel.findMany({

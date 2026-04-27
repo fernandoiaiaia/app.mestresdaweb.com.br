@@ -79,7 +79,10 @@ export default function AssemblerListingPage() {
 
     const handleOpen = (scope: CompleteScope) => {
         if (typeof window !== "undefined") {
-            localStorage.setItem("proposals_assembler_current_scope", JSON.stringify(scope));
+            // Strip rawMeta (DB wrapper) before saving to localStorage — editor only needs the scope
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const { rawMeta, ...cleanScope } = scope as CompleteScope & { rawMeta?: unknown };
+            localStorage.setItem("proposals_assembler_current_scope", JSON.stringify(cleanScope));
             router.push("/dashboard/crm/assembler/new/editor");
         }
     };

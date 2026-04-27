@@ -17,7 +17,8 @@ router.get("/proposals", assemblerController.listProposals);
 router.get("/proposals/:id", assemblerController.getProposal);
 router.get("/proposals/:id/feedback", assemblerController.getProposalFeedback);
 router.patch("/proposals/:id/feedback/read", assemblerController.markFeedbackRead);
-router.post("/proposals", assemblerController.saveProposal); // Cria ou atualiza uma existente
+router.post("/proposals", assemblerController.createProposal);
+router.put("/proposals/:id", assemblerController.updateProposal);
 router.delete("/proposals/:id", assemblerController.deleteProposal);
 
 export const assemblerRoutes = router;

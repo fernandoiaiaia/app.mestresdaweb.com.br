@@ -128,12 +128,22 @@ export const assemblerController = {
         }
     },
 
-    async saveProposal(req: Request, res: Response) {
+    async createProposal(req: Request, res: Response) {
         try {
-            const proposal = await AssemblerService.saveProposal(req.user!.userId, req.body);
+            const proposal = await AssemblerService.createProposal(req.user!.userId, req.body);
             res.json({ success: true, data: proposal });
         } catch (e: any) {
             if (e.message === "NOT_FOUND") return res.status(404).json({ success: false, error: "Not found" });
+            throw e;
+        }
+    },
+
+    async updateProposal(req: Request, res: Response) {
+        try {
+            const proposal = await AssemblerService.updateProposal(req.user!.userId, req.params.id as string, req.body);
+            res.json({ success: true, data: proposal });
+        } catch (e: any) {
+            if (e.message === "NOT_FOUND") return res.status(404).json({ success: false, error: { message: "Proposta não encontrada." } });
             throw e;
         }
     },

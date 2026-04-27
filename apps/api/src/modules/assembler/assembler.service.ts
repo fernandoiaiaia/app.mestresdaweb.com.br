@@ -180,9 +180,9 @@ export class AssemblerService {
         return proposal;
     }
 
-    // ── WRITE ──────────────────────────────────────────────────────────────────
+    // ── CREATE (new proposal) ────────────────────────────────────────────────
 
-    static async saveProposal(userId: string, data: ScopeData) {
+    static async createProposal(userId: string, data: ScopeData) {
         // Use the explicit title from the scope; fall back to projectSummary excerpt
         const title = data.title?.trim()
             ? data.title.trim()
@@ -250,45 +250,79 @@ export class AssemblerService {
             if (!dealExists) dealId = null;
         }
 
-        if (data.id && !data.id.startsWith("scope_") && !data.id.startsWith("draft_")) {
-            const existing = await prisma.assembledProposal.findUnique({ where: { id: data.id } });
-            if (!existing || existing.userId !== userId) throw new Error("NOT_FOUND");
-            
-            // Preserve client feedbacks so frontend auto-save doesn't overwrite read states
-            const existingScopeData = (existing.scopeData as Record<string, unknown>) || {};
-            const preservedFeedbacks = existingScopeData.clientFeedback;
-            
-            const newScopeData: Record<string, unknown> = {
-                ...(data as unknown as Record<string, unknown>),
-            };
-            if (preservedFeedbacks !== undefined) {
-                newScopeData.clientFeedback = preservedFeedbacks;
-            }
-
-            return prisma.assembledProposal.update({
-                where: { id: data.id },
-                data: {
-                    title,
-                    scopeData: newScopeData as unknown as Prisma.JsonObject,
-                    totalHours,
-                    clientId,
-                    dealId,
-                    viewerId: data.viewerId || null,
-                },
-            });
-        }
+        // Strip rawMeta to avoid recursive data bloat in scopeData
+        const cleanData = { ...(data as unknown as Record<string, unknown>) };
+        delete cleanData.rawMeta;
+        delete cleanData.id; // Never store draft/scope IDs in the scope data
 
         return prisma.assembledProposal.create({
             data: {
                 userId,
                 title,
-                scopeData: data as unknown as Prisma.JsonObject,
+                scopeData: cleanData as unknown as Prisma.JsonObject,
                 totalHours,
                 clientId,
                 dealId,
                 viewerId: data.viewerId || null,
                 // Generate a random publicId for new proposals if not provided
                 publicId: data.publicId || Math.random().toString(36).substring(2, 15),
+            },
+        });
+    }
+
+    // ── UPDATE (existing proposal by explicit ID) ─────────────────────────────
+
+    static async updateProposal(userId: string, proposalId: string, data: ScopeData) {
+        const existing = await prisma.assembledProposal.findUnique({ where: { id: proposalId } });
+        if (!existing || existing.userId !== userId) throw new Error("NOT_FOUND");
+
+        const title = data.title?.trim()
+            ? data.title.trim()
+            : data.projectSummary
+                ? data.projectSummary.substring(0, 60).trimEnd() + "..."
+                : "Nova Proposta";
+
+        const totalHours = AssemblerService.calcTotalHours(data);
+
+        // clientId & dealId validation
+        let clientId = data.clientId && data.clientId.trim() !== "" ? data.clientId : null;
+        let dealId = data.dealId && data.dealId.trim() !== "" ? data.dealId : null;
+
+        if (clientId) {
+            const clientExists = await prisma.client.findUnique({ where: { id: clientId } });
+            if (!clientExists) clientId = null;
+        }
+
+        if (dealId) {
+            const dealExists = await prisma.deal.findUnique({ where: { id: dealId } });
+            if (!dealExists) dealId = null;
+        }
+
+        // Preserve client feedbacks so frontend auto-save doesn't overwrite read states
+        const existingScopeData = (existing.scopeData as Record<string, unknown>) || {};
+        const preservedFeedbacks = existingScopeData.clientFeedback;
+
+        // Strip rawMeta to avoid recursive data bloat
+        const cleanData: Record<string, unknown> = {
+            ...(data as unknown as Record<string, unknown>),
+        };
+        delete cleanData.rawMeta;
+        // Keep the real DB ID in scopeData for consistency
+        cleanData.id = proposalId;
+
+        if (preservedFeedbacks !== undefined) {
+            cleanData.clientFeedback = preservedFeedbacks;
+        }
+
+        return prisma.assembledProposal.update({
+            where: { id: proposalId },
+            data: {
+                title,
+                scopeData: cleanData as unknown as Prisma.JsonObject,
+                totalHours,
+                clientId,
+                dealId,
+                viewerId: data.viewerId || null,
             },
         });
     }

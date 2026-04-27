@@ -314,18 +314,36 @@ export async function getSavedProposals(): Promise<any[]> {
 
 
 export async function saveProposalToList(scope: CompleteScope): Promise<CompleteScope> {
+  // Determine if this is an update of an existing proposal
   const isUpdate =
     scope.id &&
     scope.id.length > 20 &&
     !scope.id.startsWith("scope_") &&
     !scope.id.startsWith("draft_");
 
-  // Send the scope itself as the body payload so the DB stores the pure JSON representation
-  const sendScope = isUpdate ? { ...scope } : { ...scope, id: undefined };
+  // Strip rawMeta (listing-injected metadata) to prevent recursive data bloat
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { rawMeta, ...cleanScope } = scope as CompleteScope & { rawMeta?: unknown };
 
+  if (isUpdate) {
+    // UPDATE: PUT /api/assembler/proposals/:id — ID comes from the URL, not the body
+    const res = await api<CompleteScope>(`/api/assembler/proposals/${scope.id}`, {
+      method: "PUT",
+      body: cleanScope,
+    }) as ApiResponse<CompleteScope>;
+
+    if (!res.success) {
+      const errRes = res as any;
+      throw new Error(errRes.message || errRes.error?.message || "Erro desconhecido ao salvar");
+    }
+    return res.data!;
+  }
+
+  // CREATE: POST /api/assembler/proposals — no ID in body
+  const { id: _stripId, ...createPayload } = cleanScope;
   const res = await api<CompleteScope>("/api/assembler/proposals", {
     method: "POST",
-    body: sendScope,
+    body: createPayload,
   }) as ApiResponse<CompleteScope>;
 
   if (!res.success) {

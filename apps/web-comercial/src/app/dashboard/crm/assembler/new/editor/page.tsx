@@ -572,9 +572,10 @@ export default function EditorPage() {
     saveScopeDraft(scope);
     try {
       const saved = await saveProposalToList(scope);
-      // Always update the local scope id with the DB id to prevent duplicates on next save
-      if (!scope.id || scope.id.startsWith("draft_") || scope.id.startsWith("scope_")) {
-        updateScope({ ...scope, id: saved.id });
+      // Always sync the local scope id with the DB id to guarantee subsequent saves use UPDATE
+      const dbId = saved.id;
+      if (dbId && dbId !== scope.id) {
+        updateScope({ ...scope, id: dbId });
       }
       toast.success("Proposta salva com sucesso!");
     } catch (e: unknown) {
@@ -589,6 +590,11 @@ export default function EditorPage() {
     saveScopeDraft(scope);
     try {
       const saved = await saveProposalToList(scope);
+      // Sync scope ID to prevent future duplicates
+      const dbId = saved.id;
+      if (dbId && dbId !== scope.id) {
+        updateScope({ ...scope, id: dbId });
+      }
       router.push(`/presentation?id=${saved.id}`);
     } catch { router.push("/presentation"); }
   };

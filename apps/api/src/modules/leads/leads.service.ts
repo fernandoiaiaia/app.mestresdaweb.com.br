@@ -2,6 +2,7 @@ import { leadsRepository } from "./leads.repository.js";
 import type { CreateLeadPublicInput } from "./leads.schemas.js";
 import { prisma } from "../../config/database.js";
 import { logger } from "../../lib/logger.js";
+import { leadAssignmentService } from "../../lib/lead-assignment.service.js";
 
 export const leadsService = {
     async createPublic(data: CreateLeadPublicInput) {
@@ -84,12 +85,6 @@ export const leadsService = {
 
         if (!owner) throw new Error("Nenhum usuário encontrado no sistema.");
 
-        const client = await prisma.client.findUnique({
-            where: { id: data.clientId },
-            select: { name: true },
-        });
-        if (!client) throw new Error("Contato não encontrado.");
-
         // Try default funnel first, then any active funnel
         let funnel = await prisma.funnel.findFirst({
             where: { userId: owner.id, isDefault: true, active: true },
@@ -122,9 +117,22 @@ export const leadsService = {
             funnel = newFunnel;
         }
 
+        // Resolve assignee via Round-Robin
+        const client = await prisma.client.findUnique({
+            where: { id: data.clientId },
+            select: { name: true, phone: true, email: true },
+        });
+        if (!client) throw new Error("Contato não encontrado.");
+
+        const assignedUserId = await leadAssignmentService.resolveAssignee(
+            client.phone || null,
+            client.email || null
+        );
+
         const deal = await prisma.deal.create({
             data: {
                 userId: owner.id,
+                consultantId: assignedUserId, // Round-Robin designated user!
                 clientId: data.clientId,
                 funnelId: funnel.id,
                 stageId: funnel.stages[0].id,
@@ -265,10 +273,17 @@ export const leadsService = {
         if (data.tag) tags.push(data.tag);
         if (data.project_type) tags.push(data.project_type);
 
-        // ── 6) Create Deal ──
+        // ── 6) Resolve assignee via Round-Robin ──
+        const assignedUserId = await leadAssignmentService.resolveAssignee(
+            data.phone?.trim() || null,
+            data.email?.trim()?.toLowerCase() || null
+        );
+
+        // ── 7) Create Deal ──
         const deal = await prisma.deal.create({
             data: {
                 userId: owner.id,
+                consultantId: assignedUserId, // Round-Robin designated user!
                 clientId: client.id,
                 funnelId: funnel.id,
                 stageId: funnel.stages[0].id,

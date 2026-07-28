@@ -1,0 +1,9 @@
+{
+  "build": {
+    "env": {
+      "ENABLE_EXPERIMENTAL_COREPACK": "1"
+    }
+  },
+  "buildCommand": "next build",
+  "installCommand": "pnpm install --no-frozen-lockfile"
+}

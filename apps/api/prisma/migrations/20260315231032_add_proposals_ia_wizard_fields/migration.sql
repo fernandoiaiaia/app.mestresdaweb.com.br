@@ -1,0 +1,15 @@
+-- AlterTable
+ALTER TABLE "proposals" ADD COLUMN     "ai_provider" TEXT,
+ADD COLUMN     "confidence_breakdown" TEXT[] DEFAULT ARRAY[]::TEXT[],
+ADD COLUMN     "confidence_score" INTEGER DEFAULT 0,
+ADD COLUMN     "diagnostic" JSONB,
+ADD COLUMN     "gaps" JSONB,
+ADD COLUMN     "platforms_ia" TEXT[] DEFAULT ARRAY[]::TEXT[],
+ADD COLUMN     "project_name" TEXT,
+ADD COLUMN     "raw_input_text" TEXT,
+ADD COLUMN     "review_data" JSONB,
+ADD COLUMN     "selected_features" JSONB,
+ADD COLUMN     "selected_modules" JSONB,
+ADD COLUMN     "selected_screens" JSONB,
+ADD COLUMN     "system_type" TEXT,
+ADD COLUMN     "wizard_step" INTEGER NOT NULL DEFAULT 1;

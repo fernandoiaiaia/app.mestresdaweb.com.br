@@ -1,0 +1,42 @@
+name: Deploy API to DigitalOcean
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'apps/api/**'
+      - 'packages/**'
+      - 'docker-compose.prod.yml'
+      - '.env.example'
+      - 'pnpm-lock.yaml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Deploy API via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            set -e
+            echo "🔗 Conectado ao servidor DigitalOcean"
+            
+            cd ~/app.mestresdaweb.com.br
+            
+            echo "📥 Pulling latest code..."
+            git fetch origin main
+            git reset --hard origin/main
+            
+            echo "🐳 Building and restarting API containers..."
+            docker compose -f docker-compose.prod.yml up -d --build
+            
+            echo "🧹 Cleaning up old images..."
+            docker image prune -f
+            
+            echo "🚀 API Deploy finalizado com sucesso!"

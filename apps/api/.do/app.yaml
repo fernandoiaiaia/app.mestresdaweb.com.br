@@ -1,0 +1,49 @@
+name: proposalai
+region: nyc
+services:
+  - name: api
+    github:
+      repo: org/proposal-ai
+      branch: main
+      deploy_on_push: true
+    source_dir: /apps/api
+    build_command: pnpm install && pnpm build && npx prisma generate && npx prisma migrate deploy
+    run_command: node dist/server.js
+    http_port: 8080
+    instance_size_slug: basic-xs
+    instance_count: 1
+    health_check:
+      http_path: /health
+      initial_delay_seconds: 10
+      period_seconds: 30
+      timeout_seconds: 5
+      success_threshold: 1
+      failure_threshold: 3
+    envs:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        scope: RUN_AND_BUILD_TIME
+        value: ${db.DATABASE_URL}
+      - key: REDIS_URL
+        scope: RUN_TIME
+        value: ${redis.REDIS_URL}
+
+workers:
+  - name: worker
+    github:
+      repo: org/proposal-ai
+      branch: main
+    source_dir: /apps/api
+    build_command: pnpm install && pnpm build
+    run_command: node dist/jobs/worker.js
+    instance_size_slug: basic-xs
+    instance_count: 1
+
+databases:
+  - name: db
+    engine: PG
+    version: "16"
+  - name: redis
+    engine: REDIS
+    version: "7"

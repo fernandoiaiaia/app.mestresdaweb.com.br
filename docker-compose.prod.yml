@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-proposalai}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - internal
+      
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - internal
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: api
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      - PORT=8080
+      - NODE_ENV=production
+      - FRONTEND_URL=https://advisor.mestresdaweb.com.br
+      - CORS_ORIGIN=https://advisor.mestresdaweb.com.br,https://hub.mestresdaweb.com.br,https://dev.mestresdaweb.com.br,https://www.mestresdaweb.com.br,https://mestresdaweb.com.br,https://corporate.mestresdaweb.com.br
+      - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-proposalai}?schema=public
+    volumes:
+      - api_uploads:/app/apps/api/storage/uploads
+      - api_documents:/app/apps/api/uploads
+    networks:
+      - internal
+
+networks:
+  internal:
+    external: false
+
+volumes:
+  postgres_data:
+  redis_data:
+  api_uploads:
+  api_documents:

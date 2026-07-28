@@ -1,0 +1,401 @@
+import { Router, Request, Response } from "express";
+import { prisma } from "../../config/database.js";
+import { logger } from "../../lib/logger.js";
+import { authMiddleware, requirePermission } from "../../middlewares/auth.middleware.js";
+import { getOwnerUserId } from "../../lib/get-owner.js";
+
+// ═══════════════════════════════════════
+// Integration Settings Routes
+// ═══════════════════════════════════════
+
+const router = Router();
+router.use(authMiddleware);
+
+const requireView = requirePermission("settings.integrations", "view");
+const requireManage = requirePermission("settings.integrations", "manage");
+
+/**
+ * Subscribe this app to receive webhook events from a WhatsApp Business Account.
+ * Must be called whenever the WABA ID changes so the Meta servers know to
+ * dispatch incoming-message webhooks to our configured callback URL.
+ */
+async function subscribeAppToWaba(accessToken: string, wabaId: string): Promise<{ ok: boolean; error?: string }> {
+    try {
+        const r = await fetch(`https://graph.facebook.com/v23.0/${wabaId}/subscribed_apps`, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        const data = await r.json() as any;
+        if (data.success) return { ok: true };
+        return { ok: false, error: data.error?.message || `HTTP ${r.status}` };
+    } catch (err: any) {
+        return { ok: false, error: err.message || "Falha na conexão" };
+    }
+}
+
+/**
+ * GET /api/integrations
+ * List all integration settings for current user
+ */
+router.get("/", requireView, async (req: Request, res: Response) => {
+    try {
+        const ownerId = await getOwnerUserId();
+        if (!ownerId) return res.status(500).json({ success: false, error: { message: "Nenhum usuário OWNER encontrado" } });
+        
+        const currentUserId = (req as any).user?.userId;
+        
+        // Buscar integrações globais
+        const settings = await prisma.integrationSetting.findMany({
+            where: { userId: ownerId },
+            orderBy: { provider: "asc" },
+        });
+
+        // Buscar integrações individuais do usuário atual (ex: google_calendar)
+        let finalSettings = [...settings];
+        if (currentUserId && currentUserId !== ownerId) {
+            const userSettings = await prisma.integrationSetting.findMany({
+                where: { userId: currentUserId, provider: "google_calendar" }
+            });
+            // Substituir a configuração global do google_calendar pela do usuário, se houver
+            finalSettings = finalSettings.filter(s => s.provider !== "google_calendar");
+            finalSettings = [...finalSettings, ...userSettings];
+        }
+
+        res.json({ success: true, data: finalSettings });
+    } catch (err) {
+        logger.error({ err }, "Error listing integration settings");
+        res.status(500).json({ success: false, error: { message: "Erro ao listar integrações" } });
+    }
+});
+
+/**
+ * GET /api/integrations/:provider
+ * Get a specific integration setting
+ */
+router.get("/:provider", requireView, async (req: Request, res: Response) => {
+    try {
+        const ownerId = await getOwnerUserId();
+        if (!ownerId) return res.status(500).json({ success: false, error: { message: "Nenhum usuário OWNER encontrado" } });
+        const provider = Array.isArray(req.params.provider) ? req.params.provider[0] : req.params.provider;
+        
+        const currentUserId = (req as any).user?.userId;
+        const searchUserId = (provider === "google_calendar" && currentUserId) ? currentUserId : ownerId;
+
+        const setting = await prisma.integrationSetting.findUnique({
+            where: { userId_provider: { userId: searchUserId, provider } },
+        });
+        res.json({ success: true, data: setting });
+    } catch (err) {
+        logger.error({ err }, "Error getting integration setting");
+        res.status(500).json({ success: false, error: { message: "Erro ao buscar integração" } });
+    }
+});
+
+/**
+ * PUT /api/integrations/:provider
+ * Create or update integration settings (upsert)
+ */
+router.put("/:provider", requireManage, async (req: Request, res: Response) => {
+    try {
+        const ownerId = await getOwnerUserId();
+        if (!ownerId) return res.status(500).json({ success: false, error: { message: "Nenhum usuário OWNER encontrado" } });
+        const provider = Array.isArray(req.params.provider) ? req.params.provider[0] : req.params.provider;
+        const { credentials, metadata, isActive } = req.body;
+
+        const validProviders = ["anthropic", "sdr_anthropic", "brevo", "whatsapp", "synthflow", "google_calendar", "proposal_openai", "proposal_brevo", "proposal_whisper", "proposal_minimax", "minimax"];
+
+        if (!validProviders.includes(provider)) {
+            return res.status(400).json({ success: false, error: { message: `Provider inválido. Use: ${validProviders.join(", ")}` } });
+        }
+
+        // ── Fetch existing setting so we can MERGE credentials, not replace them ──
+        const existing = await prisma.integrationSetting.findUnique({
+            where: { userId_provider: { userId: ownerId, provider } },
+        });
+
+        // Deep-merge: start from what's in DB, apply only non-empty incoming values
+        const existingCreds: Record<string, any> = (existing?.credentials as Record<string, any>) || {};
+        const mergedCreds: Record<string, any> = { ...existingCreds };
+
+        if (credentials && typeof credentials === "object") {
+            for (const [key, value] of Object.entries(credentials)) {
+                // Only overwrite if the incoming value is a non-empty, non-masked string
+                const isPlaceholder = typeof value === "string" && /^[•*]+$/.test(value);
+                if (value !== undefined && value !== null && value !== "" && !isPlaceholder) {
+                    mergedCreds[key] = value;
+                }
+            }
+        }
+
+        const setting = await prisma.integrationSetting.upsert({
+            where: { userId_provider: { userId: ownerId, provider } },
+            create: {
+                userId: ownerId,
+                provider,
+                credentials: mergedCreds,
+                metadata: metadata || {},
+                isActive: isActive ?? false,
+            },
+            update: {
+                credentials: mergedCreds,
+                ...(metadata !== undefined && { metadata }),
+                ...(isActive !== undefined && { isActive }),
+            },
+        });
+
+        // ── WhatsApp: auto-subscribe app to WABA for webhook delivery ──
+        if (provider === "whatsapp" && mergedCreds.accessToken && mergedCreds.businessAccountId) {
+            const sub = await subscribeAppToWaba(mergedCreds.accessToken, mergedCreds.businessAccountId);
+            if (sub.ok) {
+                logger.info({ ownerId, wabaId: mergedCreds.businessAccountId }, "Auto-subscribed app to WABA for webhooks");
+            } else {
+                logger.warn({ ownerId, wabaId: mergedCreds.businessAccountId, error: sub.error }, "Failed to auto-subscribe app to WABA");
+            }
+        }
+
+        logger.info({ ownerId, provider, isActive: setting.isActive }, "Integration setting updated (global)");
+        res.json({ success: true, data: setting });
+    } catch (err) {
+        logger.error({ err }, "Error updating integration setting");
+        res.status(500).json({ success: false, error: { message: "Erro ao salvar integração" } });
+    }
+});
+
+/**
+ * PATCH /api/integrations/:provider/toggle
+ * Toggle integration active/inactive
+ */
+router.patch("/:provider/toggle", requireManage, async (req: Request, res: Response) => {
+    try {
+        const ownerId = await getOwnerUserId();
+        if (!ownerId) return res.status(500).json({ success: false, error: { message: "Nenhum usuário OWNER encontrado" } });
+        const provider = Array.isArray(req.params.provider) ? req.params.provider[0] : req.params.provider;
+
+        const existing = await prisma.integrationSetting.findUnique({
+            where: { userId_provider: { userId: ownerId, provider } },
+        });
+
+        if (!existing) {
+            return res.status(404).json({ success: false, error: { message: "Integração não encontrada" } });
+        }
+
+        const setting = await prisma.integrationSetting.update({
+            where: { userId_provider: { userId: ownerId, provider } },
+            data: {
+                isActive: !existing.isActive,
+                lastSyncAt: !existing.isActive ? new Date() : existing.lastSyncAt,
+            },
+        });
+
+        res.json({ success: true, data: setting });
+    } catch (err) {
+        logger.error({ err }, "Error toggling integration");
+        res.status(500).json({ success: false, error: { message: "Erro ao alternar integração" } });
+    }
+});
+
+/**
+ * DELETE /api/integrations/:provider
+ * Remove integration settings
+ */
+router.delete("/:provider", requireManage, async (req: Request, res: Response) => {
+    try {
+        const ownerId = await getOwnerUserId();
+        if (!ownerId) return res.status(500).json({ success: false, error: { message: "Nenhum usuário OWNER encontrado" } });
+        const provider = Array.isArray(req.params.provider) ? req.params.provider[0] : req.params.provider;
+
+        await prisma.integrationSetting.deleteMany({
+            where: { userId: ownerId, provider },
+        });
+
+        res.json({ success: true, message: "Integração removida" });
+    } catch (err) {
+        logger.error({ err }, "Error deleting integration");
+        res.status(500).json({ success: false, error: { message: "Erro ao remover integração" } });
+    }
+});
+
+/**
+ * POST /api/integrations/:provider/test
+ * Test if integration credentials are valid
+ */
+router.post("/:provider/test", requireManage, async (req: Request, res: Response) => {
+    try {
+        const ownerId = await getOwnerUserId();
+        if (!ownerId) return res.status(500).json({ success: false, error: { message: "Nenhum usuário OWNER encontrado" } });
+        const provider = Array.isArray(req.params.provider) ? req.params.provider[0] : req.params.provider;
+
+        const setting = await prisma.integrationSetting.findUnique({
+            where: { userId_provider: { userId: ownerId, provider } },
+        });
+
+        if (!setting) {
+            return res.status(404).json({ success: false, error: { message: "Configure os dados primeiro" } });
+        }
+
+        const creds = setting.credentials as Record<string, any>;
+        let valid = false;
+        let message = "";
+
+        switch (provider) {
+            case "anthropic":
+            case "sdr_anthropic":
+                if (creds.apiKey) {
+                    try {
+                        const r = await fetch("https://api.anthropic.com/v1/messages", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                "x-api-key": creds.apiKey,
+                                "anthropic-version": "2023-06-01",
+                            },
+                            body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 10, messages: [{ role: "user", content: "Hi" }] }),
+                        });
+                        valid = r.ok;
+                        message = valid ? "API Key válida" : `Erro: ${r.status}`;
+                    } catch { message = "Falha na conexão"; }
+                } else { message = "API Key não informada"; }
+                break;
+
+            case "brevo":
+                if (creds.apiKey) {
+                    try {
+                        const r = await fetch("https://api.brevo.com/v3/account", {
+                            headers: { "api-key": creds.apiKey, "Accept": "application/json" },
+                        });
+                        valid = r.ok;
+                        message = valid ? "API Key válida — Brevo conectada" : `Erro: ${r.status}`;
+                    } catch { message = "Falha na conexão"; }
+                } else { message = "API Key não informada"; }
+                break;
+
+            case "whatsapp":
+                if (creds.accessToken && creds.phoneNumberId) {
+                    try {
+                        // 1. Validate token + phone number
+                        const r = await fetch(`https://graph.facebook.com/v23.0/${creds.phoneNumberId}`, {
+                            headers: { Authorization: `Bearer ${creds.accessToken}` },
+                        });
+                        if (!r.ok) {
+                            const errBody = await r.json().catch(() => ({})) as any;
+                            message = `Token sem acesso ao Phone Number ID: ${errBody?.error?.message || `HTTP ${r.status}`}`;
+                            break;
+                        }
+                        // 2. Ensure app is subscribed to WABA for webhook delivery
+                        if (creds.businessAccountId) {
+                            const sub = await subscribeAppToWaba(creds.accessToken, creds.businessAccountId);
+                            if (!sub.ok) {
+                                message = `Token válido, mas falha ao inscrever webhooks no WABA: ${sub.error}`;
+                                break;
+                            }
+                        }
+                        valid = true;
+                        message = "Token válido — Webhooks ativos";
+                    } catch { message = "Falha na conexão"; }
+                } else { message = "Token ou Phone ID não informados"; }
+                break;
+
+            case "synthflow":
+                if (creds.apiKey) {
+                    try {
+                        const r = await fetch("https://api.synthflow.ai/v2/agents", {
+                            headers: { Authorization: `Bearer ${creds.apiKey}` },
+                        });
+                        valid = r.ok;
+                        message = valid ? "API Key válida" : `Erro: ${r.status}`;
+                    } catch { message = "Falha na conexão"; }
+                } else { message = "API Key não informada"; }
+                break;
+
+            case "google_calendar":
+                message = "Requer OAuth — configure Client ID e Secret para iniciar";
+                valid = !!(creds.clientId && creds.clientSecret);
+                break;
+
+            // ═══ Proposal Module Integrations ═══
+            case "proposal_openai":
+                if (creds.apiKey) {
+                    try {
+                        const r = await fetch("https://api.openai.com/v1/models", {
+                            headers: { Authorization: `Bearer ${creds.apiKey}` },
+                        });
+                        valid = r.ok;
+                        message = valid ? "API Key válida — OpenAI conectada" : `Erro: ${r.status}`;
+                    } catch { message = "Falha na conexão"; }
+                } else { message = "API Key não informada"; }
+                break;
+
+            case "proposal_brevo":
+                if (creds.apiKey) {
+                    try {
+                        const r = await fetch("https://api.brevo.com/v3/account", {
+                            headers: { "api-key": creds.apiKey, "Accept": "application/json" },
+                        });
+                        valid = r.ok;
+                        message = valid ? "API Key válida — Brevo conectada" : `Erro: ${r.status}`;
+                    } catch { message = "Falha na conexão"; }
+                } else { message = "API Key não informada"; }
+                break;
+
+            case "proposal_whisper":
+                if (creds.apiKey) {
+                    try {
+                        const r = await fetch("https://api.openai.com/v1/models/whisper-1", {
+                            headers: { Authorization: `Bearer ${creds.apiKey}` },
+                        });
+                        valid = r.ok;
+                        message = valid ? "API Key válida — Whisper conectada" : `Erro: ${r.status}`;
+                    } catch { message = "Falha na conexão"; }
+                } else { message = "API Key não informada"; }
+                break;
+
+            case "proposal_minimax":
+                if (creds.apiKey) {
+                    try {
+                        const r = await fetch("https://api.minimax.io/anthropic/v1/messages", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                "x-api-key": creds.apiKey,
+                                "anthropic-version": "2023-06-01",
+                            },
+                            body: JSON.stringify({
+                                model: creds.model || "MiniMax-M2.7",
+                                messages: [{ role: "user", content: "Hi" }],
+                                max_tokens: 10,
+                            }),
+                        });
+                        if (r.ok) {
+                            valid = true;
+                            message = "API Key válida — MiniMax M2.7 conectada";
+                        } else {
+                            const body = await r.json().catch(() => ({})) as any;
+                            message = `Erro ${r.status}: ${body?.error?.message || body?.error?.type || "Credenciais inválidas"}`;
+                        }
+                    } catch { message = "Falha na conexão com a MiniMax"; }
+                } else {
+                    message = "API Key não informada";
+                }
+                break;
+
+            default:
+                message = "Provider desconhecido";
+        }
+
+        if (valid) {
+            await prisma.integrationSetting.update({
+                where: { userId_provider: { userId: ownerId, provider } },
+                data: { lastSyncAt: new Date() },
+            });
+        }
+
+        res.json({ success: true, data: { valid, message } });
+    } catch (err) {
+        logger.error({ err }, "Error testing integration");
+        res.status(500).json({ success: false, error: { message: "Erro ao testar" } });
+    }
+});
+
+export function integrationsRoutes(app: Router) {
+    app.use("/api/integrations", router);
+}

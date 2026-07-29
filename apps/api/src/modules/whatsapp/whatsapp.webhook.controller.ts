@@ -340,6 +340,10 @@ export async function processWhatsappWebhookForInbox(body: any): Promise<void> {
                         const wamid = statusObj.id;
                         const statusStr = statusObj.status; // "sent", "delivered", "read", "failed"
 
+                        if (statusStr === "failed" && statusObj.errors) {
+                            logger.error({ wamid, errors: statusObj.errors }, "[WhatsApp] Message delivery failed");
+                        }
+
                         // Update status
                         const updatedMsg = await prisma.whatsappMessage.updateMany({
                             where: { metaMessageId: wamid },

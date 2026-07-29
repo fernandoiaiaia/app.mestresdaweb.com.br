@@ -126,6 +126,7 @@ export interface UpsertDealByContactInput {
  *   - stage moves to the default funnel's first stage
  *   - a system_event DealNote is added with conversion metadata
  * If no matching Client/Deal exists, a new Client + Deal are created.
+ * In both cases, chatbotEngine.onDealStageChange is fired for the first stage.
  */
 export async function upsertDealByContact(input: UpsertDealByContactInput) {
     const cleanEmail = normalizeEmail(input.email);
@@ -237,6 +238,13 @@ export async function upsertDealByContact(input: UpsertDealByContactInput) {
                 type: "system_event",
             },
         });
+
+        // Trigger chatbot on reactivation too — onDealStageChange is idempotent per deal
+        // (skips if a session already exists for this exact dealId), so this is safe to
+        // call every time a contact re-enters the funnel, not just on brand-new deals.
+        chatbotEngine.onDealStageChange(dealId, firstStageId, funnel.id).catch((err: any) => {
+            logger.error({ err, dealId }, "Error triggering chatbot from upsertDealByContact (reactivation)");
+        });
     } else {
         const assignedUserId = input.assignedUserId || input.userId;
         const classifiedSource = classifySourceFromConversionInput(input.conversionUrl, input.urlData);
@@ -274,7 +282,7 @@ export async function upsertDealByContact(input: UpsertDealByContactInput) {
             });
         }
 
-        // Trigger chatbot for brand-new deals
+        // Trigger chatbot for brand-new deals (also triggered on reactivation above)
         chatbotEngine.onDealStageChange(dealId, firstStageId, funnel.id).catch((err: any) => {
             logger.error({ err, dealId }, "Error triggering chatbot from upsertDealByContact");
         });

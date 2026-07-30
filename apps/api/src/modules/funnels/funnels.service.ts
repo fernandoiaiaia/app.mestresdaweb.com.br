@@ -1,4 +1,5 @@
 import { prisma } from "../../config/database.js";
+import { notifyConnechTeamChanged } from "../integrations/connech-team-sync.client.js";
 
 interface JwtUser {
     userId: string;
@@ -85,7 +86,7 @@ export const funnelsService = {
             where: { userId: user.userId }
         });
 
-        return prisma.funnel.create({
+        const funnel = await prisma.funnel.create({
             data: {
                 name: data.name,
                 description: data.description,
@@ -103,6 +104,12 @@ export const funnelsService = {
             },
             include: { stages: true }
         });
+
+        if (data.assigneeIds && data.assigneeIds.length > 0) {
+            notifyConnechTeamChanged().catch(() => {});
+        }
+
+        return funnel;
     },
 
     async update(id: string, data: UpdateFunnelDto, user: JwtUser) {
@@ -117,10 +124,18 @@ export const funnelsService = {
         if (data.assigneeIds) {
             updateData.lastAssignedIndex = -1;
         }
-        return prisma.funnel.update({
+        const funnel = await prisma.funnel.update({
             where: { id, userId: user.userId },
             data: updateData
         });
+
+        // Rodízio mudou — avisa o Connech pra resincronizar a equipe da Mestres da Web
+        // (no-op lá se essa não for a conta configurada). Não bloqueia a resposta.
+        if (data.assigneeIds) {
+            notifyConnechTeamChanged().catch(() => {});
+        }
+
+        return funnel;
     },
 
     async delete(id: string, user: JwtUser) {

@@ -4,14 +4,19 @@ import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
+// Nunca commitar credenciais reais aqui — só o fallback de dev, sobrescrevível via env.
+const ADMIN_NAME = process.env.SEED_ADMIN_NAME ?? "Owner";
+const ADMIN_EMAIL = process.env.SEED_ADMIN_EMAIL ?? "owner@example.com";
+const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD ?? "change-me-owner-2026";
+
 async function main() {
     console.log("🌱 Seeding database...");
 
-    const hashedPassword = await bcrypt.hash("FernandinhoCunha@3041***", 12);
+    const hashedPassword = await bcrypt.hash(ADMIN_PASSWORD, 12);
     const admin = await prisma.user.upsert({
-        where: { email: "fernando@mestresdaweb.com.br" },
-        update: { password: hashedPassword, role: Role.OWNER },
-        create: { name: "Fernando Cunha", email: "fernando@mestresdaweb.com.br", password: hashedPassword, role: Role.OWNER },
+        where: { email: ADMIN_EMAIL },
+        update: {}, // não sobrescreve email/senha reais de um admin já existente a cada reseed
+        create: { name: ADMIN_NAME, email: ADMIN_EMAIL, password: hashedPassword, role: Role.OWNER },
     });
     console.log(`✅ Admin user: ${admin.email}`);
 

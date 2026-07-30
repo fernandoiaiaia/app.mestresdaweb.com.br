@@ -118,7 +118,14 @@ export const usersRepository = {
     },
 
     async deleteUser(id: string) {
-        return prisma.user.delete({ where: { id } });
+        return prisma.$transaction(async (tx) => {
+            // Funnel/Deal.assigneeIds are plain string[] with no FK, so they don't get
+            // cleaned up automatically like consultantId (onDelete: SetNull) does — a
+            // stale id left behind here can later break round-robin lead assignment.
+            await tx.$executeRaw`UPDATE funnels SET assignee_ids = array_remove(assignee_ids, ${id}) WHERE ${id} = ANY(assignee_ids)`;
+            await tx.$executeRaw`UPDATE deals SET assignee_ids = array_remove(assignee_ids, ${id}) WHERE ${id} = ANY(assignee_ids)`;
+            return tx.user.delete({ where: { id } });
+        });
     },
 
     async findByEmail(email: string) {

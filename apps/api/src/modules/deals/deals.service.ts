@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { prisma } from "../../config/database.js";
 import { salesCadenceService } from "../sales-cadence/sales-cadence.service.js";
 import { logger } from "../../lib/logger.js";
@@ -52,14 +53,14 @@ function normalizePhone(phone: string | null | undefined): string | null {
     return digits.length > 0 ? digits : null;
 }
 
-async function _resolveDefaultFunnel(userId: string) {
-    let funnel = await prisma.funnel.findFirst({
+async function _resolveDefaultFunnel(userId: string, tx: Prisma.TransactionClient | typeof prisma = prisma) {
+    let funnel = await tx.funnel.findFirst({
         where: { userId, isDefault: true, active: true },
         include: { stages: { orderBy: { orderIndex: "asc" }, take: 1 } },
     });
 
     if (!funnel) {
-        funnel = await prisma.funnel.findFirst({
+        funnel = await tx.funnel.findFirst({
             where: { userId, active: true },
             include: { stages: { orderBy: { orderIndex: "asc" }, take: 1 } },
             orderBy: { createdAt: "asc" },
@@ -68,7 +69,7 @@ async function _resolveDefaultFunnel(userId: string) {
 
     if (!funnel || funnel.stages.length === 0) {
         // Auto-create a default funnel as last resort
-        funnel = await prisma.funnel.create({
+        funnel = await tx.funnel.create({
             data: {
                 userId,
                 name: "Funil de Vendas",
@@ -132,163 +133,173 @@ export async function upsertDealByContact(input: UpsertDealByContactInput) {
     const cleanEmail = normalizeEmail(input.email);
     const cleanPhone = normalizePhone(input.phone);
 
-    const funnel = await _resolveDefaultFunnel(input.userId);
-    const firstStageId = funnel.stages[0].id;
+    // Client + Deal (+ DealNote) are created atomically: if Deal creation fails for any
+    // reason (e.g. an invalid consultantId), the Client insert rolls back too instead of
+    // leaving an orphan Contact with no Opportunity in the pipeline.
+    const result = await prisma.$transaction(async (tx) => {
+        const funnel = await _resolveDefaultFunnel(input.userId, tx);
+        const firstStageId = funnel.stages[0].id;
 
-    // Dedup by e-mail OR by the last-10-digit phone suffix — tolerant of country-code
-    // (+55) and punctuation differences between submissions. Matches the exact heuristic
-    // already proven for consultant-affinity routing (lib/lead-assignment.service.ts), so a
-    // lead recognized as "the same person" there is also recognized as the same person here,
-    // instead of spawning a new Client/Deal every time the phone is typed slightly differently.
-    const phoneSuffix = cleanPhone && cleanPhone.length >= 8 ? cleanPhone.slice(-10) : null;
-    let existingClient: { id: string; name: string } | null = null;
+        // Dedup by e-mail OR by the last-10-digit phone suffix — tolerant of country-code
+        // (+55) and punctuation differences between submissions. Matches the exact heuristic
+        // already proven for consultant-affinity routing (lib/lead-assignment.service.ts), so a
+        // lead recognized as "the same person" there is also recognized as the same person here,
+        // instead of spawning a new Client/Deal every time the phone is typed slightly differently.
+        const phoneSuffix = cleanPhone && cleanPhone.length >= 8 ? cleanPhone.slice(-10) : null;
+        let existingClient: { id: string; name: string } | null = null;
 
-    const orConditions: any[] = [];
-    if (cleanEmail) orConditions.push({ email: cleanEmail });
-    if (phoneSuffix) {
-        const clientsByPhone = await prisma.$queryRaw<Array<{ id: string }>>`
-            SELECT id FROM clients
-            WHERE user_id = ${input.userId}
-              AND phone IS NOT NULL
-              AND regexp_replace(phone, '[^0-9]', '', 'g') LIKE ${"%" + phoneSuffix}
-        `;
-        if (clientsByPhone.length > 0) {
-            orConditions.push({ id: { in: clientsByPhone.map((c) => c.id) } });
+        const orConditions: any[] = [];
+        if (cleanEmail) orConditions.push({ email: cleanEmail });
+        if (phoneSuffix) {
+            const clientsByPhone = await tx.$queryRaw<Array<{ id: string }>>`
+                SELECT id FROM clients
+                WHERE user_id = ${input.userId}
+                  AND phone IS NOT NULL
+                  AND regexp_replace(phone, '[^0-9]', '', 'g') LIKE ${"%" + phoneSuffix}
+            `;
+            if (clientsByPhone.length > 0) {
+                orConditions.push({ id: { in: clientsByPhone.map((c) => c.id) } });
+            }
         }
-    }
 
-    if (orConditions.length > 0) {
-        const candidates = await prisma.client.findMany({
-            where: { userId: input.userId, OR: orConditions },
-            select: { id: true, name: true },
+        if (orConditions.length > 0) {
+            const candidates = await tx.client.findMany({
+                where: { userId: input.userId, OR: orConditions },
+                select: { id: true, name: true },
+                orderBy: { createdAt: "desc" },
+            });
+            existingClient = candidates[0] || null;
+        }
+
+        let clientId: string;
+        let isNewClient = false;
+
+        if (existingClient) {
+            clientId = existingClient.id;
+        } else {
+            const created = await tx.client.create({
+                data: {
+                    userId: input.userId,
+                    name: input.name.trim(),
+                    email: cleanEmail,
+                    phone: input.phone?.trim() || null,
+                    company: input.companyName?.trim() || null,
+                    companyId: input.companyId || null,
+                    source: input.source,
+                    status: "new_lead",
+                    segment: input.segment?.trim() || null,
+                    city: input.city?.trim() || null,
+                    state: input.state?.trim() || null,
+                    website: input.website?.trim() || null,
+                    role: input.role?.trim() || null,
+                },
+                select: { id: true },
+            });
+            clientId = created.id;
+            isNewClient = true;
+        }
+
+        // Find the most recent deal for this client (any status/funnel)
+        const existingDeal = await tx.deal.findFirst({
+            where: { clientId, userId: input.userId },
             orderBy: { createdAt: "desc" },
-        });
-        existingClient = candidates[0] || null;
-    }
-
-    let clientId: string;
-    let isNewClient = false;
-
-    if (existingClient) {
-        clientId = existingClient.id;
-    } else {
-        const created = await prisma.client.create({
-            data: {
-                userId: input.userId,
-                name: input.name.trim(),
-                email: cleanEmail,
-                phone: input.phone?.trim() || null,
-                company: input.companyName?.trim() || null,
-                companyId: input.companyId || null,
-                source: input.source,
-                status: "new_lead",
-                segment: input.segment?.trim() || null,
-                city: input.city?.trim() || null,
-                state: input.state?.trim() || null,
-                website: input.website?.trim() || null,
-                role: input.role?.trim() || null,
-            },
-            select: { id: true },
-        });
-        clientId = created.id;
-        isNewClient = true;
-    }
-
-    // Find the most recent deal for this client (any status/funnel)
-    const existingDeal = await prisma.deal.findFirst({
-        where: { clientId, userId: input.userId },
-        orderBy: { createdAt: "desc" },
-        select: { id: true, status: true },
-    });
-
-    const noteLines: string[] = [];
-    if (input.message?.trim()) noteLines.push(`Mensagem: ${input.message.trim()}`);
-    if (input.projectType?.trim()) noteLines.push(`Tipo de projeto: ${input.projectType.trim()}`);
-    if (input.budget?.trim()) noteLines.push(`Faixa de investimento: ${input.budget.trim()}`);
-    if (input.conversionUrl?.trim()) noteLines.push(`URL de conversão: ${input.conversionUrl.trim()}`);
-    if (input.urlData?.trim()) noteLines.push(`Dados da URL: ${input.urlData.trim()}`);
-
-    const noteContent = noteLines.length > 0
-        ? `**Reconversão via ${input.source}**\n${noteLines.join("\n")}`
-        : `**Reconversão via ${input.source}**`;
-
-    let dealId: string;
-    let isNewDeal = false;
-
-    if (existingDeal) {
-        dealId = existingDeal.id;
-        const updateData: any = {
-            status: "open",
-            stageId: firstStageId,
-            funnelId: funnel.id,
-            lastActivity: `Novo contato recebido via ${input.source}`,
-        };
-
-        if (typeof input.value === "number" && input.value > 0) {
-            updateData.value = input.value;
-        }
-
-        await prisma.deal.update({ where: { id: dealId }, data: updateData });
-
-        await prisma.dealNote.create({
-            data: {
-                dealId,
-                userId: input.userId,
-                content: noteContent,
-                type: "system_event",
-            },
+            select: { id: true, status: true },
         });
 
-        // Trigger chatbot on reactivation too — onDealStageChange is idempotent per deal
-        // (skips if a session already exists for this exact dealId), so this is safe to
-        // call every time a contact re-enters the funnel, not just on brand-new deals.
-        chatbotEngine.onDealStageChange(dealId, firstStageId, funnel.id).catch((err: any) => {
-            logger.error({ err, dealId }, "Error triggering chatbot from upsertDealByContact (reactivation)");
-        });
-    } else {
-        const assignedUserId = input.assignedUserId || input.userId;
-        const classifiedSource = classifySourceFromConversionInput(input.conversionUrl, input.urlData);
-        const deal = await prisma.deal.create({
-            data: {
-                userId: input.userId,
-                consultantId: assignedUserId,
-                assigneeIds: [assignedUserId],
-                clientId,
-                funnelId: funnel.id,
-                stageId: firstStageId,
-                title: input.title?.trim() || input.name.trim(),
-                source: classifiedSource || input.source,
-                tags: input.tags || [],
+        const noteLines: string[] = [];
+        if (input.message?.trim()) noteLines.push(`Mensagem: ${input.message.trim()}`);
+        if (input.projectType?.trim()) noteLines.push(`Tipo de projeto: ${input.projectType.trim()}`);
+        if (input.budget?.trim()) noteLines.push(`Faixa de investimento: ${input.budget.trim()}`);
+        if (input.conversionUrl?.trim()) noteLines.push(`URL de conversão: ${input.conversionUrl.trim()}`);
+        if (input.urlData?.trim()) noteLines.push(`Dados da URL: ${input.urlData.trim()}`);
+
+        const noteContent = noteLines.length > 0
+            ? `**Reconversão via ${input.source}**\n${noteLines.join("\n")}`
+            : `**Reconversão via ${input.source}**`;
+
+        let dealId: string;
+        let isNewDeal = false;
+
+        if (existingDeal) {
+            dealId = existingDeal.id;
+            const updateData: any = {
                 status: "open",
-                value: typeof input.value === "number" ? input.value : 0,
-                priority: input.priority || "low",
-                temperature: input.temperature || "cold",
-                expectedClose: input.expectedClose ? new Date(input.expectedClose) : null,
-                nextAction: input.nextAction?.trim() || null,
-            },
-            select: { id: true },
-        });
-        dealId = deal.id;
-        isNewDeal = true;
+                stageId: firstStageId,
+                funnelId: funnel.id,
+                lastActivity: `Novo contato recebido via ${input.source}`,
+            };
 
-        if (noteLines.length > 0) {
-            await prisma.dealNote.create({
+            if (typeof input.value === "number" && input.value > 0) {
+                updateData.value = input.value;
+            }
+
+            await tx.deal.update({ where: { id: dealId }, data: updateData });
+
+            await tx.dealNote.create({
                 data: {
                     dealId,
                     userId: input.userId,
-                    content: noteLines.join("\n"),
-                    type: "note",
+                    content: noteContent,
+                    type: "system_event",
                 },
             });
+        } else {
+            // assignedUserId is expected to already be a validated, existing user id — the
+            // round-robin resolver (lib/lead-assignment.service.ts) filters out stale/deleted
+            // users before returning one, so consultantId here should never violate the FK.
+            const assignedUserId = input.assignedUserId || input.userId;
+            const classifiedSource = classifySourceFromConversionInput(input.conversionUrl, input.urlData);
+            const deal = await tx.deal.create({
+                data: {
+                    userId: input.userId,
+                    consultantId: assignedUserId,
+                    assigneeIds: [assignedUserId],
+                    clientId,
+                    funnelId: funnel.id,
+                    stageId: firstStageId,
+                    title: input.title?.trim() || input.name.trim(),
+                    source: classifiedSource || input.source,
+                    tags: input.tags || [],
+                    status: "open",
+                    value: typeof input.value === "number" ? input.value : 0,
+                    priority: input.priority || "low",
+                    temperature: input.temperature || "cold",
+                    expectedClose: input.expectedClose ? new Date(input.expectedClose) : null,
+                    nextAction: input.nextAction?.trim() || null,
+                },
+                select: { id: true },
+            });
+            dealId = deal.id;
+            isNewDeal = true;
+
+            if (noteLines.length > 0) {
+                await tx.dealNote.create({
+                    data: {
+                        dealId,
+                        userId: input.userId,
+                        content: noteLines.join("\n"),
+                        type: "note",
+                    },
+                });
+            }
         }
 
-        // Trigger chatbot for brand-new deals (also triggered on reactivation above)
-        chatbotEngine.onDealStageChange(dealId, firstStageId, funnel.id).catch((err: any) => {
-            logger.error({ err, dealId }, "Error triggering chatbot from upsertDealByContact");
-        });
-    }
+        return { clientId, dealId, isNewClient, isNewDeal, wasReactivated: !!existingDeal, funnelId: funnel.id, firstStageId };
+    });
 
-    return { clientId, dealId, isNewClient, isNewDeal, wasReactivated: !!existingDeal };
+    // Chatbot trigger runs only after the transaction has committed, and stays
+    // fire-and-forget (onDealStageChange is idempotent per deal, safe on reactivation too).
+    chatbotEngine.onDealStageChange(result.dealId, result.firstStageId, result.funnelId).catch((err: any) => {
+        logger.error({ err, dealId: result.dealId, wasReactivated: result.wasReactivated }, "Error triggering chatbot from upsertDealByContact");
+    });
+
+    return {
+        clientId: result.clientId,
+        dealId: result.dealId,
+        isNewClient: result.isNewClient,
+        isNewDeal: result.isNewDeal,
+        wasReactivated: result.wasReactivated,
+    };
 }
 
 async function _checkDealAccess(id: string, user: JwtUser) {

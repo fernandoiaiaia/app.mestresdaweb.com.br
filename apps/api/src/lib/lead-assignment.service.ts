@@ -38,17 +38,34 @@ export const leadAssignmentService = {
         });
 
         if (funnel && funnel.assigneeIds.length > 0) {
-            const nextIndex = (funnel.lastAssignedIndex + 1) % funnel.assigneeIds.length;
-            const assignedUserId = funnel.assigneeIds[nextIndex];
-
-            // Persist Round-Robin pointer
-            await prisma.funnel.update({
-                where: { id: funnel.id },
-                data: { lastAssignedIndex: nextIndex },
+            // Skip ids of users that no longer exist (e.g. a removed teammate still listed
+            // in assigneeIds) — picking a stale id here would make the later Deal.create
+            // fail on the consultantId foreign key, after the Client has already been created.
+            const validUsers = await prisma.user.findMany({
+                where: { id: { in: funnel.assigneeIds } },
+                select: { id: true },
             });
+            const validIds = new Set(validUsers.map((u) => u.id));
+            const activeAssigneeIds = funnel.assigneeIds.filter((id) => validIds.has(id));
 
-            logger.info({ assignedUserId, nextIndex, funnelId: funnel.id }, "[LeadAssignment] Round-Robin assignment");
-            return assignedUserId;
+            if (activeAssigneeIds.length > 0) {
+                const nextIndex = (funnel.lastAssignedIndex + 1) % activeAssigneeIds.length;
+                const assignedUserId = activeAssigneeIds[nextIndex];
+
+                // Persist Round-Robin pointer
+                await prisma.funnel.update({
+                    where: { id: funnel.id },
+                    data: { lastAssignedIndex: nextIndex },
+                });
+
+                logger.info({ assignedUserId, nextIndex, funnelId: funnel.id }, "[LeadAssignment] Round-Robin assignment");
+                return assignedUserId;
+            }
+
+            logger.warn(
+                { funnelId: funnel.id, assigneeIds: funnel.assigneeIds },
+                "[LeadAssignment] Round-Robin assigneeIds are all stale (deleted users) — falling back to OWNER"
+            );
         }
 
         // ─── 3. Fallback: OWNER ───

@@ -203,7 +203,7 @@ export async function upsertDealByContact(input: UpsertDealByContactInput) {
         const existingDeal = await tx.deal.findFirst({
             where: { clientId, userId: input.userId },
             orderBy: { createdAt: "desc" },
-            select: { id: true, status: true },
+            select: { id: true, status: true, consultantId: true },
         });
 
         const noteLines: string[] = [];
@@ -219,9 +219,11 @@ export async function upsertDealByContact(input: UpsertDealByContactInput) {
 
         let dealId: string;
         let isNewDeal = false;
+        let consultantId: string | null;
 
         if (existingDeal) {
             dealId = existingDeal.id;
+            consultantId = existingDeal.consultantId;
             const updateData: any = {
                 status: "open",
                 stageId: firstStageId,
@@ -271,6 +273,7 @@ export async function upsertDealByContact(input: UpsertDealByContactInput) {
             });
             dealId = deal.id;
             isNewDeal = true;
+            consultantId = assignedUserId;
 
             if (noteLines.length > 0) {
                 await tx.dealNote.create({
@@ -284,7 +287,7 @@ export async function upsertDealByContact(input: UpsertDealByContactInput) {
             }
         }
 
-        return { clientId, dealId, isNewClient, isNewDeal, wasReactivated: !!existingDeal, funnelId: funnel.id, firstStageId };
+        return { clientId, dealId, consultantId, isNewClient, isNewDeal, wasReactivated: !!existingDeal, funnelId: funnel.id, firstStageId };
     });
 
     // Chatbot trigger runs only after the transaction has committed, and stays
@@ -296,6 +299,7 @@ export async function upsertDealByContact(input: UpsertDealByContactInput) {
     return {
         clientId: result.clientId,
         dealId: result.dealId,
+        consultantId: result.consultantId,
         isNewClient: result.isNewClient,
         isNewDeal: result.isNewDeal,
         wasReactivated: result.wasReactivated,

@@ -228,6 +228,19 @@ export const leadsService = {
             "[Website Lead] Full lead processed (Client + Deal + Notes)"
         );
 
-        return { clientId: result.clientId, dealId: result.dealId };
+        // Expõe quem ficou com o negócio pra integrações downstream (ex.: Connech) que
+        // querem espelhar a mesma atribuição do lado delas — não é usado internamente aqui.
+        let consultantEmail: string | undefined;
+        let consultantName: string | undefined;
+        if (result.consultantId) {
+            const consultant = await prisma.user.findUnique({
+                where: { id: result.consultantId },
+                select: { email: true, name: true },
+            });
+            consultantEmail = consultant?.email;
+            consultantName = consultant?.name;
+        }
+
+        return { clientId: result.clientId, dealId: result.dealId, consultantEmail, consultantName };
     },
 };

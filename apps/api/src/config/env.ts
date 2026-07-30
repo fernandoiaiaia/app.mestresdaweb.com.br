@@ -62,6 +62,8 @@ const envSchema = z.object({
     // ═══ Connech (marketplace de fornecedores) ═══
     CONNECH_API_URL: z.string().url().default("http://localhost:3333"),
     ADVISOR_WEBHOOK_SECRET: z.string().optional(),
+    // Autentica requisições recebidas do Connech (POST .../scope-edit-requests)
+    CONNECH_TO_ADVISOR_SECRET: z.string().optional(),
 
     // Anthropic (Claude)
     ANTHROPIC_API_KEY: z.string().optional(),

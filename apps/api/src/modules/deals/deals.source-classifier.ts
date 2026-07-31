@@ -6,6 +6,9 @@
 // newly-classified deal lines up with that catalog for filters/reports.
 export const DEAL_SOURCE_GOOGLE_ADS = "Google Ads";
 export const DEAL_SOURCE_META_ADS = "Meta Ads (Facebook)";
+// Value is "Bling Ads" (not "Bing Ads") on purpose — it must match the exact
+// Source.name already registered in Configurações > Fontes e Campanhas.
+export const DEAL_SOURCE_BING_ADS = "Bling Ads";
 export const DEAL_SOURCE_REDDIT = "RD";
 export const DEAL_SOURCE_ORGANIC = "Google Orgânico (SEO)";
 
@@ -40,6 +43,12 @@ function classifyTrackedUrl(rawValue: string | null | undefined): string | null 
         lower.includes("facebook") ||
         lower.includes("instagram");
     if (isMetaAds) return DEAL_SOURCE_META_ADS;
+
+    const isBingAds =
+        lower.includes("msclkid=") ||
+        lower.includes("utm_source=bing") ||
+        lower.includes("utm_source=microsoft");
+    if (isBingAds) return DEAL_SOURCE_BING_ADS;
 
     const isReddit =
         lower.includes("rdt_cid=") ||

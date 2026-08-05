@@ -704,6 +704,7 @@ function PresentationPageInner() {
         if (isPdfLoading || !scope) return;
         setIsPdfLoading(true);
         let wrapper: HTMLDivElement | null = null;
+        let styleOverride: HTMLStyleElement | null = null;
 
         try {
             const html2pdf = (await import('html2pdf.js')).default;
@@ -722,6 +723,14 @@ function PresentationPageInner() {
                 'font-family: -apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue",Arial,sans-serif',
                 '-webkit-font-smoothing: antialiased',
             ].join(';');
+
+            // The global `* { outline-ring/50 }` reset (globals.css) resolves to an
+            // oklch/color-mix() outline-color that html2canvas can't parse, which
+            // silently aborts painting and produces a blank PDF. Neutralize it just
+            // for the capture clone so getComputedStyle never sees that function.
+            styleOverride = document.createElement('style');
+            styleOverride.textContent = '#pdf-proposal-clone, #pdf-proposal-clone * { outline: none !important; }';
+            document.head.appendChild(styleOverride);
 
             wrapper = document.createElement('div');
             wrapper.style.cssText = [
@@ -766,6 +775,7 @@ function PresentationPageInner() {
             console.error('PDF generation failed:', e);
         } finally {
             if (wrapper && wrapper.parentNode) wrapper.parentNode.removeChild(wrapper);
+            if (styleOverride && styleOverride.parentNode) styleOverride.parentNode.removeChild(styleOverride);
             setIsPdfLoading(false);
         }
     };

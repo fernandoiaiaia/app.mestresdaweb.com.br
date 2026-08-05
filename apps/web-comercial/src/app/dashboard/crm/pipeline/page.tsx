@@ -57,18 +57,27 @@ export default function PipelinePage() {
     const [draggedDeal, setDraggedDeal] = useState<{ dealId: string; fromStage: string } | null>(null);
     const [openMenuId, setOpenMenuId] = useState<string | null>(null);
     const [teamMembers, setTeamMembers] = useState<{ id: string; name: string }[]>([]);
-    const [selectedConsultant, setSelectedConsultant] = useState<string>(() => {
-        if (typeof window !== "undefined") return localStorage.getItem("pipeline_consultant_filter") || "all";
-        return "all";
-    });
+    const [selectedConsultant, setSelectedConsultant] = useState<string>("all");
     const { user } = useAuthStore();
     const router = useRouter();
 
     const isManagerOrOwner = user?.role === "OWNER" || user?.role === "MANAGER" || user?.role === "ADMIN";
+    const consultantFilterKey = user?.id ? `pipeline_consultant_filter_${user.id}` : null;
+
+    // Filtro de consultor é restrito a managers/owners; a chave é isolada por usuário
+    // para não vazar entre contas que compartilham o mesmo navegador.
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+        localStorage.removeItem("pipeline_consultant_filter");
+        if (isManagerOrOwner && consultantFilterKey) {
+            const stored = localStorage.getItem(consultantFilterKey);
+            if (stored) setSelectedConsultant(stored);
+        }
+    }, [user?.id, isManagerOrOwner]);
 
     const handleConsultantChange = (value: string) => {
         setSelectedConsultant(value);
-        localStorage.setItem("pipeline_consultant_filter", value);
+        if (consultantFilterKey) localStorage.setItem(consultantFilterKey, value);
     };
 
     const loadFunnels = async () => {
@@ -98,7 +107,7 @@ export default function PipelinePage() {
         if (active) setStages(active.stages || []);
 
         try {
-            const consultantParam = selectedConsultant !== "all" ? `&consultantId=${selectedConsultant}` : "";
+            const consultantParam = isManagerOrOwner && selectedConsultant !== "all" ? `&consultantId=${selectedConsultant}` : "";
             const { data: dealsData } = await api<Deal[]>(`/api/deals?funnelId=${funnelId}${consultantParam}`, { method: "GET" });
             const openDeals = (dealsData || []).filter(d => !d.status || d.status === "open");
             setDeals(openDeals);

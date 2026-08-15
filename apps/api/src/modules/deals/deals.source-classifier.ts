@@ -10,6 +10,11 @@ export const DEAL_SOURCE_META_ADS = "Meta Ads (Facebook)";
 // Source.name already registered in Configurações > Fontes e Campanhas.
 export const DEAL_SOURCE_BING_ADS = "Bling Ads";
 export const DEAL_SOURCE_REDDIT = "RD";
+// ChatGPT Ads (OpenAI Ads). Precisa bater exatamente com a Source.name "Ads ChatGPT"
+// já cadastrada em Configurações > Fontes e Campanhas. NÃO confundir com "Org ChatGPT",
+// que é o tráfego orgânico vindo de respostas do ChatGPT (utm_source=chatgpt.com) e
+// continua fora desta classificação de propósito.
+export const DEAL_SOURCE_CHATGPT_ADS = "Ads ChatGPT";
 export const DEAL_SOURCE_ORGANIC = "Google Orgânico (SEO)";
 
 const CONVERSION_URL_FIELD_REGEX = /(?:URL de convers[aã]o|Dados da URL)\s*:\s*(\S+)/gi;
@@ -26,6 +31,19 @@ function classifyTrackedUrl(rawValue: string | null | undefined): string | null 
         decoded = trimmed;
     }
     const lower = decoded.toLowerCase();
+
+    // ChatGPT Ads vem primeiro: o `oppref` é o identificador de clique do OpenAI Ads
+    // (equivalente ao gclid/fbclid — o SDK do pixel também o grava no cookie __oppref),
+    // então é o sinal mais confiável de que o lead veio de anúncio no ChatGPT.
+    // Avaliado antes do Meta porque aquele bloco usa substring solta de "facebook"/
+    // "instagram" e poderia sequestrar uma URL de campanha que cite essas palavras.
+    // utm_source=chatgpt sozinho NÃO entra aqui — esse é o orgânico ("Org ChatGPT").
+    const isChatGptAds =
+        lower.includes("oppref=") ||
+        /utm_source=(chatgpt[_-]?ads|openai[_-]?ads|openai)\b/.test(lower) ||
+        (lower.includes("chatgpt") &&
+            /utm_medium=(cpc|ppc|paid|ads|paid_social|paidsocial)\b/.test(lower));
+    if (isChatGptAds) return DEAL_SOURCE_CHATGPT_ADS;
 
     const isGoogleAds =
         lower.includes("gclid=") ||

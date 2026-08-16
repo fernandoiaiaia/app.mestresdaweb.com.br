@@ -235,6 +235,17 @@ export async function upsertDealByContact(input: UpsertDealByContactInput) {
                 updateData.value = input.value;
             }
 
+            // Uma reconversão pode carregar um sinal de campanha mais recente/melhor do
+            // que o que originou o deal (ex.: 1ª conversão orgânica, reconversão meses
+            // depois vinda de um clique pago real). Reclassifica a fonte só quando esta
+            // reconversão de fato reconhece uma plataforma — nunca apaga uma fonte já
+            // conhecida quando a reconversão não carrega nenhum sinal (ex.: reconversão
+            // via WhatsApp direto, sem URL rastreável).
+            const reconversionSource = classifySourceFromConversionInput(input.conversionUrl, input.urlData);
+            if (reconversionSource) {
+                updateData.source = reconversionSource;
+            }
+
             await tx.deal.update({ where: { id: dealId }, data: updateData });
 
             await tx.dealNote.create({

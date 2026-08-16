@@ -46,14 +46,18 @@ export const leadsController = {
 
     async createPublicOpportunity(req: Request, res: Response) {
         try {
-            const { clientId, services } = req.body as { clientId: string; services: string[] };
+            const { clientId, services, conversion_url, url_data } = req.body as {
+                clientId: string; services: string[]; conversion_url?: string; url_data?: string;
+            };
             if (!clientId) {
                 return res.status(400).json({ success: false, error: { message: "clientId é obrigatório." } });
             }
-            
+
             const result = await leadsService.createPublicOpportunity({
                 clientId,
                 services: Array.isArray(services) ? services : [],
+                conversionUrl: conversion_url,
+                urlData: url_data,
             });
             
             return res.status(201).json({ success: true, data: result });

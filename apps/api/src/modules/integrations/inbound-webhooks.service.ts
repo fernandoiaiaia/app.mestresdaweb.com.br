@@ -67,6 +67,12 @@ export const inboundWebhooksService = {
         // 4. Upsert Client + Deal via centralized deduplication logic
         const dealSource = payload.source?.trim() || "Inbound Webhook";
 
+        // Aceita camelCase (conversionUrl/urlData) e snake_case (conversion_url/url_data)
+        // — integrações externas variam na convenção, e o classificador de fonte
+        // (deals.source-classifier.ts) é inatingível neste endpoint sem isso.
+        const conversionUrl = payload.conversionUrl?.trim() || payload.conversion_url?.trim() || null;
+        const urlData = payload.urlData?.trim() || payload.url_data?.trim() || null;
+
         const result = await upsertDealByContact({
             userId: ownerId,
             assignedUserId,
@@ -78,6 +84,8 @@ export const inboundWebhooksService = {
             value: payload.dealValue ? Number(payload.dealValue) : null,
             tags: Array.isArray(payload.dealTags) ? payload.dealTags : [],
             message: payload.dealMessage?.trim() || null,
+            conversionUrl,
+            urlData,
             companyId,
             companyName: payload.companyName?.trim() || null,
             segment: payload.segment?.trim() || null,

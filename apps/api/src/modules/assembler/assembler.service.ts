@@ -199,9 +199,10 @@ export class AssemblerService {
         let clientId = data.clientId && data.clientId.trim() !== "" ? data.clientId : null;
         let dealId = data.dealId && data.dealId.trim() !== "" ? data.dealId : null;
 
+        let clientRecord: Awaited<ReturnType<typeof prisma.client.findUnique>> = null;
         if (clientId) {
-            const clientExists = await prisma.client.findUnique({ where: { id: clientId } });
-            if (!clientExists) {
+            clientRecord = await prisma.client.findUnique({ where: { id: clientId } });
+            if (!clientRecord) {
                 clientId = null;
             }
         }
@@ -239,7 +240,11 @@ export class AssemblerService {
                                 consultantId: userId,
                                 title: `Oportunidade gerada pelo Montador`,
                                 value: 0,
-                                status: "open"
+                                status: "open",
+                                // Herda a fonte já conhecida do contato em vez de cair no
+                                // default do schema ("Desconhecida") — o cliente já tem
+                                // uma origem registrada desde a criação do Client.
+                                source: clientRecord?.source || undefined,
                             }
                         });
                         dealId = newDeal.id;

@@ -80,7 +80,7 @@ export const leadsService = {
      * If a deal already exists for this contact, it is reactivated to MQL instead of duplicated.
      * Title = client name; tags = selected services.
      */
-    async createPublicOpportunity(data: { clientId: string; services: string[] }) {
+    async createPublicOpportunity(data: { clientId: string; services: string[]; conversionUrl?: string; urlData?: string }) {
         // Resolved consistently with every other lead-intake channel (WhatsApp, settings) via
         // the shared getOwnerUserId() helper, so the same real-world contact always lands
         // under the same account regardless of which channel they came through.
@@ -109,6 +109,8 @@ export const leadsService = {
             source: "Website",
             title: client.name,
             tags: data.services,
+            conversionUrl: data.conversionUrl?.trim() || null,
+            urlData: data.urlData?.trim() || null,
         });
 
         logger.info(

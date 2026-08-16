@@ -6,6 +6,7 @@ import {
     DEAL_SOURCE_BING_ADS,
     DEAL_SOURCE_REDDIT,
     DEAL_SOURCE_CHATGPT_ADS,
+    DEAL_SOURCE_CHATGPT_ORGANIC,
     DEAL_SOURCE_ORGANIC,
 } from "./deals.source-classifier.js";
 
@@ -27,8 +28,12 @@ describe("classifySourceLabel", () => {
         ).toBe(DEAL_SOURCE_CHATGPT_ADS);
     });
 
-    it("NÃO trata utm_source=chatgpt puro (sem _ads) como pago — é orgânico", () => {
-        expect(classifySourceLabel(["https://x.com/?utm_source=chatgpt.com"])).toBe(DEAL_SOURCE_ORGANIC);
+    it("NÃO trata utm_source=chatgpt puro (sem _ads) como pago — é orgânico do ChatGPT", () => {
+        expect(classifySourceLabel(["https://x.com/?utm_source=chatgpt.com"])).toBe(DEAL_SOURCE_CHATGPT_ORGANIC);
+    });
+
+    it("reconhece ChatGPT orgânico (citação do ChatGPT Search) via utm_source=chatgpt.com", () => {
+        expect(classifySourceLabel(["https://x.com/?utm_source=chatgpt.com&utm_medium=referral"])).toBe(DEAL_SOURCE_CHATGPT_ORGANIC);
     });
 
     it("reconhece Google Ads via gclid", () => {

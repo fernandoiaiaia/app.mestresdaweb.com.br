@@ -15,6 +15,14 @@ export const DEAL_SOURCE_REDDIT = "RD";
 // que é o tráfego orgânico vindo de respostas do ChatGPT (utm_source=chatgpt.com) e
 // continua fora desta classificação de propósito.
 export const DEAL_SOURCE_CHATGPT_ADS = "Ads ChatGPT";
+// Tráfego orgânico de citações do ChatGPT (Search): a OpenAI adiciona
+// utm_source=chatgpt.com automaticamente em todo link citado numa resposta —
+// confirmado, não é um anúncio pago. IMPORTANTE: ao contrário das outras
+// constantes deste arquivo, "Org ChatGPT" ainda NÃO existe cadastrado em
+// Configurações > Fontes e Campanhas — precisa ser criado lá (nome exato,
+// case-sensitive) antes/depois deste deploy, senão o filtro por fonte na
+// pipeline não vai reconhecer esse valor.
+export const DEAL_SOURCE_CHATGPT_ORGANIC = "Org ChatGPT";
 export const DEAL_SOURCE_ORGANIC = "Google Orgânico (SEO)";
 
 const CONVERSION_URL_FIELD_REGEX = /(?:URL de convers[aã]o|Dados da URL)\s*:\s*(\S+)/gi;
@@ -87,6 +95,14 @@ function classifyTrackedUrl(rawValue: string | null | undefined): string | null 
     const hasChatGptMacroTrio =
         lower.includes("campaign_id=") && lower.includes("ad_group_id=") && lower.includes("ad_id=");
     if (hasChatGptMacroTrio) return DEAL_SOURCE_CHATGPT_ADS;
+
+    // ChatGPT orgânico (citação, não anúncio) — checado por último, depois de descartar
+    // toda variante paga do próprio ChatGPT acima (chatgpt_ads/chatgpt-ads/chatgptads já
+    // teriam retornado DEAL_SOURCE_CHATGPT_ADS antes de chegar aqui).
+    // Limitação conhecida (fora do nosso controle): no app mobile do ChatGPT o header de
+    // referrer costuma ser removido, e nem todo clique carrega esse utm_source — parte do
+    // tráfego orgânico do ChatGPT inevitavelmente cai como "Google Orgânico (SEO)" genérico.
+    if (lower.includes("utm_source=chatgpt")) return DEAL_SOURCE_CHATGPT_ORGANIC;
 
     return null;
 }

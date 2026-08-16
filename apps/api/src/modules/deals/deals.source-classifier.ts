@@ -42,9 +42,18 @@ function classifyTrackedUrl(rawValue: string | null | undefined): string | null 
     // isso sequestrava campanhas reais do Google/Meta Ads cujo utm_campaign/utm_content
     // só menciona "chatgpt" (ex.: uma campanha "automação com chatgpt" rodando no Google
     // Ads com gclid legítimo) antes mesmo de a checagem de Google Ads rodar.
+    // As campanhas reais em Configurações > Fontes e Campanhas do Ads Manager do ChatGPT
+    // (ex.: anúncio "app-chatgpt") NÃO têm o macro {oppref} preenchido no campo "Parâmetros
+    // de consulta da página de destino" — só campaign_id/ad_group_id/ad_id/service. Por
+    // isso o trio campaign_id+ad_group_id+ad_id (nomes de macro exclusivos do Ads Manager
+    // do ChatGPT; Google Ads usa gclid via auto-tagging, não esses nomes de parâmetro) é
+    // tratado como sinal equivalente ao oppref. Idealmente adicionar "&oppref={oppref}" ao
+    // campo de parâmetros no Ads Manager também ajudaria a atribuição de conversão do lado
+    // do próprio OpenAI, mas o classificador não deve depender só disso.
     const isChatGptAds =
         lower.includes("oppref=") ||
-        /utm_source=(chatgpt[_-]?ads|openai[_-]?ads|openai)\b/.test(lower);
+        /utm_source=(chatgpt[_-]?ads|openai[_-]?ads|openai)\b/.test(lower) ||
+        (lower.includes("campaign_id=") && lower.includes("ad_group_id=") && lower.includes("ad_id="));
     if (isChatGptAds) return DEAL_SOURCE_CHATGPT_ADS;
 
     const isGoogleAds =

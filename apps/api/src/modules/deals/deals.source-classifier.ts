@@ -38,11 +38,13 @@ function classifyTrackedUrl(rawValue: string | null | undefined): string | null 
     // Avaliado antes do Meta porque aquele bloco usa substring solta de "facebook"/
     // "instagram" e poderia sequestrar uma URL de campanha que cite essas palavras.
     // utm_source=chatgpt sozinho NÃO entra aqui — esse é o orgânico ("Org ChatGPT").
+    // Não usar um fallback tipo `chatgpt` em qualquer lugar da URL + utm_medium pago:
+    // isso sequestrava campanhas reais do Google/Meta Ads cujo utm_campaign/utm_content
+    // só menciona "chatgpt" (ex.: uma campanha "automação com chatgpt" rodando no Google
+    // Ads com gclid legítimo) antes mesmo de a checagem de Google Ads rodar.
     const isChatGptAds =
         lower.includes("oppref=") ||
-        /utm_source=(chatgpt[_-]?ads|openai[_-]?ads|openai)\b/.test(lower) ||
-        (lower.includes("chatgpt") &&
-            /utm_medium=(cpc|ppc|paid|ads|paid_social|paidsocial)\b/.test(lower));
+        /utm_source=(chatgpt[_-]?ads|openai[_-]?ads|openai)\b/.test(lower);
     if (isChatGptAds) return DEAL_SOURCE_CHATGPT_ADS;
 
     const isGoogleAds =

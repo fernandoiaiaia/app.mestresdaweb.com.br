@@ -1,10 +1,12 @@
 import { clientsRepository } from "./clients.repository.js";
-import { AppError } from "../../lib/errors.js";
+import { AppError, ConflictError } from "../../lib/errors.js";
 import { Prisma } from "@prisma/client";
 import { usersRepository } from "../users/users.repository.js";
 import { prisma } from "../../config/database.js";
 import { hashPassword } from "../../lib/hash.js";
 import { upsertDealByContact } from "../deals/deals.service.js";
+import { contactIdentity } from "../../lib/contact-identity.js";
+import { findClientByIdentity, lockContactIdentity } from "./clients.identity.js";
 
 interface JwtUser {
     userId: string;
@@ -41,8 +43,16 @@ export const clientsService = {
             }
         }
 
+        // O e-mail era gravado como veio do formulário. Como a deduplicação compara em
+        // caixa baixa, um "Joao@Empresa.com" cadastrado aqui nunca era reconhecido como o
+        // mesmo "joao@empresa.com" que chegava pelo site, e a pessoa virava dois registros.
+        const identity = contactIdentity(clientData.email, clientData.phone);
+
         const createPayload: Prisma.ClientUncheckedCreateInput = {
             ...clientData,
+            email: identity.emailKey ?? clientData.email ?? null,
+            emailKey: identity.emailKey,
+            phoneKey: identity.phoneKey,
             userId: jwtUser.userId,
         };
 
@@ -58,15 +68,34 @@ export const clientsService = {
             };
         }
 
-        return clientsRepository.create(createPayload);
+        return prisma.$transaction(async (tx) => {
+            await lockContactIdentity(tx, identity);
+
+            const existing = await findClientByIdentity(tx, identity);
+            if (existing) {
+                throw new ConflictError(
+                    `Já existe um contato com este e-mail ou telefone: ${existing.name}.`,
+                );
+            }
+
+            return tx.client.create({ data: createPayload, include: { contacts: true } });
+        });
     },
 
     async bulkCreate(dataArray: any[], jwtUser: JwtUser) {
         // Assign the creator as the userId for all imported clients
-        const clientsForDb = dataArray.map(data => ({
-            ...data,
-            userId: jwtUser.userId,
-        }));
+        const clientsForDb = dataArray.map(data => {
+            // Sem as chaves de identidade, um contato importado em massa fica invisível
+            // para a deduplicação e o próximo lead dessa pessoa abre um card novo.
+            const identity = contactIdentity(data.email, data.phone);
+            return {
+                ...data,
+                email: identity.emailKey ?? data.email ?? null,
+                emailKey: identity.emailKey,
+                phoneKey: identity.phoneKey,
+                userId: jwtUser.userId,
+            };
+        });
         return clientsRepository.createMany(clientsForDb);
     },
 
@@ -307,6 +336,25 @@ export const clientsService = {
         const updatePayload: Prisma.ClientUncheckedUpdateInput = {
             ...clientData,
         };
+
+        // Chaves de identidade acompanham a edição — sem isso, corrigir o telefone de um
+        // contato deixaria a chave velha para trás e o próximo lead da mesma pessoa não
+        // seria reconhecido.
+        if ("email" in clientData || "phone" in clientData) {
+            const current = await prisma.client.findUnique({
+                where: { id },
+                select: { email: true, phone: true },
+            });
+            const identity = contactIdentity(
+                "email" in clientData ? clientData.email : current?.email,
+                "phone" in clientData ? clientData.phone : current?.phone,
+            );
+            if ("email" in clientData) {
+                updatePayload.email = identity.emailKey ?? clientData.email ?? null;
+            }
+            updatePayload.emailKey = identity.emailKey;
+            updatePayload.phoneKey = identity.phoneKey;
+        }
 
         if (contacts) {
             updatePayload.contacts = {

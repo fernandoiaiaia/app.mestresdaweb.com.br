@@ -6,6 +6,7 @@ import { logger } from "../../lib/logger.js";
 import { leadAssignmentService } from "../../lib/lead-assignment.service.js";
 import { chatbotEngine } from "../chatbot/chatbot.engine.js";
 import { upsertDealByContact } from "../deals/deals.service.js";
+import { upsertClientByContact } from "../clients/clients.identity.js";
 import { getOwnerUserId } from "../../lib/get-owner.js";
 
 export const leadsService = {
@@ -57,22 +58,22 @@ export const leadsService = {
             }
         }
 
-        const client = await prisma.client.create({
-            data: {
-                userId: ownerId,
-                name: data.name.trim(),
-                email: data.email.trim().toLowerCase() || null,
-                phone: data.phone.trim() || null,
-                company: data.company?.trim() || null,
-                companyId,
-                source: "website",
-                status: "new_lead",
-            },
-            select: { id: true },
+        // Antes este passo fazia um create direto: cada reenvio do formulário — e cada
+        // visitante que já era contato conhecido — abria um registro novo, que o passo 2
+        // depois transformava em mais um card na pipeline. Agora passa pela mesma
+        // resolução por identidade dos outros canais.
+        const { clientId, isNewClient } = await upsertClientByContact({
+            userId: ownerId,
+            name: data.name,
+            email: data.email,
+            phone: data.phone,
+            company: data.company,
+            companyId,
+            source: "website",
         });
 
-        logger.info({ clientId: client.id, companyId }, "[Cz Form] Public contact created");
-        return { clientId: client.id, companyId };
+        logger.info({ clientId, companyId, isNewClient }, "[Cz Form] Public contact resolved");
+        return { clientId, companyId };
     },
 
     /**
@@ -103,6 +104,9 @@ export const leadsService = {
         const result = await upsertDealByContact({
             userId: ownerId,
             assignedUserId,
+            // O contato já foi resolvido no passo 1; reencontrá-lo por e-mail/telefone
+            // aqui poderia escolher outro registro e abrir um card paralelo.
+            clientId: client.id,
             name: client.name,
             email: client.email || null,
             phone: client.phone || null,

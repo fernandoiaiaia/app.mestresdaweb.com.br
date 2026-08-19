@@ -251,6 +251,12 @@ model Client {
   companyId  String? @map("company_id")
   email      String?
   phone      String?
+  // Chaves canônicas de identidade — derivadas de email/phone por src/lib/contact-identity.ts
+  // e gravadas em toda criação/atualização de contato. São o critério de deduplicação de
+  // lead: comparar o texto cru fazia "+55 11 98765-4321" e "551187654321" (mesma pessoa,
+  // formato legado do WhatsApp) abrirem dois cards na pipeline.
+  emailKey   String? @map("email_key")
+  phoneKey   String? @map("phone_key")
   role       String?
   city       String?
   state      String?
@@ -282,6 +288,8 @@ model Client {
   @@index([email])
   @@index([phone])
   @@index([companyId])
+  @@index([userId, emailKey])
+  @@index([userId, phoneKey])
   @@map("clients")
 }
 
@@ -600,6 +608,9 @@ model Deal {
 
   @@index([userId])
   @@index([funnelId])
+  // Toda entrada de lead consulta os negócios do contato para garantir um único card
+  // aberto; sem este índice a checagem varre a tabela inteira a cada conversão.
+  @@index([clientId])
   @@map("deals")
 }
 

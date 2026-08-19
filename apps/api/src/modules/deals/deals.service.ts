@@ -4,6 +4,13 @@ import { salesCadenceService } from "../sales-cadence/sales-cadence.service.js";
 import { logger } from "../../lib/logger.js";
 import { chatbotEngine } from "../chatbot/chatbot.engine.js";
 import { classifySourceFromConversionInput } from "./deals.source-classifier.js";
+import { contactIdentity } from "../../lib/contact-identity.js";
+import {
+    consolidateOpenDeals,
+    enrichClientIdentity,
+    lockContactIdentity,
+    resolveClientByIdentity,
+} from "../clients/clients.identity.js";
 
 interface JwtUser {
     userId: string;
@@ -41,18 +48,6 @@ interface UpdateDealDto {
     nextAction?: string | null;
 }
 
-// Normalize contact identifiers for deduplication
-function normalizeEmail(email: string | null | undefined): string | null {
-    if (!email) return null;
-    return String(email).trim().toLowerCase();
-}
-
-function normalizePhone(phone: string | null | undefined): string | null {
-    if (!phone) return null;
-    const digits = String(phone).replace(/\D/g, "");
-    return digits.length > 0 ? digits : null;
-}
-
 async function _resolveDefaultFunnel(userId: string, tx: Prisma.TransactionClient | typeof prisma = prisma) {
     let funnel = await tx.funnel.findFirst({
         where: { userId, isDefault: true, active: true },
@@ -68,7 +63,18 @@ async function _resolveDefaultFunnel(userId: string, tx: Prisma.TransactionClien
     }
 
     if (!funnel || funnel.stages.length === 0) {
-        // Auto-create a default funnel as last resort
+        // Último recurso. Duas conversões simultâneas num tenant recém-criado criariam
+        // dois funis padrão e os leads iriam parar em pipelines diferentes, parecendo
+        // duplicados. O lock só é pago neste caminho raro; o fluxo normal não espera.
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`funnel|default|${userId}`})::bigint)`;
+
+        const recheck = await tx.funnel.findFirst({
+            where: { userId, active: true },
+            include: { stages: { orderBy: { orderIndex: "asc" }, take: 1 } },
+            orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
+        });
+        if (recheck && recheck.stages.length > 0) return recheck;
+
         funnel = await tx.funnel.create({
             data: {
                 userId,
@@ -94,6 +100,12 @@ async function _resolveDefaultFunnel(userId: string, tx: Prisma.TransactionClien
 export interface UpsertDealByContactInput {
     userId: string;
     assignedUserId?: string | null;
+    /**
+     * Contato já conhecido pelo chamador (formulário em duas etapas). Entra na
+     * resolução junto com o que for encontrado por e-mail/telefone; se houver mais de
+     * um registro para a mesma pessoa, todos são unificados no mais antigo.
+     */
+    clientId?: string | null;
     name: string;
     email?: string | null;
     phone?: string | null;
@@ -119,70 +131,59 @@ export interface UpsertDealByContactInput {
     nextAction?: string | null;
 }
 
-/**
- * Creates or reactivates a single Deal for a given contact.
- * Deduplication rule: same e-mail AND same phone (both filled).
- * If a matching Client is found, the most recent Deal is reused:
- *   - status becomes "open"
- *   - stage moves to the default funnel's first stage
- *   - a system_event DealNote is added with conversion metadata
- * If no matching Client/Deal exists, a new Client + Deal are created.
- * In both cases, chatbotEngine.onDealStageChange is fired for the first stage.
- */
-export async function upsertDealByContact(input: UpsertDealByContactInput) {
-    const cleanEmail = normalizeEmail(input.email);
-    const cleanPhone = normalizePhone(input.phone);
+export interface UpsertDealByContactResult {
+    clientId: string;
+    dealId: string;
+    consultantId: string | null;
+    isNewClient: boolean;
+    isNewDeal: boolean;
+    wasReactivated: boolean;
+}
 
-    // Client + Deal (+ DealNote) are created atomically: if Deal creation fails for any
-    // reason (e.g. an invalid consultantId), the Client insert rolls back too instead of
-    // leaving an orphan Contact with no Opportunity in the pipeline.
+/**
+ * Cria ou reaproveita um único negócio para um contato.
+ *
+ * O contato é identificado pelas chaves canônicas de lib/contact-identity.ts —
+ * e-mail normalizado e telefone em E.164 — nunca pelo texto cru, e as requisições
+ * concorrentes para a mesma pessoa são serializadas por advisory lock.
+ *
+ * Toda reconversão devolve o contato ao começo do funil: o negócio mais recente — aberto,
+ * perdido ou ganho — volta para "open" na primeira etapa (MQL). Nunca se abre um segundo
+ * card para quem já tem um; um contato tem no máximo um negócio aberto, sempre.
+ * A reconversão fica registrada numa DealNote com os dados da conversão.
+ */
+export async function upsertDealByContact(
+    input: UpsertDealByContactInput,
+): Promise<UpsertDealByContactResult> {
+    const identity = contactIdentity(input.email, input.phone);
+    const rawPhone = input.phone?.trim() || null;
+
+    // Client + Deal (+ DealNote) são criados atomicamente: se a criação do Deal falhar
+    // por qualquer motivo (ex.: consultantId inválido), o Client também é desfeito em
+    // vez de sobrar um contato órfão sem oportunidade na pipeline.
     const result = await prisma.$transaction(async (tx) => {
+        await lockContactIdentity(tx, identity);
+
         const funnel = await _resolveDefaultFunnel(input.userId, tx);
         const firstStageId = funnel.stages[0].id;
 
-        // Dedup by e-mail OR by the last-10-digit phone suffix — tolerant of country-code
-        // (+55) and punctuation differences between submissions. Matches the exact heuristic
-        // already proven for consultant-affinity routing (lib/lead-assignment.service.ts), so a
-        // lead recognized as "the same person" there is also recognized as the same person here,
-        // instead of spawning a new Client/Deal every time the phone is typed slightly differently.
-        const phoneSuffix = cleanPhone && cleanPhone.length >= 8 ? cleanPhone.slice(-10) : null;
-        let existingClient: { id: string; name: string } | null = null;
-
-        const orConditions: any[] = [];
-        if (cleanEmail) orConditions.push({ email: cleanEmail });
-        if (phoneSuffix) {
-            const clientsByPhone = await tx.$queryRaw<Array<{ id: string }>>`
-                SELECT id FROM clients
-                WHERE user_id = ${input.userId}
-                  AND phone IS NOT NULL
-                  AND regexp_replace(phone, '[^0-9]', '', 'g') LIKE ${"%" + phoneSuffix}
-            `;
-            if (clientsByPhone.length > 0) {
-                orConditions.push({ id: { in: clientsByPhone.map((c) => c.id) } });
-            }
-        }
-
-        if (orConditions.length > 0) {
-            const candidates = await tx.client.findMany({
-                where: { userId: input.userId, OR: orConditions },
-                select: { id: true, name: true },
-                orderBy: { createdAt: "desc" },
-            });
-            existingClient = candidates[0] || null;
-        }
+        const existingClient = await resolveClientByIdentity(tx, identity, input.clientId);
 
         let clientId: string;
         let isNewClient = false;
 
         if (existingClient) {
             clientId = existingClient.id;
+            await enrichClientIdentity(tx, existingClient, identity, rawPhone);
         } else {
             const created = await tx.client.create({
                 data: {
                     userId: input.userId,
                     name: input.name.trim(),
-                    email: cleanEmail,
-                    phone: input.phone?.trim() || null,
+                    email: identity.emailKey,
+                    phone: rawPhone,
+                    emailKey: identity.emailKey,
+                    phoneKey: identity.phoneKey,
                     company: input.companyName?.trim() || null,
                     companyId: input.companyId || null,
                     source: input.source,
@@ -199,11 +200,16 @@ export async function upsertDealByContact(input: UpsertDealByContactInput) {
             isNewClient = true;
         }
 
-        // Find the most recent deal for this client (any status/funnel)
+        // Um contato pode chegar aqui já carregando mais de um card aberto, herdados de
+        // antes desta correção. Unifica primeiro, para que o negócio reaproveitado logo
+        // abaixo seja o único aberto que resta.
+        await consolidateOpenDeals(tx, clientId);
+
+        // Negócio mais recente deste contato, em qualquer status ou funil.
         const existingDeal = await tx.deal.findFirst({
-            where: { clientId, userId: input.userId },
+            where: { clientId },
             orderBy: { createdAt: "desc" },
-            select: { id: true, status: true, consultantId: true },
+            select: { id: true, status: true, consultantId: true, stageId: true, funnelId: true },
         });
 
         const noteLines: string[] = [];
@@ -220,16 +226,28 @@ export async function upsertDealByContact(input: UpsertDealByContactInput) {
         let dealId: string;
         let isNewDeal = false;
         let consultantId: string | null;
+        let stageIdForChatbot: string;
+        let funnelIdForChatbot: string;
 
         if (existingDeal) {
             dealId = existingDeal.id;
             consultantId = existingDeal.consultantId;
-            const updateData: any = {
+
+            // Reconversão sempre devolve o negócio ao começo do funil, qualquer que fosse
+            // o status anterior — inclusive um já ganho, que volta a ser trabalhado no
+            // mesmo card em vez de gerar um segundo.
+            const stageChanged = existingDeal.stageId !== firstStageId || existingDeal.funnelId !== funnel.id;
+            const updateData: Prisma.DealUpdateInput = {
                 status: "open",
-                stageId: firstStageId,
-                funnelId: funnel.id,
+                stage: { connect: { id: firstStageId } },
+                funnel: { connect: { id: funnel.id } },
                 lastActivity: `Novo contato recebido via ${input.source}`,
             };
+
+            // O relógio de permanência na etapa só reinicia se a etapa de fato mudou.
+            if (stageChanged) {
+                updateData.stageEnteredAt = new Date();
+            }
 
             if (typeof input.value === "number" && input.value > 0) {
                 updateData.value = input.value;
@@ -256,6 +274,9 @@ export async function upsertDealByContact(input: UpsertDealByContactInput) {
                     type: "system_event",
                 },
             });
+
+            stageIdForChatbot = firstStageId;
+            funnelIdForChatbot = funnel.id;
         } else {
             // assignedUserId is expected to already be a validated, existing user id — the
             // round-robin resolver (lib/lead-assignment.service.ts) filters out stale/deleted
@@ -285,6 +306,8 @@ export async function upsertDealByContact(input: UpsertDealByContactInput) {
             dealId = deal.id;
             isNewDeal = true;
             consultantId = assignedUserId;
+            stageIdForChatbot = firstStageId;
+            funnelIdForChatbot = funnel.id;
 
             if (noteLines.length > 0) {
                 await tx.dealNote.create({
@@ -298,12 +321,25 @@ export async function upsertDealByContact(input: UpsertDealByContactInput) {
             }
         }
 
-        return { clientId, dealId, consultantId, isNewClient, isNewDeal, wasReactivated: !!existingDeal, funnelId: funnel.id, firstStageId };
+        return {
+            clientId,
+            dealId,
+            consultantId,
+            isNewClient,
+            isNewDeal,
+            wasReactivated: !!existingDeal,
+            funnelId: funnelIdForChatbot,
+            stageId: stageIdForChatbot,
+        };
+    }, {
+        // O advisory lock faz requisições concorrentes do mesmo contato esperarem a vez;
+        // os 5s padrão do Prisma são apertados demais para uma rajada de reenvios.
+        timeout: 20_000,
     });
 
     // Chatbot trigger runs only after the transaction has committed, and stays
     // fire-and-forget (onDealStageChange is idempotent per deal, safe on reactivation too).
-    chatbotEngine.onDealStageChange(result.dealId, result.firstStageId, result.funnelId).catch((err: any) => {
+    chatbotEngine.onDealStageChange(result.dealId, result.stageId, result.funnelId).catch((err: any) => {
         logger.error({ err, dealId: result.dealId, wasReactivated: result.wasReactivated }, "Error triggering chatbot from upsertDealByContact");
     });
 

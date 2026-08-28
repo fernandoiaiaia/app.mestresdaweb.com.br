@@ -65,7 +65,7 @@ export async function findClientByIdentity(
     if (or.length === 0) return null;
 
     const candidates = await tx.client.findMany({
-        where: { OR: or },
+        where: { OR: or, mergedIntoId: null },
         select: CLIENT_IDENTITY_SELECT,
         orderBy: { createdAt: "asc" },
         take: 1,
@@ -102,26 +102,58 @@ export async function consolidateDuplicateClients(
         await tx.whatsappContact.update({ where: { id: wa.id }, data: { clientId: adopt ? keepId : null } });
     }
 
-    await tx.client.deleteMany({ where: { id: { in: dropIds } } });
+    // O contato repetido é arquivado, nunca excluído: aponta para o que ficou e sai das
+    // listagens e da deduplicação, mas continua no banco e consultável. Uma fusão errada
+    // se desfaz limpando este campo.
+    await tx.client.updateMany({
+        where: { id: { in: dropIds } },
+        data: { mergedIntoId: keepId },
+    });
 
     // Os negócios que acabaram de mudar de dono podem deixar o contato com vários cards
     // abertos — que é justamente a duplicata visível na pipeline.
     await consolidateOpenDeals(tx, keepId);
 }
 
+/** Motivo de perda usado para arquivar cards duplicados sem apagá-los. */
+export const DUPLICATE_LOSS_REASON = "Duplicado";
+
+async function _duplicateLossReasonId(tx: Prisma.TransactionClient, userId: string, funnelId: string) {
+    const existing = await tx.lossReason.findFirst({
+        where: { userId, name: DUPLICATE_LOSS_REASON },
+        select: { id: true },
+    });
+    if (existing) return existing.id;
+
+    const created = await tx.lossReason.create({
+        data: {
+            userId,
+            funnelId,
+            name: DUPLICATE_LOSS_REASON,
+            description: "Card unificado em outro negócio do mesmo contato.",
+        },
+        select: { id: true },
+    });
+    return created.id;
+}
+
 /**
- * Reduz a um só os negócios abertos de um contato.
+ * Reduz a um só os negócios abertos de um contato — sem apagar nenhum.
  *
- * Fica o mais avançado no funil (empate: o mais antigo), porque é ele que carrega o
- * trabalho de vendas já feito. Notas, arquivos, tarefas, propostas e execuções de
- * cadência dos demais migram para ele antes da remoção, e o card que fica herda o maior
- * valor e a união das tags — nada do que a equipe registrou se perde.
+ * Fica aberto o mais avançado no funil (empate: o mais antigo), porque é ele que carrega
+ * o trabalho de vendas já feito. Notas, arquivos, tarefas, propostas e execuções de
+ * cadência dos demais migram para ele, e o card que fica herda o maior valor e a união
+ * das tags. Os outros são marcados como perdidos com o motivo "Duplicado" e uma nota
+ * apontando para o card que os absorveu: saem da pipeline, continuam no banco, e
+ * desfazer é só reabrir. Nada é excluído.
  */
 export async function consolidateOpenDeals(tx: Prisma.TransactionClient, clientId: string) {
     const open = await tx.deal.findMany({
         where: { clientId, status: "open" },
         select: {
             id: true,
+            userId: true,
+            funnelId: true,
             value: true,
             tags: true,
             createdAt: true,
@@ -151,7 +183,27 @@ export async function consolidateOpenDeals(tx: Prisma.TransactionClient, clientI
         },
     });
 
-    await tx.deal.deleteMany({ where: { id: { in: dropIds } } });
+    const lossReasonId = await _duplicateLossReasonId(tx, keep.userId, keep.funnelId);
+
+    await tx.deal.updateMany({
+        where: { id: { in: dropIds } },
+        data: {
+            status: "lost",
+            lossReasonId,
+            lastActivity: `Card unificado no negócio ${keep.id}`,
+        },
+    });
+
+    for (const drop of drops) {
+        await tx.dealNote.create({
+            data: {
+                dealId: drop.id,
+                userId: drop.userId,
+                type: "system_event",
+                content: `**Card duplicado** — unificado no negócio ${keep.id}, que recebeu o histórico deste. Para desfazer, reabra este card e devolva o conteúdo.`,
+            },
+        });
+    }
 }
 
 /**
@@ -173,8 +225,10 @@ export async function resolveClientByIdentity(
     if (identity.emailKey) or.push({ emailKey: identity.emailKey });
     if (identity.phoneKey) or.push({ phoneKey: identity.phoneKey });
 
+    // Contatos já arquivados por uma fusão anterior ficam de fora: seus negócios e
+    // histórico foram para o principal, e reencontrá-los só refaria trabalho.
     const found = or.length > 0
-        ? await tx.client.findMany({ where: { OR: or }, select: CLIENT_IDENTITY_SELECT })
+        ? await tx.client.findMany({ where: { OR: or, mergedIntoId: null }, select: CLIENT_IDENTITY_SELECT })
         : [];
 
     const byId = new Map(found.map((c) => [c.id, c]));
@@ -184,9 +238,19 @@ export async function resolveClientByIdentity(
     if (pinnedClientId && !byId.has(pinnedClientId)) {
         const pinned = await tx.client.findUnique({
             where: { id: pinnedClientId },
-            select: CLIENT_IDENTITY_SELECT,
+            select: { ...CLIENT_IDENTITY_SELECT, mergedIntoId: true },
         });
-        if (pinned) byId.set(pinned.id, pinned);
+        if (pinned && !pinned.mergedIntoId) {
+            byId.set(pinned.id, pinned);
+        } else if (pinned?.mergedIntoId) {
+            // O contato do passo 1 já foi absorvido por outro; segue-se o ponteiro para
+            // que o negócio caia no registro que de fato representa a pessoa hoje.
+            const target = await tx.client.findUnique({
+                where: { id: pinned.mergedIntoId },
+                select: CLIENT_IDENTITY_SELECT,
+            });
+            if (target) byId.set(target.id, target);
+        }
     }
 
     if (byId.size === 0) return null;

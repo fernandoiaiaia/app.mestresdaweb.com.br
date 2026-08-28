@@ -25,7 +25,9 @@ export const clientsRepository = {
 
     async findAll(whereClause: Prisma.ClientWhereInput = {}) {
         return prisma.client.findMany({
-            where: whereClause,
+            // Contatos arquivados por uma fusão de duplicatas continuam no banco, mas
+            // fora das listagens: o histórico deles já vive no registro que ficou.
+            where: { ...whereClause, mergedIntoId: null },
             include: { contacts: true },
             orderBy: { createdAt: "desc" },
         });

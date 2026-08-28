@@ -8,12 +8,14 @@
  *   pnpm tsx scripts/merge-duplicate-clients.ts            # simulação (padrão)
  *   pnpm tsx scripts/merge-duplicate-clients.ts --apply    # grava as alterações
  *
- * Nada é apagado sem antes ter o conteúdo transferido: notas, arquivos, tarefas,
- * propostas e execuções de cadência migram para o registro que fica, e os campos
- * próprios de cada negócio removido são preservados numa nota de auditoria.
+ * NADA É EXCLUÍDO. Notas, arquivos, tarefas, propostas e execuções de cadência migram
+ * para o registro que fica; o contato repetido passa a apontar para ele (merged_into_id)
+ * e o card duplicado vira "perdido" com o motivo "Duplicado". Ambos continuam no banco e
+ * consultáveis, e desfazer é limpar o ponteiro ou reabrir o card.
  */
 import { PrismaClient } from "@prisma/client";
 import { contactIdentity } from "../src/lib/contact-identity.js";
+import { DUPLICATE_LOSS_REASON } from "../src/modules/clients/clients.identity.js";
 
 const prisma = new PrismaClient({ log: ["error"] });
 const APPLY = process.argv.includes("--apply");
@@ -67,6 +69,8 @@ async function backfillKeys() {
 
 async function buildGroups() {
     const clients = await prisma.client.findMany({
+        // Quem já foi arquivado por uma fusão anterior fica de fora.
+        where: { mergedIntoId: null },
         select: { id: true, name: true, email: true, phone: true, emailKey: true, phoneKey: true, createdAt: true },
         orderBy: { createdAt: "asc" },
     });
@@ -160,7 +164,12 @@ async function mergeClientRecords(keepId: string, dropIds: string[]) {
         });
     }
 
-    await prisma.client.deleteMany({ where: { id: { in: dropIds } } });
+    // Arquiva em vez de excluir: o contato repetido aponta para o que ficou e sai das
+    // listagens, mas permanece no banco.
+    await prisma.client.updateMany({
+        where: { id: { in: dropIds } },
+        data: { mergedIntoId: keepId },
+    });
 }
 
 /**
@@ -198,7 +207,11 @@ async function mergeOpenDeals(clientIds: string[]): Promise<number> {
         const mergedTags = [...new Set([...keep.tags, ...drops.flatMap((d) => d.tags)])];
         const maxValue = Math.max(keep.value, ...drops.map((d) => d.value));
 
-        const owner = await prisma.deal.findUnique({ where: { id: keep.id }, select: { userId: true } });
+        const owner = await prisma.deal.findUnique({
+            where: { id: keep.id },
+            select: { userId: true, funnelId: true },
+        });
+
         await prisma.dealNote.create({
             data: {
                 dealId: keep.id,
@@ -213,14 +226,34 @@ async function mergeOpenDeals(clientIds: string[]): Promise<number> {
         });
 
         await prisma.deal.update({ where: { id: keep.id }, data: { tags: mergedTags, value: maxValue } });
-        await prisma.deal.deleteMany({ where: { id: { in: dropIds } } });
+
+        // Cards duplicados são arquivados como perdidos — saem da pipeline sem sair do banco.
+        const reason = await prisma.lossReason.findFirst({
+            where: { userId: owner!.userId, name: DUPLICATE_LOSS_REASON },
+            select: { id: true },
+        }) ?? await prisma.lossReason.create({
+            data: {
+                userId: owner!.userId,
+                funnelId: owner!.funnelId,
+                name: DUPLICATE_LOSS_REASON,
+                description: "Card unificado em outro negócio do mesmo contato.",
+            },
+            select: { id: true },
+        });
+
+        await prisma.deal.updateMany({
+            where: { id: { in: dropIds } },
+            data: { status: "lost", lossReasonId: reason.id, lastActivity: `Card unificado no negócio ${keep.id}` },
+        });
     }
 
     return drops.length;
 }
 
 async function main() {
-    log(APPLY ? "MODO GRAVAÇÃO — as alterações serão persistidas.\n" : "SIMULAÇÃO — nada será alterado. Use --apply para gravar.\n");
+    log(APPLY
+        ? "MODO GRAVAÇÃO — as alterações serão persistidas. Nenhum registro é excluído.\n"
+        : "SIMULAÇÃO — nada será alterado. Use --apply para gravar.\n");
 
     await backfillKeys();
 
@@ -253,7 +286,7 @@ async function main() {
 
     // Cards repetidos existem também sem contato duplicado — dois negócios abertos em
     // paralelo para o mesmo contato — então os demais contatos entram na varredura.
-    const soloClients = await prisma.client.findMany({ select: { id: true, name: true } });
+    const soloClients = await prisma.client.findMany({ where: { mergedIntoId: null }, select: { id: true, name: true } });
     for (const c of soloClients) {
         if (grouped.has(c.id)) continue;
         const removed = await mergeOpenDeals([c.id]);
@@ -264,8 +297,8 @@ async function main() {
     }
 
     log(`\nResumo${APPLY ? "" : " (simulado)"}:`);
-    log(`  contatos duplicados fundidos: ${clientsRemoved}`);
-    log(`  cards abertos consolidados:   ${dealsRemoved}`);
+    log(`  contatos duplicados arquivados: ${clientsRemoved}`);
+    log(`  cards abertos unificados:      ${dealsRemoved}`);
     if (!APPLY) log("\nRode novamente com --apply para efetivar.");
 
     await prisma.$disconnect();

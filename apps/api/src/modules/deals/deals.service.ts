@@ -205,12 +205,21 @@ export async function upsertDealByContact(
         // abaixo seja o único aberto que resta.
         await consolidateOpenDeals(tx, clientId);
 
-        // Negócio mais recente deste contato, em qualquer status ou funil.
-        const existingDeal = await tx.deal.findFirst({
-            where: { clientId },
-            orderBy: { createdAt: "desc" },
-            select: { id: true, status: true, consultantId: true, stageId: true, funnelId: true },
-        });
+        // O negócio em andamento tem precedência sobre o mais recente. Ordenar só por data
+        // pegaria o card que a consolidação acabou de arquivar — ou um "ganho" recente ao
+        // lado de um card aberto mais antigo — e reabri-lo devolveria a duplicata à pipeline.
+        const dealSelect = { id: true, status: true, consultantId: true, stageId: true, funnelId: true };
+        const existingDeal =
+            (await tx.deal.findFirst({
+                where: { clientId, status: "open" },
+                orderBy: { createdAt: "desc" },
+                select: dealSelect,
+            })) ??
+            (await tx.deal.findFirst({
+                where: { clientId },
+                orderBy: { createdAt: "desc" },
+                select: dealSelect,
+            }));
 
         const noteLines: string[] = [];
         if (input.message?.trim()) noteLines.push(`Mensagem: ${input.message.trim()}`);

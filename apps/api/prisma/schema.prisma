@@ -257,6 +257,10 @@ model Client {
   // formato legado do WhatsApp) abrirem dois cards na pipeline.
   emailKey   String? @map("email_key")
   phoneKey   String? @map("phone_key")
+  // Quando dois registros se revelam a mesma pessoa, o mais novo aponta para o que
+  // ficou em vez de ser removido: nenhum contato sai da base. Registros com este campo
+  // preenchido são ignorados nas listagens e na deduplicação, mas seguem consultáveis.
+  mergedIntoId String? @map("merged_into_id")
   role       String?
   city       String?
   state      String?
@@ -290,6 +294,7 @@ model Client {
   @@index([companyId])
   @@index([userId, emailKey])
   @@index([userId, phoneKey])
+  @@index([mergedIntoId])
   @@map("clients")
 }
 

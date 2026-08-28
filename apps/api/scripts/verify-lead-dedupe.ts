@@ -38,11 +38,12 @@ async function reset() {
 }
 
 async function report(label: string) {
-    const clients = await prisma.client.count();
+    const clients = await prisma.client.count({ where: { mergedIntoId: null } });
     const deals = await prisma.deal.count();
+    const arquivados = await prisma.client.count({ where: { mergedIntoId: { not: null } } });
     const open = await prisma.deal.count({ where: { status: "open" } });
     const ok = clients === 1 && open === 1;
-    console.log(`${ok ? "PASS" : "FALHOU"}  ${label.padEnd(52)} clients=${clients} deals=${deals} abertos=${open}`);
+    console.log(`${ok ? "PASS" : "FALHOU"}  ${label.padEnd(52)} clients=${clients} deals=${deals} abertos=${open} arquivados=${arquivados}`);
     return ok;
 }
 
@@ -86,7 +87,7 @@ async function main() {
         upsertDealByContact({ userId, name: "Maria", email: "maria@x.com", phone: "21987654321", source: "Site" }),
         upsertDealByContact({ userId, name: "Pedro", email: "pedro@x.com", phone: "11933334444", source: "Site" }),
     ]);
-    const c4 = await prisma.client.count();
+    const c4 = await prisma.client.count({ where: { mergedIntoId: null } });
     const d4 = await prisma.deal.count();
     const ok4 = c4 === 3 && d4 === 3;
     console.log(`${ok4 ? "PASS" : "FALHOU"}  ${"3 pessoas distintas seguem distintas".padEnd(52)} clients=${c4} deals=${d4}`);
@@ -113,7 +114,7 @@ async function main() {
     await upsertDealByContact({ userId, name: "Bia", email: "bia@x.com", phone: "11994443333", source: "Site" });
     const dealBia = await prisma.deal.findUnique({ where: { id: bia.dealId }, select: { status: true, stageId: true } });
     const ok6 = dealBia?.status === "open" && dealBia.stageId === mql!.id
-        && (await prisma.deal.count()) === 1 && (await prisma.client.count()) === 1;
+        && (await prisma.deal.count()) === 1 && (await prisma.client.count({ where: { mergedIntoId: null } })) === 1;
     console.log(`${ok6 ? "PASS" : "FALHOU"}  ${"cliente que fechou volta ao MQL no mesmo card".padEnd(52)} status=${dealBia?.status} cards=${await prisma.deal.count()}`);
     allOk = ok6 && allOk;
 
@@ -131,9 +132,30 @@ async function main() {
     const antes = await prisma.deal.count({ where: { status: "open" } });
     await upsertDealByContact({ userId, name: "Carlos", email: "carlos@x.com", phone: "11995556666", source: "Blog" });
     const depois = await prisma.deal.count({ where: { status: "open" } });
-    const ok7 = antes === 2 && depois === 1;
-    console.log(`${ok7 ? "PASS" : "FALHOU"}  ${"card duplicado do legado é unificado na entrada".padEnd(52)} antes=${antes} depois=${depois}`);
+    const totalCards = await prisma.deal.count();
+    const arquivadoComoPerdido = await prisma.deal.count({ where: { status: "lost" } });
+    const ok7 = antes === 2 && depois === 1 && totalCards === 2 && arquivadoComoPerdido === 1;
+    console.log(`${ok7 ? "PASS" : "FALHOU"}  ${"card duplicado sai da pipeline sem ser apagado".padEnd(52)} abertos ${antes}->${depois} total=${totalCards} perdido=${arquivadoComoPerdido}`);
     allOk = ok7 && allOk;
+
+    // ── 8. Fusão de contatos preserva todos os registros no banco ──
+    userId = await reset();
+    // Duas entradas disjuntas: uma só com telefone, outra só com e-mail. Elas nascem
+    // separadas por não terem como se reconhecer; o contato seguinte, trazendo os dois
+    // dados, revela a ligação e dispara a fusão.
+    await upsertDealByContact({ userId, name: "Duda", email: null, phone: "11997778888", source: "WhatsApp" });
+    await upsertDealByContact({ userId, name: "Duda", email: "duda@x.com", phone: null, source: "Site" });
+    const antesFusao = await prisma.client.count();
+    await upsertDealByContact({ userId, name: "Duda", email: "duda@x.com", phone: "11997778888", source: "Blog" });
+    const totalDepois = await prisma.client.count();
+    const ativos = await prisma.client.count({ where: { mergedIntoId: null } });
+    const arquivadosFusao = await prisma.client.count({ where: { mergedIntoId: { not: null } } });
+    const abertosDuda = await prisma.deal.count({ where: { status: "open" } });
+    const cardsTotais = await prisma.deal.count();
+    const ok8 = antesFusao === 2 && totalDepois === 2 && ativos === 1 && arquivadosFusao === 1
+        && abertosDuda === 1 && cardsTotais === 2;
+    console.log(`${ok8 ? "PASS" : "FALHOU"}  ${"fusão não apaga: contatos e cards seguem no banco".padEnd(52)} contatos ${antesFusao}->${totalDepois} (ativos=${ativos}) cards=${cardsTotais} abertos=${abertosDuda}`);
+    allOk = ok8 && allOk;
 
     console.log(allOk ? "\nTODOS OS CENÁRIOS PASSARAM" : "\nHÁ CENÁRIO FALHANDO");
     await prisma.$disconnect();

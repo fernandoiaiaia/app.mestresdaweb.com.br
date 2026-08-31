@@ -14,7 +14,42 @@ import {
     CalendarRange,
     Radar,
 } from "lucide-react";
-import { reportsService, LeadsBySourceData, LeadsPeriod } from "@/services/reports.service";
+import { api } from "@/lib/api";
+
+
+type LeadSourceRow = {
+    source: string;
+    leads: number;
+    percent: number;
+    wonCount: number;
+    wonValue: number;
+    totalValue: number;
+    previousLeads: number;
+    /** null quando o período anterior não teve nenhum lead — não existe variação sobre zero. */
+    changePercent: number | null;
+};
+
+type LeadsBySourceData = {
+    range: { startDate: string; endDate: string; days: number };
+    totals: {
+        leads: number;
+        previousLeads: number;
+        changePercent: number | null;
+        wonCount: number;
+        wonValue: number;
+        sourceCount: number;
+    };
+    sources: LeadSourceRow[];
+    daily: Array<{ date: string; leads: number }>;
+};
+
+type LeadsPeriod = { days: number } | { startDate: string; endDate: string };
+
+function buildQuery(period: LeadsPeriod) {
+    return "days" in period
+        ? `days=${period.days}`
+        : `startDate=${encodeURIComponent(period.startDate)}&endDate=${encodeURIComponent(period.endDate)}`;
+}
 
 /** Janelas rápidas + o modo personalizado. */
 const PRESETS = [
@@ -50,7 +85,7 @@ export default function LeadsBySourcePage() {
         const load = async () => {
             setIsLoading(true);
             setError(null);
-            const res = await reportsService.getLeadsBySource(period);
+            const res = await api<LeadsBySourceData>(`/api/reports/leads-by-source?${buildQuery(period)}`);
             if (!active) return;
             if (res.success && res.data) {
                 setData(res.data);
@@ -92,7 +127,7 @@ export default function LeadsBySourcePage() {
                 <div>
                     <div className="flex items-center gap-2 mb-4">
                         <Link
-                            href="/dashboard/management/reports"
+                            href="/dashboard/manager/reports"
                             className="flex items-center gap-1.5 text-slate-500 hover:text-slate-300 transition-colors text-sm"
                         >
                             <ChevronLeft size={16} /><span>Relatórios</span>

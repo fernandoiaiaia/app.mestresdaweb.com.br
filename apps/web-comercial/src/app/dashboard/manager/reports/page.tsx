@@ -6,7 +6,7 @@ import {
     BarChart3, TrendingUp, Users, DollarSign, Clock, Target,
     FileText, ArrowRight, XCircle, Briefcase, UserCheck,
     Activity, Layers, CalendarDays, Handshake, PieChart,
-    Gauge, Zap, CheckCircle2,
+    Gauge, Zap, CheckCircle2, Magnet,
 } from "lucide-react";
 
 interface ReportCard {
@@ -61,6 +61,11 @@ const reports: ReportCard[] = [
     },
 
     // ═══ MANAGER (Gestão de Equipe) ═══
+    {
+        id: "leads-by-source", title: "Entrada de Leads por Fonte", description: "Quantos leads entraram por canal em 7, 15, 30 dias ou período personalizado, com comparativo.",
+        icon: Magnet, color: "text-sky-400", bgColor: "bg-sky-500/10", borderColor: "border-sky-500/20",
+        href: "/dashboard/manager/reports/leads-by-source", category: "manager", tags: ["Leads", "Origem"],
+    },
     {
         id: "team-performance", title: "Performance da Equipe", description: "Ranking de advisors, conversão individual, volume de propostas e tendências.",
         icon: Users, color: "text-blue-400", bgColor: "bg-blue-500/10", borderColor: "border-blue-500/20",

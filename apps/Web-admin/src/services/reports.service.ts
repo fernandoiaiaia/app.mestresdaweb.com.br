@@ -81,6 +81,36 @@ export type ConsultantPerformanceRow = {
     cicloVendasDias: number;
 };
 
+export type LeadSourceRow = {
+    source: string;
+    leads: number;
+    percent: number;
+    wonCount: number;
+    wonValue: number;
+    totalValue: number;
+    previousLeads: number;
+    /** null quando o período anterior não teve nenhum lead — não existe variação sobre zero. */
+    changePercent: number | null;
+};
+
+export type LeadsBySourceData = {
+    range: { startDate: string; endDate: string; days: number };
+    totals: {
+        leads: number;
+        previousLeads: number;
+        changePercent: number | null;
+        wonCount: number;
+        wonValue: number;
+        sourceCount: number;
+    };
+    sources: LeadSourceRow[];
+    daily: Array<{ date: string; leads: number }>;
+};
+
+export type LeadsPeriod =
+    | { days: number }
+    | { startDate: string; endDate: string };
+
 export type AcquisitionRow = {
     source: string;
     totalLeads: number;
@@ -233,6 +263,13 @@ export const reportsService = {
 
     async getAcquisitionROI(year: number) {
         return api<AcquisitionRow[]>(`/api/reports/acquisition-roi?year=${year}`);
+    },
+
+    async getLeadsBySource(period: LeadsPeriod) {
+        const query = "days" in period
+            ? `days=${period.days}`
+            : `startDate=${encodeURIComponent(period.startDate)}&endDate=${encodeURIComponent(period.endDate)}`;
+        return api<LeadsBySourceData>(`/api/reports/leads-by-source?${query}`);
     },
 
     async getProjectProfitability(year: number) {

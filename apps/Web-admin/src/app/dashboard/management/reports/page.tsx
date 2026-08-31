@@ -15,7 +15,8 @@ import {
     Briefcase,
     Users,
     MessageSquare,
-    Clock
+    Clock,
+    Magnet
 } from "lucide-react";
 
 export default function ReportsHubPage() {
@@ -33,10 +34,11 @@ export default function ReportsHubPage() {
         },
         {
             title: "Vendas & CRM",
-            description: "Mensure conversões do funil, win-rate, performance de vendedores e ROI de aquisição.",
+            description: "Acompanhe a entrada de leads por canal, conversões do funil, win-rate, performance de vendedores e ROI de aquisição.",
             icon: <Target size={24} className="text-blue-400" />,
             color: "blue",
             reports: [
+                { name: "Entrada de Leads por Fonte", link: "/dashboard/management/reports/sales/leads", icon: <Magnet size={16} /> },
                 { name: "Funil de Conversão", link: "/dashboard/management/reports/sales/funnel", icon: <BarChart3 size={16} /> },
                 { name: "Performance do Time", link: "/dashboard/management/reports/sales/performance", icon: <Users size={16} /> },
                 { name: "ROI por Canal", link: "/dashboard/management/reports/sales/roi", icon: <LineChart size={16} /> },

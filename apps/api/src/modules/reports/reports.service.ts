@@ -1148,5 +1148,154 @@ export const reportsService = {
             legal,
             support: { openTicketsCount: openTickets }
         };
+    },
+
+    /**
+     * Entrada de leads por fonte num intervalo livre de datas.
+     *
+     * Conta negócios criados no período — cada um representa a entrada de um lead novo.
+     * Reconversões não entram: desde a correção de duplicidade elas reaproveitam o
+     * negócio existente em vez de abrir outro, então contá-las aqui inflaria o volume
+     * do canal. Cards arquivados como "Duplicado" também ficam de fora, pelo mesmo motivo.
+     *
+     * Além do total do período, devolve o mesmo recorte para o intervalo imediatamente
+     * anterior de igual duração, que é o que dá sentido a "cresceu" ou "caiu".
+     */
+    async getLeadsBySource(startDate: Date, endDate: Date) {
+        const spanMs = endDate.getTime() - startDate.getTime();
+        const previousStart = new Date(startDate.getTime() - spanMs - 1);
+        const previousEnd = new Date(startDate.getTime() - 1);
+
+        const select = {
+            source: true,
+            value: true,
+            status: true,
+            createdAt: true,
+        } as const;
+
+        // Cards arquivados pela consolidação de duplicatas não são entradas reais.
+        const notDuplicate = {
+            OR: [
+                { lossReasonId: null },
+                { lossReason: { name: { not: "Duplicado" } } },
+            ],
+        };
+
+        const [current, previous] = await Promise.all([
+            prisma.deal.findMany({
+                where: { createdAt: { gte: startDate, lte: endDate }, ...notDuplicate },
+                select,
+            }),
+            prisma.deal.findMany({
+                where: { createdAt: { gte: previousStart, lte: previousEnd }, ...notDuplicate },
+                select: { source: true },
+            }),
+        ]);
+
+        const previousBySource = new Map<string, number>();
+        for (const deal of previous) {
+            const source = deal.source || "Desconhecida";
+            previousBySource.set(source, (previousBySource.get(source) ?? 0) + 1);
+        }
+
+        interface SourceBucket {
+            source: string;
+            leads: number;
+            wonCount: number;
+            wonValue: number;
+            totalValue: number;
+        }
+        const bySource = new Map<string, SourceBucket>();
+        const byDay = new Map<string, number>();
+
+        for (const deal of current) {
+            const source = deal.source || "Desconhecida";
+            const bucket = bySource.get(source)
+                ?? { source, leads: 0, wonCount: 0, wonValue: 0, totalValue: 0 };
+
+            bucket.leads++;
+            bucket.totalValue += deal.value;
+            if (deal.status === "won") {
+                bucket.wonCount++;
+                bucket.wonValue += deal.value;
+            }
+            bySource.set(source, bucket);
+
+            const day = _toBrazilDay(deal.createdAt);
+            byDay.set(day, (byDay.get(day) ?? 0) + 1);
+        }
+
+        const totalLeads = current.length;
+        const previousTotal = previous.length;
+
+        const sources = [...bySource.values()]
+            .map((bucket) => {
+                const previousLeads = previousBySource.get(bucket.source) ?? 0;
+                return {
+                    ...bucket,
+                    percent: totalLeads > 0 ? (bucket.leads / totalLeads) * 100 : 0,
+                    previousLeads,
+                    changePercent: _percentChange(bucket.leads, previousLeads),
+                };
+            })
+            .sort((a, b) => b.leads - a.leads);
+
+        const daily = _fillDailySeries(startDate, endDate, byDay);
+
+        return {
+            range: {
+                startDate: startDate.toISOString(),
+                endDate: endDate.toISOString(),
+                // O número de dias exibidos, não o de horas dividido por 24: é o que o
+                // leitor confere contando as barras.
+                days: daily.length,
+            },
+            totals: {
+                leads: totalLeads,
+                previousLeads: previousTotal,
+                changePercent: _percentChange(totalLeads, previousTotal),
+                wonCount: current.filter((d) => d.status === "won").length,
+                wonValue: current.reduce((sum, d) => (d.status === "won" ? sum + d.value : sum), 0),
+                sourceCount: sources.length,
+            },
+            sources,
+            daily,
+        };
     }
 };
+
+/**
+ * Deslocamento do horário de Brasília. Fixo: o país não adota horário de verão desde 2019.
+ */
+export const BRAZIL_UTC_OFFSET_MS = 3 * 60 * 60 * 1000;
+
+/**
+ * Dia civil brasileiro. Agrupar direto pelo UTC jogaria todo lead que entra depois das
+ * 21h para o dia seguinte, desalinhando o relatório do que a equipe vê na tela.
+ */
+function _toBrazilDay(date: Date): string {
+    return new Date(date.getTime() - BRAZIL_UTC_OFFSET_MS).toISOString().slice(0, 10);
+}
+
+function _percentChange(current: number, previous: number): number | null {
+    // Sem base de comparação não existe variação — devolver 0 ou 100 aqui viraria uma
+    // seta enganosa na tela.
+    if (previous === 0) return current === 0 ? 0 : null;
+    return ((current - previous) / previous) * 100;
+}
+
+/** Série diária com os dias vazios preenchidos, para o gráfico não pular datas. */
+function _fillDailySeries(startDate: Date, endDate: Date, byDay: Map<string, number>) {
+    const series: Array<{ date: string; leads: number }> = [];
+    const cursor = new Date(startDate.getTime());
+    const lastDay = _toBrazilDay(endDate);
+
+    for (let guard = 0; guard < 400; guard++) {
+        const day = _toBrazilDay(cursor);
+        series.push({ date: day, leads: byDay.get(day) ?? 0 });
+        if (day >= lastDay) break;
+        cursor.setUTCDate(cursor.getUTCDate() + 1);
+    }
+
+    return series;
+}

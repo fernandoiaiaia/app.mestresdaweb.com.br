@@ -13,6 +13,7 @@ router.get("/profitability", requireAdmin, reportsController.getProfitability);
 router.get("/sales-funnel", requireAdmin, reportsController.getSalesFunnel);
 router.get("/consultant-performance", requireAdmin, reportsController.getConsultantPerformance);
 router.get("/acquisition-roi", requireAdmin, reportsController.getAcquisitionROI);
+router.get("/leads-by-source", requireAdmin, reportsController.getLeadsBySource);
 router.get("/project-profitability", requireAdmin, reportsController.getProjectProfitability);
 router.get("/project-velocity", requireAdmin, reportsController.getProjectVelocity);
 router.get("/contracts-mrr", requireAdmin, reportsController.getContractsMRR);

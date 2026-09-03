@@ -129,6 +129,14 @@ export interface UpsertDealByContactInput {
     temperature?: string | null;
     expectedClose?: string | null;
     nextAction?: string | null;
+    /**
+     * Id da solicitação no sistema de origem (hoje: a Opportunity do Connech). Quando
+     * presente, o negócio passa a ser por solicitação, não por contato: o mesmo lead
+     * pedindo um segundo orçamento ganha um card novo em vez de reaproveitar o card do
+     * primeiro. Ausente para tudo que nasce aqui (site, WhatsApp, cadastro manual), que
+     * mantém a regra de um único card aberto por contato.
+     */
+    externalRef?: string | null;
 }
 
 export interface UpsertDealByContactResult {
@@ -151,6 +159,12 @@ export interface UpsertDealByContactResult {
  * perdido ou ganho — volta para "open" na primeira etapa (MQL). Nunca se abre um segundo
  * card para quem já tem um; um contato tem no máximo um negócio aberto, sempre.
  * A reconversão fica registrada numa DealNote com os dados da conversão.
+ *
+ * A exceção é `input.externalRef`: uma solicitação externa (Opportunity do Connech) é
+ * uma demanda distinta, não uma reconversão. Nesse caso o card é resolvido pela
+ * referência — reenvio do mesmo id reencontra o card, id novo abre um card novo — porque
+ * do outro lado cada solicitação guarda o id do negócio daqui num índice único e não
+ * consegue apontar duas para o mesmo.
  */
 export async function upsertDealByContact(
     input: UpsertDealByContactInput,
@@ -200,26 +214,35 @@ export async function upsertDealByContact(
             isNewClient = true;
         }
 
+        const externalRef = input.externalRef?.trim() || null;
+
         // Um contato pode chegar aqui já carregando mais de um card aberto, herdados de
         // antes desta correção. Unifica primeiro, para que o negócio reaproveitado logo
         // abaixo seja o único aberto que resta.
         await consolidateOpenDeals(tx, clientId);
 
-        // O negócio em andamento tem precedência sobre o mais recente. Ordenar só por data
-        // pegaria o card que a consolidação acabou de arquivar — ou um "ganho" recente ao
-        // lado de um card aberto mais antigo — e reabri-lo devolveria a duplicata à pipeline.
         const dealSelect = { id: true, status: true, consultantId: true, stageId: true, funnelId: true };
-        const existingDeal =
-            (await tx.deal.findFirst({
-                where: { clientId, status: "open" },
-                orderBy: { createdAt: "desc" },
-                select: dealSelect,
-            })) ??
-            (await tx.deal.findFirst({
-                where: { clientId },
-                orderBy: { createdAt: "desc" },
-                select: dealSelect,
-            }));
+
+        // Solicitação externa: o card é da solicitação, não do contato. Só reaproveita o
+        // card que já nasceu desta mesma referência — uma reentrega do webhook. Qualquer
+        // outro card do contato é de outra demanda e não pode ser reaproveitado aqui, ou o
+        // Connech acabaria com duas oportunidades apontando para o mesmo negócio, o que o
+        // índice único de `crm_deal_id` recusa.
+        const existingDeal = externalRef
+            ? await tx.deal.findUnique({ where: { externalRef }, select: dealSelect })
+            : // O negócio em andamento tem precedência sobre o mais recente. Ordenar só por data
+              // pegaria o card que a consolidação acabou de arquivar — ou um "ganho" recente ao
+              // lado de um card aberto mais antigo — e reabri-lo devolveria a duplicata à pipeline.
+              ((await tx.deal.findFirst({
+                  where: { clientId, status: "open" },
+                  orderBy: { createdAt: "desc" },
+                  select: dealSelect,
+              })) ??
+                  (await tx.deal.findFirst({
+                      where: { clientId },
+                      orderBy: { createdAt: "desc" },
+                      select: dealSelect,
+                  })));
 
         const noteLines: string[] = [];
         if (input.message?.trim()) noteLines.push(`Mensagem: ${input.message.trim()}`);
@@ -309,6 +332,7 @@ export async function upsertDealByContact(
                     temperature: input.temperature || "cold",
                     expectedClose: input.expectedClose ? new Date(input.expectedClose) : null,
                     nextAction: input.nextAction?.trim() || null,
+                    externalRef,
                 },
                 select: { id: true },
             });

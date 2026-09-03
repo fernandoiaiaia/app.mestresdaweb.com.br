@@ -74,7 +74,7 @@ export const leadsController = {
      */
     async createFullLead(req: Request, res: Response) {
         try {
-            const { name, email, phone, tag, source, project_type, budget, message, conversion_url, url_data } = req.body as {
+            const { name, email, phone, tag, source, project_type, budget, message, conversion_url, url_data, external_ref } = req.body as {
                 name: string;
                 email: string;
                 phone: string;
@@ -85,6 +85,7 @@ export const leadsController = {
                 message?: string;
                 conversion_url?: string;
                 url_data?: string;
+                external_ref?: string;
             };
 
             if (!name?.trim() || !email?.trim()) {
@@ -94,7 +95,7 @@ export const leadsController = {
             const result = await leadsService.createFullLead({
                 name, email, phone,
                 tag, source, project_type, budget, message,
-                conversion_url, url_data,
+                conversion_url, url_data, external_ref,
             });
 
             return res.status(201).json({ success: true, data: result });

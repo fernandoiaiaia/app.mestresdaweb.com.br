@@ -934,7 +934,7 @@ export default function EditorPage() {
                             <optgroup label="Leads do Connech">
                                 {connechLeads.map(l => (
                                     <option key={l.dealId} value={l.clientId} className="bg-slate-900 text-white">
-                                        {l.clientName}{l.company ? ` (${l.company})` : ''}
+                                        {l.clientName}{l.title ? ` · ${l.title}` : ''}
                                     </option>
                                 ))}
                             </optgroup>

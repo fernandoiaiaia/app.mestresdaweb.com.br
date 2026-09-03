@@ -113,8 +113,16 @@ export type ConnechPublishOutcome =
  * Envia o escopo já transformado para o webhook de entrada do Connech
  * (POST /api/v1/webhooks/advisor/scope). Sem retry automático — o Connech
  * dedup por hash do escopo, então um reenvio manual é seguro.
+ *
+ * `proposalId` é o que faz cada orçamento montado aqui virar um orçamento próprio lá.
+ * Sem ele, o Connech trataria a segunda publicação do mesmo lead como uma nova versão do
+ * escopo da primeira, e os fornecedores só veriam um pedido para cotar.
  */
-export async function sendScopeToConnech(dealId: string, scope: InboundScope): Promise<ConnechPublishOutcome> {
+export async function sendScopeToConnech(
+    dealId: string,
+    scope: InboundScope,
+    proposal: { id: string; title: string },
+): Promise<ConnechPublishOutcome> {
     if (!env.ADVISOR_WEBHOOK_SECRET) {
         return { ok: false, code: "NOT_CONFIGURED", message: "ADVISOR_WEBHOOK_SECRET não configurado no servidor." };
     }
@@ -127,18 +135,24 @@ export async function sendScopeToConnech(dealId: string, scope: InboundScope): P
                 "Content-Type": "application/json",
                 "x-advisor-secret": env.ADVISOR_WEBHOOK_SECRET,
             },
-            body: JSON.stringify({ dealId, sentAt: new Date().toISOString(), scope }),
+            body: JSON.stringify({
+                dealId,
+                proposalId: proposal.id,
+                proposalTitle: proposal.title.trim().slice(0, 300) || undefined,
+                sentAt: new Date().toISOString(),
+                scope,
+            }),
             signal: AbortSignal.timeout(15_000),
         });
     } catch (err) {
-        logger.warn({ dealId, err }, "[Connech] Falha de rede ao publicar escopo");
+        logger.warn({ dealId, proposalId: proposal.id, err }, "[Connech] Falha de rede ao publicar escopo");
         return { ok: false, code: "NETWORK_ERROR", message: "Não foi possível conectar ao Connech agora. Verifique se a API do Connech está no ar e tente novamente." };
     }
 
     const body = await res.json().catch(() => ({}) as Record<string, unknown>);
 
     if (res.status === 200) {
-        logger.info({ dealId, status: res.status, duplicate: !!body.duplicate }, "[Connech] Escopo publicado");
+        logger.info({ dealId, proposalId: proposal.id, status: res.status, duplicate: !!body.duplicate }, "[Connech] Escopo publicado");
         if (body.duplicate) return { ok: true, duplicate: true, version: body.version as number };
         return { ok: true, duplicate: false, opportunityId: body.opportunityId as string, version: body.version as number };
     }

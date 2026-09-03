@@ -590,6 +590,13 @@ model Deal {
   tags          String[]
   assigneeIds   String[]  @default([]) @map("assignee_ids")
 
+  // Identificador do negócio no sistema de origem, quando o lead nasceu fora daqui
+  // (hoje: o id da Opportunity no Connech). É o que permite ter mais de um card
+  // aberto para o mesmo contato sem reabrir o problema de cards duplicados: cada
+  // solicitação externa vira o seu próprio negócio, e o reenvio da mesma
+  // solicitação reencontra o card em vez de criar outro.
+  externalRef   String?   @unique @map("external_ref")
+
   notes                  DealNote[]
   files                  DealFile[]
   tasks                  Task[]

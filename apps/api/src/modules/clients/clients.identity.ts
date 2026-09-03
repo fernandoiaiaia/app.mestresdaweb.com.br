@@ -146,10 +146,16 @@ async function _duplicateLossReasonId(tx: Prisma.TransactionClient, userId: stri
  * das tags. Os outros são marcados como perdidos com o motivo "Duplicado" e uma nota
  * apontando para o card que os absorveu: saem da pipeline, continuam no banco, e
  * desfazer é só reabrir. Nada é excluído.
+ *
+ * Negócios com `externalRef` ficam de fora: cada um corresponde a uma solicitação de
+ * orçamento própria lá no sistema de origem, que guarda o id deste negócio num índice
+ * único. Unificá-los aqui apagaria esse vínculo justamente para as solicitações
+ * absorvidas, e o escopo montado para elas nunca mais encontraria a oportunidade certa.
+ * Dois pedidos distintos do mesmo contato não são duplicata um do outro.
  */
 export async function consolidateOpenDeals(tx: Prisma.TransactionClient, clientId: string) {
     const open = await tx.deal.findMany({
-        where: { clientId, status: "open" },
+        where: { clientId, status: "open", externalRef: null },
         select: {
             id: true,
             userId: true,

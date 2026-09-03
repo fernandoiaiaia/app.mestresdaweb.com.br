@@ -565,7 +565,10 @@ export class AssemblerService {
         if (!AssemblerService.isConnechDeal(proposal.deal)) throw new Error("NOT_CONNECH_DEAL");
 
         const scope = toInboundScope(proposal.scopeData);
-        const outcome = await sendScopeToConnech(proposal.dealId, scope);
+        const outcome = await sendScopeToConnech(proposal.dealId, scope, {
+            id: proposalId,
+            title: proposal.title,
+        });
 
         if (outcome.ok) {
             void prisma.activityLog.create({

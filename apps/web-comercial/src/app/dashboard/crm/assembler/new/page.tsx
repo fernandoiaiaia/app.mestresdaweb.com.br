@@ -253,7 +253,7 @@ export default function WizardStep1() {
                             <optgroup label="Leads do Connech">
                                 {connechLeads.map(l => (
                                     <option key={l.dealId} value={l.clientId} className="bg-slate-900 text-white">
-                                        {l.clientName}{l.company ? ` (${l.company})` : ''}{l.hasProposal ? ' — já tem proposta' : ''}
+                                        {l.clientName}{l.title ? ` · ${l.title}` : ''}{l.hasProposal ? ' — já tem proposta' : ''}
                                     </option>
                                 ))}
                             </optgroup>

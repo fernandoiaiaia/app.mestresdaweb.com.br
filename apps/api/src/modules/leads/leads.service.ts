@@ -181,6 +181,7 @@ export const leadsService = {
         message?: string;
         conversion_url?: string;
         url_data?: string;
+        external_ref?: string;
     }) {
         // Resolved consistently with every other lead-intake channel (WhatsApp, settings) via
         // the shared getOwnerUserId() helper, so the same real-world contact always lands
@@ -227,6 +228,9 @@ export const leadsService = {
             urlData: data.url_data?.trim() || null,
             projectType: data.project_type?.trim() || null,
             budget: data.budget?.trim() || null,
+            // Presente só quando o lead vem de um sistema que trata cada pedido como uma
+            // demanda própria (Connech). Faz o card ser por solicitação, não por contato.
+            externalRef: data.external_ref?.trim() || null,
         });
 
         logger.info(

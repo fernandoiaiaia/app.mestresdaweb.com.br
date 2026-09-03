@@ -208,11 +208,19 @@ export class AssemblerService {
         }
 
         if (clientId && !dealId) {
-            // Find existing open deal
-            const existingDeal = await prisma.deal.findFirst({
-                where: { clientId, status: "open", userId },
-                orderBy: { createdAt: "desc" }
+            // O lead do Connech entra pelo /api/leads/public/full, que cria o Deal sob a
+            // conta OWNER e deixa o consultor só como responsável. Filtrar por `userId`
+            // (o consultor logado) não encontrava esse card e abria um negócio paralelo —
+            // e aí o Connech recusava a publicação com DEAL_NOT_FOUND, porque o
+            // `crmDealId` guardado lá aponta para o card original. Busca todos os abertos
+            // do contato e dá precedência ao que veio do Connech.
+            const openDeals = await prisma.deal.findMany({
+                where: { clientId, status: "open" },
+                select: { id: true, source: true, tags: true },
+                orderBy: { createdAt: "desc" },
             });
+            const existingDeal =
+                openDeals.find(d => AssemblerService.isConnechDeal(d)) ?? openDeals[0];
 
             if (existingDeal) {
                 dealId = existingDeal.id;
@@ -293,15 +301,31 @@ export class AssemblerService {
         const totalHours = AssemblerService.calcTotalHours(data);
 
         // clientId & dealId validation
-        // O frontend quase nunca envia `dealId` de volta (o editor não expõe essa
-        // troca), então a ausência dele no payload não pode ser lida como "desvincular" —
-        // preserva o vínculo já existente, igual já é feito para clientFeedback abaixo.
+        // Nem toda tela devolve `dealId`, então a ausência dele no payload não pode ser
+        // lida como "desvincular" — preserva o vínculo já existente, igual já é feito
+        // para clientFeedback abaixo.
         let clientId = data.clientId && data.clientId.trim() !== "" ? data.clientId : null;
         let dealId = data.dealId && data.dealId.trim() !== "" ? data.dealId : existing.dealId;
 
         if (clientId) {
             const clientExists = await prisma.client.findUnique({ where: { id: clientId } });
             if (!clientExists) clientId = null;
+        }
+
+        // Exceção à regra acima: se o contato mudou, herdar o negócio antigo publicaria
+        // este escopo na oportunidade do contato anterior lá no Connech. Reencontra o
+        // negócio aberto do novo contato, com precedência para o que veio do Connech.
+        if (clientId !== existing.clientId) {
+            dealId = data.dealId && data.dealId.trim() !== "" ? data.dealId : null;
+
+            if (clientId && !dealId) {
+                const openDeals = await prisma.deal.findMany({
+                    where: { clientId, status: "open" },
+                    select: { id: true, source: true, tags: true },
+                    orderBy: { createdAt: "desc" },
+                });
+                dealId = (openDeals.find(d => AssemblerService.isConnechDeal(d)) ?? openDeals[0])?.id ?? null;
+            }
         }
 
         if (dealId) {
@@ -442,6 +466,67 @@ export class AssemblerService {
         if (!deal) return false;
         if (deal.source?.trim().toLowerCase() === "connech") return true;
         return deal.tags?.some(t => t.trim().toLowerCase() === "connech") ?? false;
+    }
+
+    /**
+     * Leads que entraram pelo Connech e ainda estão em aberto, do mais recente para o
+     * mais antigo. É o que o Montador usa para preencher o "Contato Base" sozinho: sem
+     * essa lista o consultor precisava achar o contato certo no meio de toda a base, e
+     * um escopo montado sem esse vínculo nunca chega aos fornecedores.
+     */
+    static async listConnechLeads(userId: string) {
+        const dbUser = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { role: true },
+        });
+
+        // OWNER/ADMIN enxergam a carteira inteira; os demais, só os negócios em que
+        // estão como dono da conta, consultor ou participante — mesmo recorte já
+        // aplicado no restante do CRM.
+        const seesEverything = dbUser?.role === "OWNER" || dbUser?.role === "ADMIN";
+        const accessScope: Prisma.DealWhereInput = seesEverything
+            ? {}
+            : {
+                  OR: [
+                      { userId },
+                      { consultantId: userId },
+                      { assigneeIds: { has: userId } },
+                  ],
+              };
+
+        const deals = await prisma.deal.findMany({
+            where: {
+                status: "open",
+                // Mesmo critério do isConnechDeal(), só que aplicado no banco.
+                AND: [
+                    { OR: [{ source: { equals: "connech", mode: "insensitive" } }, { tags: { has: "connech" } }] },
+                    accessScope,
+                ],
+            },
+            select: {
+                id: true,
+                title: true,
+                createdAt: true,
+                client: { select: { id: true, name: true, company: true } },
+                assembledProposals: { select: { id: true }, take: 1 },
+            },
+            orderBy: { createdAt: "desc" },
+            take: 50,
+        });
+
+        return deals
+            .filter(d => d.client)
+            .map(d => ({
+                dealId: d.id,
+                clientId: d.client!.id,
+                clientName: d.client!.name || "Sem Nome",
+                company: d.client!.company ?? null,
+                title: d.title,
+                createdAt: d.createdAt,
+                // Um lead que ainda não tem proposta é o candidato natural para o
+                // preenchimento automático do Montador.
+                hasProposal: d.assembledProposals.length > 0,
+            }));
     }
 
     /** Sonda leve: essa proposta está vinculada a um Deal originado do Connech? Nunca lança. */

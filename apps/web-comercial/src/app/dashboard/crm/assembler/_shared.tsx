@@ -376,6 +376,30 @@ export interface ConnechPublishResult {
   version?: number;
 }
 
+/** Lead aberto que entrou pelo Connech — já traz o negócio a que o escopo precisa se vincular. */
+export interface ConnechLead {
+  dealId: string;
+  clientId: string;
+  clientName: string;
+  company: string | null;
+  title: string;
+  createdAt: string;
+  hasProposal: boolean;
+}
+
+/**
+ * Leads vindos do Connech, do mais recente para o mais antigo. Nunca lança: se a
+ * chamada falhar, o Montador continua funcionando com a lista normal de contatos.
+ */
+export async function getConnechLeads(): Promise<ConnechLead[]> {
+  try {
+    const res = await api<ConnechLead[]>("/api/assembler/connech-leads") as ApiResponse<ConnechLead[]>;
+    return res.success && res.data ? res.data : [];
+  } catch {
+    return [];
+  }
+}
+
 /** Sonda leve — nunca lança, apenas controla a visibilidade do botão de publicar. */
 export async function getConnechStatus(proposalId: string): Promise<ConnechStatus> {
   const res = await api<ConnechStatus>(`/api/assembler/proposals/${proposalId}/connech-status`) as ApiResponse<ConnechStatus>;

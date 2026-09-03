@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Plus, Trash2, ArrowRight, Smartphone, Laptop, Monitor, Globe, Code, Box, Server, Check, Calendar, User, FileText, Bot } from "lucide-react";
 import { api } from "../../../../../lib/api";
-import { UserDef, PlatformType, saveUsersDraft, loadUsersDraft, saveScopeDraft, saveProjectSummaryDraft, loadProjectSummaryDraft, saveProposalMetaDraft, loadProposalMetaDraft, CompleteScope } from "../_shared";
+import { UserDef, PlatformType, saveUsersDraft, loadUsersDraft, saveScopeDraft, saveProjectSummaryDraft, loadProjectSummaryDraft, saveProposalMetaDraft, loadProposalMetaDraft, CompleteScope, ConnechLead, getConnechLeads } from "../_shared";
 import MatrixRain from "@/components/shared/MatrixRain";
 
 const PLATFORM_OPTIONS: { label: PlatformType; icon: any }[] = [
@@ -29,16 +29,18 @@ export default function WizardStep1() {
   const [dealId, setDealId] = useState("");
   const [validityDays, setValidityDays] = useState<number>(15);
   const [clients, setClients] = useState<any[]>([]);
+  const [connechLeads, setConnechLeads] = useState<ConnechLead[]>([]);
+  const [autoLinked, setAutoLinked] = useState(false);
 
   // Initialize
   useEffect(() => {
     const urlClientId = searchParams.get("clientId");
     const urlDealId = searchParams.get("dealId");
-    
+
     const meta = loadProposalMetaDraft();
     let initialClientId = urlClientId || "";
     let initialDealId = urlDealId || "";
-    
+
     if (meta) {
       setProjectName(meta.title || "");
       if (!urlClientId) {
@@ -49,16 +51,16 @@ export default function WizardStep1() {
       }
       setValidityDays(meta.validityDays || 15);
     }
-    
+
     if (initialClientId || initialDealId) {
         if (initialClientId) setClientId(initialClientId);
         if (initialDealId) setDealId(initialDealId);
-        
+
         // Force save if it came from URL
         if (urlClientId || urlDealId) {
-            saveProposalMetaDraft({ 
-                title: meta?.title || "", 
-                validityDays: meta?.validityDays || 15, 
+            saveProposalMetaDraft({
+                title: meta?.title || "",
+                validityDays: meta?.validityDays || 15,
                 clientId: initialClientId,
                 dealId: initialDealId
             });
@@ -66,11 +68,37 @@ export default function WizardStep1() {
     }
 
     setProjectSummary(loadProjectSummaryDraft());
-    
+
     api<any[]>("/api/clients").then((res: any) => {
         if (res.success && res.data) setClients(res.data);
     });
-    
+
+    // O escopo só chega aos fornecedores se a proposta estiver amarrada ao negócio
+    // que o Connech criou. Em vez de exigir que o consultor ache o contato certo na
+    // lista inteira, os leads do Connech vêm destacados — e quando há um único lead
+    // ainda sem proposta, ele já entra preenchido.
+    getConnechLeads().then(leads => {
+        setConnechLeads(leads);
+        if (initialClientId || initialDealId) return;
+
+        const pending = leads.filter(l => !l.hasProposal);
+        if (pending.length !== 1) return;
+
+        const lead = pending[0];
+        setClientId(lead.clientId);
+        setDealId(lead.dealId);
+        setAutoLinked(true);
+        // Relê o rascunho: o consultor pode ter começado a digitar o nome do projeto
+        // enquanto a lista de leads carregava, e isso não pode ser sobrescrito.
+        const current = loadProposalMetaDraft();
+        saveProposalMetaDraft({
+            title: current?.title || meta?.title || "",
+            validityDays: current?.validityDays || meta?.validityDays || 15,
+            clientId: lead.clientId,
+            dealId: lead.dealId,
+        });
+    });
+
     const draft = loadUsersDraft();
     if (draft && draft.length > 0) {
       setUsers(draft);
@@ -119,7 +147,9 @@ export default function WizardStep1() {
     }));
   };
 
-  const isValid = users.length > 0 && 
+  const isConnechLead = connechLeads.some(l => l.clientId === clientId);
+
+  const isValid = users.length > 0 &&
     projectSummary.trim() !== "" &&
     projectName.trim() !== "" &&
     users.every(u => 
@@ -198,25 +228,59 @@ export default function WizardStep1() {
 
             <div className="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-6 backdrop-blur-md">
                 <label className="flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
-                    <User size={14} /> Contato Base (Opcional)
+                    <User size={14} /> Contato Base (Lead)
                 </label>
                 <div className="relative">
                     <select
                         value={clientId}
                         onChange={e => {
-                            setClientId(e.target.value);
-                            saveProposalMetaDraft({ title: projectName, validityDays, clientId: e.target.value, dealId });
+                            const nextClientId = e.target.value;
+                            // O negócio vem junto com o contato: trocar o lead sem trocar o
+                            // dealId deixaria o escopo publicado na oportunidade errada do
+                            // Connech. Contato comum limpa o vínculo e deixa o back-end
+                            // reencontrar o negócio aberto certo.
+                            const lead = connechLeads.find(l => l.clientId === nextClientId);
+                            const nextDealId = lead?.dealId || "";
+                            setClientId(nextClientId);
+                            setDealId(nextDealId);
+                            setAutoLinked(false);
+                            saveProposalMetaDraft({ title: projectName, validityDays, clientId: nextClientId, dealId: nextDealId });
                         }}
                         className="w-full bg-slate-900/60 border border-slate-700/40 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors appearance-none"
                     >
                         <option value="" className="bg-slate-900 text-slate-500">Sem vínculo...</option>
-                        {clients.map(c => (
-                            <option key={c.id} value={c.id} className="bg-slate-900 text-white">
-                                {c.name || c.user?.name || "Sem Nome"} {c.companyRef ? `(${c.companyRef.name})` : ''}
-                            </option>
-                        ))}
+                        {connechLeads.length > 0 && (
+                            <optgroup label="Leads do Connech">
+                                {connechLeads.map(l => (
+                                    <option key={l.dealId} value={l.clientId} className="bg-slate-900 text-white">
+                                        {l.clientName}{l.company ? ` (${l.company})` : ''}{l.hasProposal ? ' — já tem proposta' : ''}
+                                    </option>
+                                ))}
+                            </optgroup>
+                        )}
+                        {clients.some(c => !connechLeads.some(l => l.clientId === c.id)) && (
+                        <optgroup label="Outros contatos">
+                            {clients
+                                .filter(c => !connechLeads.some(l => l.clientId === c.id))
+                                .map(c => (
+                                    <option key={c.id} value={c.id} className="bg-slate-900 text-white">
+                                        {c.name || c.user?.name || "Sem Nome"} {c.companyRef ? `(${c.companyRef.name})` : ''}
+                                    </option>
+                                ))}
+                        </optgroup>
+                        )}
                     </select>
                 </div>
+                {isConnechLead ? (
+                    <p className="mt-3 text-[11px] leading-relaxed text-emerald-400/90">
+                        {autoLinked ? "Lead do Connech vinculado automaticamente. " : "Lead do Connech. "}
+                        O escopo poderá ser publicado para os fornecedores.
+                    </p>
+                ) : (
+                    <p className="mt-3 text-[11px] leading-relaxed text-amber-400/80">
+                        Sem um lead do Connech vinculado, o escopo não vai para os fornecedores.
+                    </p>
+                )}
             </div>
 
             <div className="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-6 backdrop-blur-md">

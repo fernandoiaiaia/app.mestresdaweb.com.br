@@ -160,6 +160,11 @@ export const assemblerController = {
 
     // ── CONNECH (publicar escopo para fornecedores) ───────────────────────────
 
+    async connechLeads(req: Request, res: Response) {
+        const data = await AssemblerService.listConnechLeads(req.user!.userId);
+        res.json({ success: true, data });
+    },
+
     async connechStatus(req: Request, res: Response) {
         try {
             const data = await AssemblerService.getConnechStatus(req.user!.userId, req.params.id as string);

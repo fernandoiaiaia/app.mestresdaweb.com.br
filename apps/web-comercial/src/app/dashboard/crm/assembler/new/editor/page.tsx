@@ -7,7 +7,7 @@ import {
   Layers, Layout, Activity, Link as LinkIcon, Clock, ChevronDown, ChevronRight, Save, Presentation,
   Plus, Trash2, Sparkles, Loader2, CheckCircle2, MessageCircle, Eye, Send
 } from "lucide-react";
-import { CompleteScope, ScopeUserNode, loadScopeDraft, saveScopeDraft, saveProposalToList, generateFullScope, getConnechStatus, publishScopeToConnech } from "../../_shared";
+import { CompleteScope, ScopeUserNode, loadScopeDraft, saveScopeDraft, saveProposalToList, generateFullScope, getConnechStatus, publishScopeToConnech, ConnechLead, getConnechLeads } from "../../_shared";
 import { api } from "@/lib/api";
 import { parseMarkdownToScope } from "../../parser";
 import { useConfirm } from "@/providers/confirm-provider";
@@ -198,6 +198,7 @@ export default function EditorPage() {
   const [expandedNodes, setExpandedNodes] = useState<Record<string, boolean>>({});
   interface ClientOption { id: string; name?: string | null; user?: { name?: string | null } | null; companyRef?: { name?: string | null } | null }
   const [clients, setClients] = useState<ClientOption[]>([]);
+  const [connechLeads, setConnechLeads] = useState<ConnechLead[]>([]);
 
   // Per-user generation state
   const [userGenState, setUserGenState] = useState<Record<string, UserGenState>>({});
@@ -225,6 +226,10 @@ export default function EditorPage() {
 
   // Connech: só mostra o botão de publicar quando o deal vinculado veio do Connech
   const [connechEligible, setConnechEligible] = useState(false);
+  // A elegibilidade definitiva vem do back-end, mas ela só pode ser consultada depois
+  // que a proposta existe no banco. Enquanto isso, o vínculo com um lead do Connech já
+  // responde a mesma pergunta — e o botão publica salvando antes, então não há risco.
+  const connechLinked = connechEligible || connechLeads.some(l => l.clientId === scope?.clientId);
   const [publishingConnech, setPublishingConnech] = useState(false);
 
   const refreshConnechStatus = React.useCallback(async (proposalId: string) => {
@@ -381,6 +386,10 @@ export default function EditorPage() {
     api<ClientOption[]>("/api/clients").then((res) => {
         if (res.success && res.data) setClients(res.data);
     });
+
+    // Os leads do Connech ficam destacados no seletor de contato: é o vínculo que
+    // decide se o escopo pode ou não ser publicado para os fornecedores.
+    getConnechLeads().then(setConnechLeads);
   }, [router, loadFeedbacks, refreshConnechStatus]);
 
   // ── Per-user AI Generation (one platform at a time) ─────────────────────
@@ -841,7 +850,7 @@ export default function EditorPage() {
               className="px-5 py-2 rounded-full bg-slate-800 hover:bg-slate-700 text-white font-semibold text-sm transition-colors flex items-center gap-2">
               <Save size={14} /> Salvar
             </button>
-            {connechEligible && (
+            {connechLinked && (
               <button
                 onClick={handlePublishToConnech}
                 disabled={publishingConnech}
@@ -902,22 +911,45 @@ export default function EditorPage() {
 
             <div className="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-6 backdrop-blur-md">
                 <label className="flex items-center gap-2 text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-3">
-                     Contato Base (Opcional)
+                     Contato Base (Lead)
                 </label>
                 <div className="relative">
                     <select
                         value={scope.clientId || ""}
                         onChange={e => {
-                            const s = { ...scope }; s.clientId = e.target.value; updateScope(s);
+                            const nextClientId = e.target.value;
+                            // Trocar o contato sem trocar o negócio publicaria este escopo
+                            // na oportunidade anterior do Connech — o back-end preserva o
+                            // dealId que já estava salvo quando o payload não traz outro.
+                            const lead = connechLeads.find(l => l.clientId === nextClientId);
+                            const s = { ...scope };
+                            s.clientId = nextClientId;
+                            s.dealId = lead?.dealId || "";
+                            updateScope(s);
                         }}
                         className="w-full bg-slate-900/60 border border-slate-700/40 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors appearance-none"
                     >
                         <option value="" className="bg-slate-900 text-slate-500">Sem vínculo...</option>
-                        {clients.map(c => (
-                            <option key={c.id} value={c.id} className="bg-slate-900 text-white">
-                                {c.name || c.user?.name || "Sem Nome"} {c.companyRef ? `(${c.companyRef.name})` : ''}
-                            </option>
-                        ))}
+                        {connechLeads.length > 0 && (
+                            <optgroup label="Leads do Connech">
+                                {connechLeads.map(l => (
+                                    <option key={l.dealId} value={l.clientId} className="bg-slate-900 text-white">
+                                        {l.clientName}{l.company ? ` (${l.company})` : ''}
+                                    </option>
+                                ))}
+                            </optgroup>
+                        )}
+                        {clients.some(c => !connechLeads.some(l => l.clientId === c.id)) && (
+                        <optgroup label="Outros contatos">
+                            {clients
+                                .filter(c => !connechLeads.some(l => l.clientId === c.id))
+                                .map(c => (
+                                    <option key={c.id} value={c.id} className="bg-slate-900 text-white">
+                                        {c.name || c.user?.name || "Sem Nome"} {c.companyRef ? `(${c.companyRef.name})` : ''}
+                                    </option>
+                                ))}
+                        </optgroup>
+                        )}
                     </select>
                 </div>
             </div>

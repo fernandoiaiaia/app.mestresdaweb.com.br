@@ -22,6 +22,7 @@ router.put("/proposals/:id", assemblerController.updateProposal);
 router.delete("/proposals/:id", assemblerController.deleteProposal);
 
 // Publicação do escopo para o Connech (marketplace de fornecedores)
+router.get("/connech-leads", assemblerController.connechLeads);
 router.get("/proposals/:id/connech-status", assemblerController.connechStatus);
 router.post("/proposals/:id/publish-to-connech", assemblerController.publishToConnech);
 
